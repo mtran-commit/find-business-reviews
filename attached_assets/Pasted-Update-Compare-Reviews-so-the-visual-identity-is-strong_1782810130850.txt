@@ -1,0 +1,249 @@
+Update Compare Reviews so the visual identity is stronger.
+
+New image/logo rules:
+
+TOP FEATURED RESULT:
+For the main featured result card, display BOTH:
+1. Business logo
+2. Business photo / business image
+
+Layout for top featured result:
+- Keep the large business photo on the left
+- Add a smaller business logo on top of the photo or next to the business name
+- The logo should be clearly visible and separate from the photo
+- If both are available, show both
+- If only one is available, show whichever exists
+- If neither exists, show a branded fallback placeholder with initials
+
+Top result image structure:
+- Large hero/business photo:
+  width around 330px
+  height around 175px
+  border-radius: 8px
+  object-fit: cover
+
+- Small logo:
+  width around 56px
+  height around 56px
+  border-radius: 12px
+  background: white
+  border: 1px solid #E5E5E5
+  box-shadow: 0 6px 18px rgba(0,0,0,0.08)
+  object-fit: contain
+  padding: 6px
+
+Preferred layout:
+Option A:
+- Photo on the left
+- Small logo overlaid in the top-left or bottom-left corner of the photo
+
+OR
+
+Option B:
+- Photo on the left
+- Small logo placed next to the business name in the details column
+
+Use the cleanest premium option, but both photo and logo must be visible.
+
+If using overlay, use:
+.logo-overlay {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  width: 56px;
+  height: 56px;
+  border-radius: 12px;
+  background: #fff;
+  border: 1px solid #E5E5E5;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.logo-overlay img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6px;
+}
+
+Wrap the image area like:
+<div class="featured-image-wrap">
+  <img class="business-photo" src="..." alt="Business photo" />
+  <div class="logo-overlay">
+    <img src="..." alt="Business logo" />
+  </div>
+</div>
+
+Use CSS:
+.featured-image-wrap {
+  position: relative;
+  width: 330px;
+  height: 175px;
+}
+
+BUSINESS DETAILS COLUMN:
+Optionally also repeat a mini logo near the business name if it improves the look.
+
+NEARBY / SIMILAR BUSINESSES:
+For every similar business row underneath, display at least a logo on the far left.
+
+Do NOT use generic initials only if a real logo exists.
+Use:
+1. Real logo if available
+2. If no logo, fallback to initials block
+
+Similar business row left column should show:
+- Small logo square, around 52px x 52px
+- Border radius 10px
+- White or branded background
+- object-fit contain for real logos
+
+Example CSS:
+.row-logo {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  background: #FFFFFF;
+  border: 1px solid #E5E5E5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.row-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 5px;
+}
+
+.row-logo.fallback {
+  background: #071A3D;
+  color: #FFFFFF;
+  font-weight: 900;
+  font-size: 22px;
+}
+
+DATA MODEL UPDATE:
+Update the business data structure to support both photo and logo.
+
+Top result business object should include:
+{
+  name,
+  address,
+  imageUrl,
+  logoUrl,
+  website,
+  phone,
+  directionsUrl,
+  google,
+  yelp,
+  tripadvisor,
+  reviewpay,
+  offer,
+  nearby
+}
+
+Nearby businesses array should include:
+nearby: [
+  {
+    name: "Business name",
+    category: "Restaurant",
+    suburb: "Braeside",
+    logoUrl: "https://...",
+    imageUrl: "https://...", 
+    google: { rating: 4.4, reviews: 1597 },
+    yelp: { rating: null, reviews: 0 },
+    tripadvisor: { rating: null, reviews: 0 },
+    trustScore: 88
+  }
+]
+
+Important:
+For nearby businesses, imageUrl is optional, but logoUrl should be shown if available.
+
+Fallback logic:
+Create helper functions:
+
+function getInitials(name) {
+  if (!name) return "?";
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map(word => word[0])
+    .join("")
+    .toUpperCase();
+}
+
+function renderLogo(logoUrl, name, className = "row-logo") {
+  if (logoUrl) {
+    return `
+      <div class="${className}">
+        <img src="${logoUrl}" alt="${name} logo" />
+      </div>
+    `;
+  }
+
+  return `
+    <div class="${className} fallback">
+      ${getInitials(name)}
+    </div>
+  `;
+}
+
+TOP FEATURED RESULT RENDER:
+If both imageUrl and logoUrl exist:
+- Show photo + logo
+
+If only imageUrl exists:
+- Show photo
+- Show initials logo overlay fallback
+
+If only logoUrl exists:
+- Show logo and use a soft placeholder background for image area
+
+If neither exists:
+- Show branded placeholder with initials
+
+SIMILAR BUSINESS RENDER:
+For each nearby row:
+- On the far left, render the logo
+- If no logo, show initials fallback
+
+Do not leave the left side blank.
+
+DATA SOURCE RULES:
+- business photo can come from Google/SerpApi images if available
+- business logo can come from Google image/logo search, website favicon/logo, or stored demo data
+- for now, if real logo is not found, use initials fallback
+- do not break layout if logos are missing
+
+BACKEND IMPROVEMENT:
+Add placeholder logic in backend to provide:
+- imageUrl
+- logoUrl
+
+For now:
+- Keep using available image/photo from business results
+- Add a demo/stub logoUrl when possible
+- If no logoUrl, frontend fallback must work
+
+VISUAL GOAL:
+Top result:
+- large business photo
+- small visible business logo
+- premium and polished
+
+Similar business rows:
+- each row starts with a clear logo
+- fallback initials only when necessary
+
+FINAL CHECK:
+Searching a business should show:
+- top result with photo + logo
+- nearby businesses with logos on the left

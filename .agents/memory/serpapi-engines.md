@@ -10,6 +10,8 @@ When pulling public review ratings from SerpApi, the engines differ in whether t
 - **yelp** (search) — does NOT expose an aggregate rating anymore. Only used to resolve a `place_id` by name. Then call **yelp_reviews** and average the first page of review stars; take the total count from `search_information.total_results`. Exact for low-review businesses, an estimate for high-volume.
 - **facebook** — no usable public rating source; return null.
 
+**Logo vs photo:** the google_maps `thumbnail` is a colour *photo* of the place, not a logo. There's no logo field. To get a brand logo with no extra API/key, derive it from the business website via Google's public favicon service (`https://www.google.com/s2/favicons?domain=<host>&sz=128`); always keep an initials fallback for businesses without a website.
+
 **Category hints gotcha:** the google_maps place `type` field is a **string OR an array** (e.g. `["Italian restaurant","Bar","Restaurant"]`), and `types`/`category` may be absent. When inferring a business category, gather all of `type`/`types`/`category` handling both shapes — reading `type` only as a string silently misses array-typed places (e.g. "Tipo 00" classified as generic instead of restaurant).
 
 **Why:** verified live via curl during the build; the Yelp aggregate disappeared from the search engine, so it must be derived, while TripAdvisor still ships it inline (a wrong early assumption was that TripAdvisor had no usable source).

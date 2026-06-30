@@ -54,6 +54,10 @@ export interface NearbyBusiness {
   name: string;
   category: string;
   location: string;
+  /** Brand logo (website favicon) when available; "" → frontend uses initials. */
+  logoUrl: string;
+  /** Colour business photo when available (optional for rows). */
+  imageUrl: string;
   google: PlatformRating | null;
   yelp: PlatformRating | null;
   tripadvisor: PlatformRating | null;
@@ -140,6 +144,22 @@ function initials(name: string): string {
     .join("");
 }
 
+/**
+ * Derive a brand logo URL from a business website using Google's public favicon
+ * service. Returns "" when no usable website is present so the frontend can fall
+ * back to initials. No API key required.
+ */
+function faviconLogo(website: string): string {
+  if (!website) return "";
+  try {
+    const host = new URL(website).hostname;
+    if (!host) return "";
+    return `https://www.google.com/s2/favicons?domain=${host}&sz=128`;
+  } catch {
+    return "";
+  }
+}
+
 /** Derive a Yelp `find_loc` (city/region) from a Google-style address. */
 function deriveLocation(address: string): string {
   if (!address) return "";
@@ -217,9 +237,11 @@ export async function fetchBusinessReviews(
   const address = typeof place["address"] === "string" ? place["address"] : "";
   const phone = typeof place["phone"] === "string" ? place["phone"] : "";
   const website = typeof place["website"] === "string" ? place["website"] : "";
-  const logoUrl =
+  // Google Maps thumbnail is a colour business photo; derive a separate brand
+  // logo from the website favicon so the featured card can show both.
+  const imageUrl =
     typeof place["thumbnail"] === "string" ? place["thumbnail"] : "";
-  const imageUrl = logoUrl;
+  const logoUrl = faviconLogo(website);
 
   const google = toRating(place);
 
@@ -624,6 +646,8 @@ export function buildCategoryDemoNearby(
       name: nm,
       category: `${category.rowLabel} · ${place}`,
       location: place,
+      logoUrl: "",
+      imageUrl: "",
       google: demoRating(seed + "g", 60, 360),
       yelp: yelp ? demoRating(seed + "y", 20, 180) : null,
       tripadvisor: tripadvisor ? demoRating(seed + "t", 30, 320) : null,
@@ -699,11 +723,16 @@ export async function fetchSimilarBusinesses(
         seen.add(key);
 
         const rowSuburb = extractLocality(addr).suburb || suburb;
+        const rowSite = typeof r["website"] === "string" ? r["website"] : "";
+        const rowThumb =
+          typeof r["thumbnail"] === "string" ? r["thumbnail"] : "";
 
         results.push({
           name: title,
           category: `${category.rowLabel} · ${rowSuburb}`,
           location: rowSuburb,
+          logoUrl: faviconLogo(rowSite),
+          imageUrl: rowThumb,
           google: toRating(r),
           yelp: null,
           tripadvisor: null,

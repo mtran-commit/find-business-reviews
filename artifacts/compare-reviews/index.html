@@ -164,14 +164,31 @@
         padding: 8px 14px; border-radius: 0 0 6px 6px;
         display: inline-flex; align-items: center; gap: 6px;
       }
+      .featured-image-wrap {
+        grid-area: img; position: relative; width: 100%; height: 175px;
+        border-radius: 8px; overflow: hidden; background: var(--navy);
+      }
       .featured-image {
-        grid-area: img; width: 100%; height: 175px; border-radius: 8px;
+        position: absolute; inset: 0; width: 100%; height: 100%;
         object-fit: cover; background: var(--navy);
       }
       .featured-image-fallback {
-        grid-area: img; width: 100%; height: 175px; border-radius: 8px;
+        position: absolute; inset: 0;
         background: var(--navy); color: #fff; display: grid; place-items: center;
         font-size: 46px; font-weight: 900; letter-spacing: 1px;
+      }
+      .logo-overlay {
+        position: absolute; left: 12px; bottom: 12px;
+        width: 56px; height: 56px; border-radius: 12px;
+        background: #fff; border: 1px solid #E5E5E5;
+        box-shadow: 0 8px 22px rgba(0,0,0,0.18);
+        display: flex; align-items: center; justify-content: center;
+        overflow: hidden; z-index: 2;
+      }
+      .logo-overlay img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
+      .logo-overlay.fallback {
+        background: var(--navy); color: #fff; font-weight: 900; font-size: 22px;
+        letter-spacing: .5px;
       }
       .featured-info { grid-area: info; min-width: 0; }
       .biz-name { font-size: clamp(24px, 2.4vw, 32px); font-weight: 900; letter-spacing: -.7px; line-height: 1.08; color: var(--text); overflow-wrap: break-word; word-break: normal; hyphens: none; }
@@ -264,7 +281,7 @@
       }
       @media (max-width: 680px) {
         .featured-card { grid-template-columns: 1fr; grid-template-areas: "img" "info" "rate" "score"; }
-        .featured-image, .featured-image-fallback { width: 100%; }
+        .featured-image-wrap { width: 100%; }
       }
 
       /* ===== Similar business rows ===== */
@@ -281,8 +298,14 @@
       }
       .result-row:hover { border-color: var(--aqua); box-shadow: var(--shadow-soft); }
       .result-logo {
-        width: 52px; height: 52px; border-radius: 8px; flex-shrink: 0;
-        background: var(--navy); color: #fff; display: grid; place-items: center;
+        width: 52px; height: 52px; border-radius: 10px; flex-shrink: 0;
+        background: #fff; border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center; overflow: hidden;
+      }
+      .result-logo img { width: 100%; height: 100%; object-fit: contain; padding: 5px; }
+      .result-logo.fallback {
+        background: var(--navy); border-color: var(--navy); color: #fff;
+        display: grid; place-items: center;
         font-weight: 900; font-size: 16px; letter-spacing: .5px;
       }
       .result-info { min-width: 0; }
@@ -508,6 +531,28 @@
         return { avg: avg, totalReviews: totalReviews, score: Math.round((avg / 5) * 100) };
       }
 
+      // ---- Logo rendering: real logo if present, else initials fallback ----
+      function renderLogo(logoUrl, name, cls) {
+        cls = cls || 'result-logo';
+        var init = initials(name);
+        if (logoUrl) {
+          return '<div class="' + cls + '"><img src="' + escapeAttr(logoUrl) +
+            '" alt="' + escapeAttr(name) + ' logo" ' +
+            'onerror="window.__logoFail(this, \'' + escapeAttr(init) + '\')" /></div>';
+        }
+        return '<div class="' + cls + ' fallback">' + escapeHtml(init) + '</div>';
+      }
+
+      // Gracefully degrade a broken logo image to its initials fallback.
+      window.__logoFail = function (img, init) {
+        var box = img.parentElement;
+        if (!box) return;
+        box.classList.add('fallback');
+        box.textContent = init || '?';
+      };
+      // Remove a broken featured photo, revealing the navy fallback underneath.
+      window.__photoFail = function (img) { img.remove(); };
+
       // ---- Featured tags from real metrics (VERIFIED DATA always shown) ----
       function featuredTags(m) {
         const tags = [];
@@ -622,9 +667,22 @@
 
       // ---- Render main results ----
       function renderResults(data, m, seconds) {
-        const img = data.imageUrl
-          ? '<img class="featured-image" src="' + escapeAttr(data.imageUrl) + '" alt="' + escapeAttr(data.name) + '" />'
-          : '<div class="featured-image-fallback">' + escapeHtml(initials(data.name)) + '</div>';
+        // Featured visual: large business photo + small brand logo overlay.
+        // Show both when available; degrade gracefully to initials otherwise.
+        const photoInit = escapeHtml(initials(data.name));
+        const photoInner = data.imageUrl
+          ? '<img class="featured-image" src="' + escapeAttr(data.imageUrl) + '" alt="' + escapeAttr(data.name) + '" onerror="window.__photoFail(this)" />'
+          : '';
+        let logoOverlay = '';
+        if (data.logoUrl) {
+          logoOverlay = '<div class="logo-overlay"><img src="' + escapeAttr(data.logoUrl) + '" alt="' + escapeAttr(data.name) + ' logo" onerror="window.__logoFail(this, \'' + escapeAttr(initials(data.name)) + '\')" /></div>';
+        } else if (data.imageUrl) {
+          logoOverlay = '<div class="logo-overlay fallback">' + photoInit + '</div>';
+        }
+        const img = '<div class="featured-image-wrap">' +
+          '<div class="featured-image-fallback">' + photoInit + '</div>' +
+          photoInner + logoOverlay +
+        '</div>';
 
         const tags = featuredTags(m).map(function (t) {
           return '<span class="tag ' + (t.aqua ? 'tag-aqua' : '') + '">' + escapeHtml(t.t) + '</span>';
@@ -695,7 +753,7 @@
           return '' +
             '<div class="result-row" data-name="' + escapeAttr(n.name) + '">' +
               '<div class="result-top">' +
-                '<div class="result-logo">' + escapeHtml(initials(n.name)) + '</div>' +
+                renderLogo(n.logoUrl, n.name, 'result-logo') +
                 '<div class="result-info">' +
                   '<div class="result-name">' + escapeHtml(n.name) + '</div>' +
                   '<div class="result-cat">' + escapeHtml(n.category || '') + '</div>' +
