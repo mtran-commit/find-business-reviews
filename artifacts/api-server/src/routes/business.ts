@@ -4,6 +4,8 @@ import {
   fetchBusinessReviews,
   buildDemoOffer,
   demoReviewPay,
+  detectBusinessCategory,
+  fetchSimilarBusinesses,
 } from "../lib/serpapi";
 
 const router: IRouter = Router();
@@ -67,6 +69,61 @@ router.get("/find-offers", (req, res): void => {
     return;
   }
   res.json(buildDemoOffer(parsed.data.businessName, parsed.data.website));
+});
+
+const SimilarQuery = z.object({
+  category: z.string().trim().min(1).max(80),
+  suburb: z.string().trim().min(1).max(80),
+  state: z.string().trim().max(10).optional().default(""),
+  businessName: z.string().trim().max(200).optional().default(""),
+});
+
+/**
+ * Similar businesses matched by BOTH category and suburb. Searches SerpApi for
+ * "<category> near <suburb> <state> Australia", excludes the searched business,
+ * and falls back to category+suburb demo data when no real peers are found.
+ */
+router.get("/similar-businesses", async (req, res): Promise<void> => {
+  const parsed = SimilarQuery.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "category and suburb are required." });
+    return;
+  }
+
+  const apiKey = process.env["SERPAPI_API_KEY"];
+  if (!apiKey) {
+    req.log.error("SERPAPI_API_KEY is not configured");
+    res
+      .status(503)
+      .json({ error: "Reviews service is not configured on the server." });
+    return;
+  }
+
+  const { category: catTerm, suburb, state, businessName } = parsed.data;
+  // Normalise the requested category through the same detector so labels and
+  // search terms stay consistent with the main lookup.
+  const category = detectBusinessCategory(catTerm, catTerm, [catTerm]);
+
+  try {
+    const results = await fetchSimilarBusinesses(
+      category,
+      { suburb, state },
+      businessName,
+      apiKey,
+      req.log,
+    );
+    res.json({
+      category,
+      locality: { suburb, state },
+      results,
+      demo: results.some((r) => r.demo),
+    });
+  } catch (err) {
+    req.log.error({ err }, "Similar-business lookup failed");
+    res
+      .status(502)
+      .json({ error: "Could not fetch similar businesses right now." });
+  }
 });
 
 const ReviewPayQuery = z.object({

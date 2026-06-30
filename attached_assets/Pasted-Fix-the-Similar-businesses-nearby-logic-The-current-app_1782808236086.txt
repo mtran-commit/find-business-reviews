@@ -1,0 +1,291 @@
+Fix the “Similar businesses nearby” logic.
+
+The current app is wrong because it shows restaurants underneath a real estate search.
+
+Business rule:
+Similar businesses must match BOTH:
+1. The same business category / industry
+2. The same suburb or nearby location in Australia
+
+Examples:
+- If the user searches a real estate agency in Chelsea VIC, show other real estate agencies in Chelsea / nearby suburbs.
+- If the user searches a pizza restaurant in Dingley Village VIC, show other pizza restaurants or restaurants in Dingley Village / nearby suburbs.
+- If the user searches a cafe in Richmond VIC, show cafes in Richmond / nearby suburbs.
+- If the user searches a hotel in Sydney, show hotels in Sydney.
+- If the user searches a plumber in Melbourne, show plumbers in Melbourne / nearby suburbs.
+
+Do not show restaurants under real estate.
+Do not show real estate under restaurants.
+Do not show random demo businesses that do not match the searched category.
+
+Rename section dynamically:
+Instead of always:
+“Similar businesses nearby”
+
+Use:
+“Similar [category] nearby”
+
+Examples:
+“Similar real estate agencies nearby”
+“Similar restaurants nearby”
+“Similar cafes nearby”
+“Similar hotels nearby”
+“Similar plumbers nearby”
+
+If the suburb is known, use:
+“Similar real estate agencies near Chelsea”
+“Similar restaurants near Dingley Village”
+“Similar cafes near Richmond”
+
+Category detection:
+Create a function detectBusinessCategory(businessData, query).
+
+It should detect category from:
+- businessData.category
+- businessData.type
+- businessData.categories
+- businessData.description
+- businessData.name
+- user search query
+
+Create category groups:
+
+Real estate:
+keywords:
+real estate, realtor, property, estate agent, realty, agency, rentals, property management, obrien, ray white, barry plant, buxton, hockingstuart, harcourts, remax, re/max, belle property
+
+Restaurants:
+keywords:
+restaurant, pizza, pasta, cafe, bar, grill, bistro, takeaway, food, dining, eatery, kitchen, bakery, sushi, Thai, Indian, Chinese, Italian
+
+Hotels:
+keywords:
+hotel, motel, accommodation, resort, serviced apartment, inn
+
+Trades:
+keywords:
+plumber, electrician, builder, carpenter, roofer, handyman, painter, mechanic
+
+Beauty / wellness:
+keywords:
+beauty, spa, salon, hair, nails, massage, skin, cosmetic, clinic
+
+Medical:
+keywords:
+doctor, dentist, dental, clinic, medical, physiotherapy, chiropractor, optometrist
+
+Retail:
+keywords:
+shop, store, retailer, boutique, supermarket, pharmacy
+
+If no category is detected:
+Use “businesses” as generic category, but still restrict to the same suburb/location.
+
+Location/suburb detection:
+Create a function extractSuburbOrLocation(businessData, query).
+
+Use:
+- businessData.address
+- businessData.suburb
+- businessData.city
+- user query
+
+For Australian addresses, detect suburb before state/postcode.
+
+Examples:
+“463 Nepean Hwy, Chelsea VIC 3196, Australia” → Chelsea
+“14 Pauline Ave, Dingley Village VIC 3172, Australia” → Dingley Village
+“361 Little Bourke St, Melbourne VIC 3000, Australia” → Melbourne
+
+Search similar businesses:
+Create backend route:
+
+GET /api/similar-businesses?category=&suburb=&state=&businessName=
+
+This route should search SerpApi using a query like:
+
+`${category} near ${suburb} ${state} Australia`
+
+Examples:
+real estate agency near Chelsea VIC Australia
+restaurants near Dingley Village VIC Australia
+pizza near Dingley Village VIC Australia
+cafes near Richmond VIC Australia
+hotels near Sydney NSW Australia
+
+Use the same Australia-only filter already added.
+
+Important:
+Filter similar results:
+- Must be located in Australia
+- Must match the same category group
+- Must not be the same business as the searched business
+- Must have same suburb or nearby suburb where possible
+- Must not use static demo restaurant data unless category is restaurant
+
+If real SerpApi results are unavailable:
+Use category-specific Australian demo fallback data.
+
+Fallback demo data must match category and suburb.
+
+Example fallback for real estate:
+If category is real estate and suburb is Chelsea:
+[
+  {
+    name: "Ray White Chelsea",
+    category: "Real Estate Agency",
+    location: "Chelsea",
+    google: { rating: 4.6, reviews: 210 },
+    yelp: { rating: null, reviews: 0 },
+    tripadvisor: { rating: null, reviews: 0 },
+    trustScore: 92
+  },
+  {
+    name: "Buxton Chelsea",
+    category: "Real Estate Agency",
+    location: "Chelsea",
+    google: { rating: 4.7, reviews: 180 },
+    trustScore: 94
+  },
+  {
+    name: "Harcourts Chelsea",
+    category: "Real Estate Agency",
+    location: "Chelsea",
+    google: { rating: 4.4, reviews: 96 },
+    trustScore: 88
+  }
+]
+
+Example fallback for restaurants:
+If category is restaurant and suburb is Dingley Village:
+[
+  {
+    name: "Dingley Pizza and Pasta",
+    category: "Restaurant",
+    location: "Dingley Village",
+    google: { rating: 4.3, reviews: 139 },
+    tripadvisor: { rating: 3.8, reviews: 26 },
+    trustScore: 75
+  },
+  {
+    name: "Dingley Thai Restaurant",
+    category: "Restaurant",
+    location: "Dingley Village",
+    google: { rating: 4.4, reviews: 180 },
+    trustScore: 88
+  },
+  {
+    name: "The Dingley Hotel",
+    category: "Restaurant",
+    location: "Dingley Village",
+    google: { rating: 4.1, reviews: 980 },
+    trustScore: 82
+  }
+]
+
+Update frontend:
+The similar section should render dynamic title:
+
+const title = `Similar ${categoryLabel} near ${suburb}`;
+
+Examples:
+Similar real estate agencies near Chelsea
+Similar restaurants near Dingley Village
+Similar cafes near Richmond
+
+Each similar result row should show:
+- Logo/photo or initials
+- Business name
+- Category · suburb
+- Google rating and review count
+- Yelp rating and review count if available
+- TripAdvisor rating and review count if available
+- Average rating
+- Trust Score
+- View Report button
+
+If a platform does not apply to that category:
+For real estate, Yelp and TripAdvisor may not have data.
+Show:
+—
+Not available
+
+Do not mark this as a red flag.
+
+For restaurants/hotels, Yelp and TripAdvisor are more relevant, so try to fetch them.
+
+Category/platform rules:
+Real estate:
+- Google is primary
+- Review Pay if available
+- Yelp optional
+- TripAdvisor usually not relevant
+- Facebook optional
+
+Restaurants:
+- Google
+- Yelp
+- TripAdvisor
+- Review Pay if available
+- Facebook optional
+
+Hotels:
+- Google
+- TripAdvisor
+- Yelp optional
+- Review Pay if available
+
+Trades:
+- Google
+- Review Pay
+- Facebook optional
+- Yelp optional
+
+Beauty:
+- Google
+- Facebook
+- Review Pay
+- Yelp optional
+
+Trust Score:
+Calculate Trust Score using available relevant platforms only.
+Do not punish a real estate agency because TripAdvisor has no match.
+Do not punish a plumber because TripAdvisor has no match.
+Do not punish any business because a platform is irrelevant to that category.
+
+OpenAI report:
+Update the AI report to say:
+“Similar businesses are matched by industry and suburb.”
+
+Also tell AI:
+Do not compare real estate agencies against restaurants.
+Do not compare restaurants against real estate agencies.
+
+Important final test:
+Search:
+“OBrien Real Estate Chelsea”
+
+Expected:
+Similar real estate agencies near Chelsea
+Rows should be real estate agencies only.
+
+Search:
+“Dingley Pizza”
+
+Expected:
+Similar restaurants near Dingley Village
+Rows should be restaurants only.
+
+Search:
+“Tipo 00”
+
+Expected:
+Similar restaurants near Melbourne
+Rows should be restaurants only.
+
+Search:
+“plumber Richmond”
+
+Expected:
+Similar plumbers near Richmond
+Rows should be plumbers only.

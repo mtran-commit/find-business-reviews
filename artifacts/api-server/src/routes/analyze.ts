@@ -13,6 +13,8 @@ const AnalyzeBody = z.object({
   name: z.string().trim().min(1).max(200),
   platforms: z.array(PlatformInput).min(1).max(10),
   offerAvailable: z.boolean().optional().default(false),
+  category: z.string().trim().max(80).optional().default(""),
+  suburb: z.string().trim().max(80).optional().default(""),
 });
 
 /** Shape the model is asked to return; missing fields fall back on the client. */
@@ -50,7 +52,7 @@ router.post("/analyze-reviews", async (req, res): Promise<void> => {
     return;
   }
 
-  const { name, platforms, offerAvailable } = parsed.data;
+  const { name, platforms, offerAvailable, category, suburb } = parsed.data;
   const lines = platforms
     .map((p) => `- ${p.label}: ${p.rating.toFixed(1)}/5 from ${p.reviews} reviews`)
     .join("\n");
@@ -68,18 +70,29 @@ router.post("/analyze-reviews", async (req, res): Promise<void> => {
           content:
             "You are a concise, consumer-friendly review analyst. Analyse ONLY " +
             "the real platform ratings provided. Do not invent ratings, review " +
-            "text, platforms, or offers. Use simple language. Return JSON only " +
-            "with exactly these keys: reviewSummary (a 2-3 sentence plain-language " +
-            "paragraph noting agreement or gaps between platforms), bestFor (array " +
-            "of 2-4 short tag phrases), redFlags (array of 0-3 short concerns; " +
-            "empty array if none), reputationTrend (one short sentence), " +
-            "offerSummary (one short sentence; if no public offer is available, " +
-            "say that no public offer was found today).",
+            "text, platforms, or offers. Similar businesses are matched by " +
+            "industry and suburb: never compare this business against businesses " +
+            "in a different industry (e.g. do not compare a real estate agency " +
+            "against restaurants, or restaurants against real estate). Do NOT " +
+            "treat a review platform that is irrelevant to this business's " +
+            "category as a red flag or a negative (e.g. TripAdvisor or Yelp " +
+            "having no listing for a real estate agency or a plumber is normal, " +
+            "not a concern) — simply ignore platforms that do not apply. Use " +
+            "simple language. Return JSON only with exactly these keys: " +
+            "reviewSummary (a 2-3 sentence plain-language paragraph noting " +
+            "agreement or gaps between platforms), bestFor (array of 2-4 short " +
+            "tag phrases), redFlags (array of 0-3 short concerns; empty array if " +
+            "none), reputationTrend (one short sentence), offerSummary (one short " +
+            "sentence; if no public offer is available, say that no public offer " +
+            "was found today).",
         },
         {
           role: "user",
           content:
-            `Business: ${name}\nReal platform ratings:\n${lines}\n` +
+            `Business: ${name}\n` +
+            (category ? `Industry/category: ${category}\n` : "") +
+            (suburb ? `Suburb: ${suburb}\n` : "") +
+            `Real platform ratings:\n${lines}\n` +
             `Public offer available: ${offerAvailable ? "yes" : "no"}`,
         },
       ],

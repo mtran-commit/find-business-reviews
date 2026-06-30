@@ -675,8 +675,12 @@
           offerChip = '<div class="offer-chip muted">No public offer found today</div>';
         }
 
-        // Similar businesses (demo/illustrative rows)
+        // Similar businesses (matched by category + suburb)
         const nearby = Array.isArray(data.nearby) ? data.nearby : [];
+        const catLabel = (data.category && data.category.label) ? data.category.label : 'businesses';
+        const subLabel = (data.locality && data.locality.suburb) ? data.locality.suburb : '';
+        const similarTitle = 'Similar ' + catLabel + (subLabel ? ' near ' + subLabel : ' nearby');
+        const similarDemo = nearby.some(function (n) { return n && n.demo; });
         const similarRows = nearby.map(function (n) {
           const nm = nearbyMetrics(n);
           const chips = [
@@ -752,9 +756,9 @@
             '</div>' +
           '</div>' +
 
-          // Similar businesses
+          // Similar businesses (matched by category + suburb)
           (similarRows ?
-            '<div class="similar-head">Similar businesses nearby <span class="demo-badge">Demo data</span></div>' +
+            '<div class="similar-head">' + escapeHtml(similarTitle) + (similarDemo ? ' <span class="demo-badge">Demo data</span>' : '') + '</div>' +
             '<div class="similar-list">' + similarRows + '</div>'
             : '') +
 
@@ -869,7 +873,9 @@
               name: data.name,
               platforms: platforms,
               // Demo offers must not influence the AI narrative.
-              offerAvailable: !!(data.offer && data.offer.available && !data.offer.demo)
+              offerAvailable: !!(data.offer && data.offer.available && !data.offer.demo),
+              category: (data.category && data.category.label) ? data.category.label : '',
+              suburb: (data.locality && data.locality.suburb) ? data.locality.suburb : ''
             })
           });
           const body = await res.json().catch(function () { return null; });

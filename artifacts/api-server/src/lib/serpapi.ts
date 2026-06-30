@@ -49,14 +49,33 @@ export interface Offer {
   demo: boolean;
 }
 
-/** A nearby business for the comparison rows (demo/illustrative data). */
+/** A nearby business for the comparison rows. `demo` flags fallback data. */
 export interface NearbyBusiness {
   name: string;
   category: string;
+  location: string;
   google: PlatformRating | null;
   yelp: PlatformRating | null;
   tripadvisor: PlatformRating | null;
   demo: boolean;
+}
+
+/** Detected industry/category of a business, used to find true peers. */
+export interface BusinessCategory {
+  /** Stable group key, e.g. "real_estate", "restaurant", "plumber". */
+  key: string;
+  /** Plural lowercase label for the section title, e.g. "real estate agencies". */
+  label: string;
+  /** Singular Title Case label for a row, e.g. "Real Estate Agency". */
+  rowLabel: string;
+  /** Term used to build the SerpApi similar-business query. */
+  searchTerm: string;
+}
+
+/** A suburb/state extracted from an Australian address (or the query). */
+export interface Locality {
+  suburb: string;
+  state: string;
 }
 
 export interface BusinessReviews {
@@ -77,7 +96,11 @@ export interface BusinessReviews {
   reviewpay: PlatformRating | null;
   /** Public offer (demo data for now; flagged via `offer.demo`). */
   offer: Offer;
-  /** Similar nearby businesses for comparison (demo/illustrative). */
+  /** Detected industry/category of this business. */
+  category: BusinessCategory;
+  /** Suburb/state of this business (drives the "near <suburb>" title). */
+  locality: Locality;
+  /** Similar nearby businesses: same category + suburb. `demo` flags fallbacks. */
   nearby: NearbyBusiness[];
   unavailable: string[];
   /** Platform keys whose data is demo/placeholder (excluded from metrics). */
@@ -200,6 +223,18 @@ export async function fetchBusinessReviews(
 
   const google = toRating(place);
 
+  // Category hints from the Google Maps profile. SerpApi may return `type` as
+  // either a string or an array (e.g. ["Italian restaurant","Bar"]); `types`
+  // / `category` may also be present, so gather whichever exist.
+  const placeTypes: string[] = [];
+  for (const field of ["type", "types", "category"]) {
+    const v = place[field];
+    if (typeof v === "string") placeTypes.push(v);
+    else if (Array.isArray(v)) {
+      for (const t of v) if (typeof t === "string") placeTypes.push(t);
+    }
+  }
+
   const coords = place["gps_coordinates"];
   let directionsUrl: string;
   if (
@@ -267,6 +302,11 @@ export async function fetchBusinessReviews(
   if (!tripadvisor) unavailable.push("tripadvisor");
   unavailable.push("facebook");
 
+  // ---- Similar businesses: same category + suburb (real lookup, demo fallback) ----
+  const category = detectBusinessCategory(name, query, placeTypes);
+  const locality = extractLocality(address, query);
+  const nearby = await fetchSimilarBusinesses(category, locality, name, apiKey, log);
+
   return {
     name,
     address,
@@ -282,7 +322,9 @@ export async function fetchBusinessReviews(
     facebook: null,
     reviewpay,
     offer: buildDemoOffer(name, website),
-    nearby: buildDemoNearby(name),
+    category,
+    locality,
+    nearby,
     unavailable,
     demo: ["reviewpay"],
     notes,
@@ -348,15 +390,6 @@ export function buildDemoOffer(name: string, website: string): Offer {
   };
 }
 
-const NEARBY_POOL: { name: string; category: string }[] = [
-  { name: "Gimlet Melbourne", category: "Cocktail Bar · CBD" },
-  { name: "Vue de Monde", category: "Fine Dining · CBD" },
-  { name: "Tipo 00", category: "Italian · CBD" },
-  { name: "Chin Chin", category: "Asian Eatery · CBD" },
-  { name: "Cumulus Inc.", category: "Modern Australian · CBD" },
-  { name: "Attica", category: "Fine Dining · Ripponlea" },
-];
-
 /** Deterministic demo rating in the 3.8–4.9 range for an arbitrary seed. */
 function demoRating(seed: string, minReviews: number, span: number): PlatformRating {
   const h = hashString(seed);
@@ -365,29 +398,325 @@ function demoRating(seed: string, minReviews: number, span: number): PlatformRat
   return { rating, reviews };
 }
 
+/* ===========================================================================
+ * Category detection + suburb extraction + similar-business lookup
+ *
+ * Similar businesses must match BOTH the searched business's industry/category
+ * AND its suburb. We detect the category from the Google Maps profile types,
+ * the business name and the user query, parse the suburb from the Australian
+ * address, then run a real SerpApi `google_maps` search for that category near
+ * that suburb. When no real peers are found we fall back to category-specific,
+ * suburb-aware demo data (flagged `demo:true`) — never the wrong category.
+ * ======================================================================== */
+
+interface CategoryDef {
+  key: string;
+  label: string;
+  rowLabel: string;
+  searchTerm: string;
+  /** Single-word keywords match on word tokens; multi-word match as substrings. */
+  keywords: string[];
+}
+
 /**
- * Three illustrative nearby businesses for the comparison rows. These are
- * clearly demo/placeholder (flagged `demo:true`); they are not real lookups.
+ * Ordered most-specific-first so e.g. "cafe" wins over the broader "restaurant"
+ * group, and a specific trade (plumber) is preferred over generic terms.
  */
-export function buildDemoNearby(name: string): NearbyBusiness[] {
-  const start = hashString("nearby:" + name) % NEARBY_POOL.length;
-  const out: NearbyBusiness[] = [];
-  for (let i = 0; i < 3; i++) {
-    const p = NEARBY_POOL[(start + i) % NEARBY_POOL.length] as {
-      name: string;
-      category: string;
-    };
-    const seed = name + "|" + p.name;
-    out.push({
-      name: p.name,
-      category: p.category,
-      google: demoRating(seed + "g", 800, 3000),
-      yelp: demoRating(seed + "y", 40, 200),
-      tripadvisor: demoRating(seed + "t", 200, 1500),
-      demo: true,
-    });
+const CATEGORY_GROUPS: CategoryDef[] = [
+  {
+    key: "real_estate",
+    label: "real estate agencies",
+    rowLabel: "Real Estate Agency",
+    searchTerm: "real estate agency",
+    keywords: [
+      "real estate", "realtor", "realty", "estate agent", "property management",
+      "property", "rentals", "ray white", "barry plant", "buxton", "hockingstuart",
+      "harcourts", "remax", "re/max", "belle property", "obrien", "o'brien",
+      "first national", "jellis craig", "nelson alexander", "mcgrath", "lj hooker",
+      "raine & horne", "stockdale", "biggin",
+    ],
+  },
+  {
+    key: "cafe",
+    label: "cafes",
+    rowLabel: "Cafe",
+    searchTerm: "cafes",
+    keywords: ["cafe", "café", "caffe", "coffee", "espresso", "roastery", "brunch"],
+  },
+  {
+    key: "restaurant",
+    label: "restaurants",
+    rowLabel: "Restaurant",
+    searchTerm: "restaurants",
+    keywords: [
+      "restaurant", "pizza", "pizzeria", "pasta", "bistro", "grill", "bar",
+      "takeaway", "dining", "eatery", "kitchen", "sushi", "ramen", "thai",
+      "indian", "chinese", "italian", "trattoria", "osteria", "bakery", "food",
+      "steakhouse", "tapas", "diner", "noodle", "burger",
+    ],
+  },
+  {
+    key: "hotel",
+    label: "hotels",
+    rowLabel: "Hotel",
+    searchTerm: "hotels",
+    keywords: [
+      "hotel", "motel", "accommodation", "resort", "serviced apartment", "inn",
+      "lodge", "hostel", "bed and breakfast",
+    ],
+  },
+  { key: "plumber", label: "plumbers", rowLabel: "Plumber", searchTerm: "plumbers", keywords: ["plumber", "plumbing"] },
+  { key: "electrician", label: "electricians", rowLabel: "Electrician", searchTerm: "electricians", keywords: ["electrician", "electrical"] },
+  { key: "builder", label: "builders", rowLabel: "Builder", searchTerm: "builders", keywords: ["builder", "building", "construction"] },
+  { key: "carpenter", label: "carpenters", rowLabel: "Carpenter", searchTerm: "carpenters", keywords: ["carpenter", "carpentry", "joinery", "cabinet maker"] },
+  { key: "roofer", label: "roofers", rowLabel: "Roofer", searchTerm: "roofers", keywords: ["roofer", "roofing"] },
+  { key: "painter", label: "painters", rowLabel: "Painter", searchTerm: "painters", keywords: ["painter", "painting", "decorator"] },
+  { key: "mechanic", label: "mechanics", rowLabel: "Mechanic", searchTerm: "mechanics", keywords: ["mechanic", "automotive", "auto repair", "car service", "panel beater"] },
+  { key: "handyman", label: "handyman services", rowLabel: "Handyman", searchTerm: "handyman", keywords: ["handyman"] },
+  {
+    key: "beauty",
+    label: "beauty & wellness venues",
+    rowLabel: "Beauty & Wellness",
+    searchTerm: "beauty salon",
+    keywords: [
+      "beauty", "spa", "salon", "hairdresser", "hair", "barber", "nails", "nail",
+      "massage", "skin", "cosmetic", "waxing", "brows", "lashes",
+    ],
+  },
+  { key: "dentist", label: "dentists", rowLabel: "Dentist", searchTerm: "dentists", keywords: ["dentist", "dental", "orthodontist"] },
+  {
+    key: "medical",
+    label: "clinics",
+    rowLabel: "Clinic",
+    searchTerm: "medical clinic",
+    keywords: ["doctor", "medical", "physiotherapy", "physio", "chiropractor", "optometrist", "clinic", "podiatry", "psychology"],
+  },
+  {
+    key: "retail",
+    label: "shops",
+    rowLabel: "Shop",
+    searchTerm: "shops",
+    keywords: ["shop", "store", "retailer", "boutique", "supermarket", "pharmacy", "chemist", "grocery", "grocer"],
+  },
+];
+
+const GENERIC_CATEGORY: BusinessCategory = {
+  key: "business",
+  label: "businesses",
+  rowLabel: "Business",
+  searchTerm: "businesses",
+};
+
+function toCategory(def: CategoryDef): BusinessCategory {
+  return { key: def.key, label: def.label, rowLabel: def.rowLabel, searchTerm: def.searchTerm };
+}
+
+/**
+ * Detect a business's industry/category from its Google Maps profile types, its
+ * name and the user query. Single-word keywords match on word tokens (so "bar"
+ * never matches "barber"); multi-word keywords match as substrings. Falls back
+ * to a generic "businesses" category when nothing matches.
+ */
+export function detectBusinessCategory(
+  name: string,
+  query: string,
+  placeTypes: string[] = [],
+): BusinessCategory {
+  const haystack = [...placeTypes, name, query].join(" ").toLowerCase();
+  const tokens = new Set(
+    haystack.replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(Boolean),
+  );
+  for (const def of CATEGORY_GROUPS) {
+    for (const kw of def.keywords) {
+      const multi = /[\s/'&]/.test(kw);
+      if (multi ? haystack.includes(kw) : tokens.has(kw)) return toCategory(def);
+    }
   }
-  return out;
+  return { ...GENERIC_CATEGORY };
+}
+
+const AU_STATES = new Set(["VIC", "NSW", "QLD", "SA", "WA", "TAS", "NT", "ACT"]);
+
+/**
+ * Extract the suburb (and state) from an Australian address such as
+ * "463 Nepean Hwy, Chelsea VIC 3196, Australia" → { suburb: "Chelsea",
+ * state: "VIC" }. The suburb is the text before the state abbreviation. Falls
+ * back to the last token of the query when no address suburb is available.
+ */
+export function extractLocality(address: string, query = ""): Locality {
+  let suburb = "";
+  let state = "";
+
+  if (address) {
+    const parts = address
+      .split(",")
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .filter((p) => p.toLowerCase() !== "australia");
+
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i] as string;
+      const toks = part.split(/\s+/);
+      const stateIdx = toks.findIndex((t) =>
+        AU_STATES.has(t.toUpperCase().replace(/\./g, "")),
+      );
+      if (stateIdx >= 0) {
+        state = (toks[stateIdx] as string).toUpperCase().replace(/\./g, "");
+        const before = toks.slice(0, stateIdx).join(" ").trim();
+        if (before) suburb = before;
+        else if (i > 0) suburb = parts[i - 1] as string;
+        break;
+      }
+    }
+    if (!suburb && parts.length >= 2) suburb = parts[parts.length - 2] as string;
+  }
+
+  if (!suburb && query) {
+    const qt = query.trim().split(/\s+/);
+    suburb = (qt[qt.length - 1] as string) ?? "";
+  }
+
+  return { suburb, state };
+}
+
+/** Which platforms carry demo ratings for a category's fallback rows. */
+function demoPlatformsFor(key: string): { yelp: boolean; tripadvisor: boolean } {
+  if (key === "restaurant" || key === "cafe") return { yelp: true, tripadvisor: true };
+  if (key === "hotel") return { yelp: false, tripadvisor: true };
+  return { yelp: false, tripadvisor: false };
+}
+
+/** Suburb-aware demo business name templates per category ({s} → suburb). */
+const DEMO_TEMPLATES: Record<string, string[]> = {
+  real_estate: ["Ray White {s}", "Buxton {s}", "Harcourts {s}", "Barry Plant {s}"],
+  cafe: ["{s} Coffee House", "Little {s} Espresso", "The {s} Roastery"],
+  restaurant: ["{s} Pizza & Pasta", "{s} Thai Restaurant", "The {s} Hotel Bistro"],
+  hotel: ["The {s} Grand Hotel", "{s} Boutique Inn", "{s} Serviced Apartments"],
+  plumber: ["{s} Plumbing Co", "Rapid {s} Plumbing", "{s} Pipe & Drain"],
+  electrician: ["{s} Electrical", "Bright Spark {s}", "{s} Power & Light"],
+  builder: ["{s} Building Group", "{s} Constructions", "Premier {s} Builders"],
+  beauty: ["{s} Beauty Bar", "The {s} Spa", "{s} Hair & Co"],
+  dentist: ["{s} Dental Care", "Smile {s} Dental", "{s} Family Dentist"],
+  medical: ["{s} Medical Centre", "{s} Family Clinic", "{s} Health Hub"],
+  retail: ["{s} Marketplace", "The {s} Store", "{s} Trading Co"],
+};
+
+/**
+ * Category-specific, suburb-aware demo peers used only when a real SerpApi
+ * lookup returns too few results. Flagged `demo:true` so the UI labels them and
+ * they are never presented as verified data. Always matches the searched
+ * category — never the wrong industry.
+ */
+export function buildCategoryDemoNearby(
+  category: BusinessCategory,
+  suburb: string,
+): NearbyBusiness[] {
+  const place = suburb || "your area";
+  const templates =
+    DEMO_TEMPLATES[category.key] ??
+    [`{s} ${category.rowLabel}`, `${category.rowLabel}s of {s}`, `Premier {s} ${category.rowLabel}`];
+  const { yelp, tripadvisor } = demoPlatformsFor(category.key);
+
+  return templates.slice(0, 3).map((tpl) => {
+    const nm = tpl.replace(/\{s\}/g, place);
+    const seed = category.key + "|" + nm;
+    return {
+      name: nm,
+      category: `${category.rowLabel} · ${place}`,
+      location: place,
+      google: demoRating(seed + "g", 60, 360),
+      yelp: yelp ? demoRating(seed + "y", 20, 180) : null,
+      tripadvisor: tripadvisor ? demoRating(seed + "t", 30, 320) : null,
+      demo: true,
+    };
+  });
+}
+
+/**
+ * Find real similar businesses: same category, same suburb. Runs a single
+ * `google_maps` search for "<category> near <suburb> <state> Australia",
+ * excludes the searched business, and returns up to 3 peers with their real
+ * Google rating. Yelp/TripAdvisor are left null here (per-peer lookups would
+ * burn quota); the UI shows them as "not available" without penalty. Falls back
+ * to category+suburb demo data when fewer than 3 real peers are found.
+ */
+export async function fetchSimilarBusinesses(
+  category: BusinessCategory,
+  locality: Locality,
+  excludeName: string,
+  apiKey: string,
+  log?: Logger,
+): Promise<NearbyBusiness[]> {
+  const { suburb, state } = locality;
+  if (!suburb) return [];
+
+  const q = `${category.searchTerm} near ${suburb} ${state} Australia`
+    .replace(/\s+/g, " ")
+    .trim();
+
+  const results: NearbyBusiness[] = [];
+  try {
+    const maps = await serpapiGet({
+      engine: "google_maps",
+      type: "search",
+      q,
+      api_key: apiKey,
+    });
+
+    const local = maps["local_results"];
+    if (Array.isArray(local)) {
+      const exclTokens = new Set(distinctiveTokens(excludeName));
+      const exclNeeded = Math.max(1, Math.ceil(exclTokens.size / 2));
+      const seen = new Set<string>();
+
+      for (const raw of local) {
+        if (results.length >= 3) break;
+        if (!raw || typeof raw !== "object") continue;
+        const r = raw as Record<string, unknown>;
+        const title = typeof r["title"] === "string" ? r["title"] : "";
+        if (!title) continue;
+
+        // Skip the searched business itself (strong distinctive-token overlap).
+        const titleTokens = distinctiveTokens(title);
+        const overlap = titleTokens.filter((t) => exclTokens.has(t)).length;
+        if (exclTokens.size > 0 && overlap >= exclNeeded) continue;
+
+        const key = normalizeName(title);
+        if (seen.has(key)) continue;
+
+        const addr = typeof r["address"] === "string" ? r["address"] : "";
+        // Australia sanity-check: when an address is present it must look
+        // Australian (an AU state token or "Australia"); guards against a noisy
+        // result leaking a non-AU listing. Missing address → keep (the query
+        // already constrains to Australia).
+        if (addr) {
+          const upper = addr.toUpperCase();
+          const isAU =
+            upper.includes("AUSTRALIA") ||
+            addr.split(/[\s,]+/).some((t) => AU_STATES.has(t.toUpperCase().replace(/\./g, "")));
+          if (!isAU) continue;
+        }
+        seen.add(key);
+
+        const rowSuburb = extractLocality(addr).suburb || suburb;
+
+        results.push({
+          name: title,
+          category: `${category.rowLabel} · ${rowSuburb}`,
+          location: rowSuburb,
+          google: toRating(r),
+          yelp: null,
+          tripadvisor: null,
+          demo: false,
+        });
+      }
+    }
+  } catch (err) {
+    log?.warn({ err }, "Similar-business lookup failed; using demo fallback");
+  }
+
+  if (results.length < 3) return buildCategoryDemoNearby(category, suburb);
+  return results;
 }
 
 /**
