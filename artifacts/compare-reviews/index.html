@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Compare Reviews — Compare ratings across Google, TripAdvisor, Yelp & Facebook</title>
+    <meta name="description" content="Don't trust one rating. Compare Google, TripAdvisor, Yelp and Facebook reviews before you buy, book or visit." />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:title" content="Compare Reviews" />
+    <meta property="og:description" content="Compare Google, TripAdvisor, Yelp and Facebook reviews before you buy, book or visit." />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+      /* ===== Design tokens ===== */
+      :root {
+        --bg: #F7F7F4;
+        --card: #FFFFFF;
+        --text: #050505;
+        --text-2: #5F6368;
+        --border: #E5E5E5;
+        --black: #000000;
+        --navy: #071A3D;
+        --navy-hover: #0B2A5B;
+        --navy-soft: #EEF3FF;
+        --grey-btn: #F1F1F1;
+        /* Brand colours for platform icons */
+        --google: #4285F4;
+        --tripadvisor: #00AA6C;
+        --yelp: #D32323;
+        --facebook: #1877F2;
+        --radius: 14px;
+        --radius-sm: 10px;
+        --shadow: 0 1px 2px rgba(5,5,5,.04), 0 8px 24px rgba(5,5,5,.05);
+        --shadow-sm: 0 1px 2px rgba(5,5,5,.05);
+      }
+
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+        text-rendering: optimizeLegibility;
+      }
+      .wrap { max-width: 980px; margin: 0 auto; padding: 0 20px; }
+
+      /* ===== Top bar ===== */
+      .topbar {
+        position: sticky; top: 0; z-index: 20;
+        background: rgba(247,247,244,.85);
+        backdrop-filter: saturate(180%) blur(12px);
+        border-bottom: 1px solid var(--border);
+      }
+      .topbar-inner { display: flex; align-items: center; gap: 12px; height: 64px; }
+      .brand-mark {
+        width: 38px; height: 38px; border-radius: 10px;
+        background: var(--navy); color: #fff;
+        display: grid; place-items: center;
+        font-weight: 800; font-size: 15px; letter-spacing: .5px;
+        flex-shrink: 0;
+      }
+      .brand-name { font-weight: 700; font-size: 17px; letter-spacing: -.2px; }
+      .brand-tag { color: var(--text-2); font-size: 13px; margin-left: auto; display: none; }
+      @media (min-width: 640px) { .brand-tag { display: block; } }
+
+      /* ===== Hero ===== */
+      .hero { text-align: center; padding: 56px 0 36px; }
+      .hero h1 {
+        font-size: clamp(34px, 6vw, 56px);
+        font-weight: 800; letter-spacing: -1.5px; line-height: 1.05;
+        color: var(--text);
+      }
+      .hero .subtitle {
+        max-width: 620px; margin: 18px auto 0;
+        color: var(--text-2); font-size: clamp(15px, 2.4vw, 18px);
+      }
+
+      /* ===== Search ===== */
+      .search-row {
+        display: flex; gap: 10px; max-width: 640px; margin: 30px auto 0;
+        flex-wrap: wrap;
+      }
+      .search-input {
+        flex: 1 1 280px; min-width: 0;
+        background: var(--card); border: 1px solid var(--border);
+        border-radius: var(--radius); padding: 16px 18px;
+        font-size: 16px; color: var(--text); font-family: inherit;
+        box-shadow: var(--shadow-sm); transition: border-color .15s, box-shadow .15s;
+      }
+      .search-input::placeholder { color: var(--text-2); }
+      .search-input:focus {
+        outline: none; border-color: var(--navy);
+        box-shadow: 0 0 0 3px rgba(7,26,61,.12);
+      }
+      .btn {
+        font-family: inherit; font-size: 15px; font-weight: 600;
+        border: none; border-radius: var(--radius); cursor: pointer;
+        padding: 16px 24px; transition: background .15s, transform .05s, box-shadow .15s;
+        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+        white-space: nowrap;
+      }
+      .btn:active { transform: translateY(1px); }
+      .btn-primary { background: var(--navy); color: #fff; box-shadow: var(--shadow-sm); }
+      .btn-primary:hover { background: var(--navy-hover); }
+      .btn-ghost {
+        background: var(--grey-btn); color: var(--text);
+        border: 1px solid var(--border); padding: 11px 16px; font-size: 14px;
+      }
+      .btn-ghost:hover { background: #e9e9e9; }
+      .btn-icon { width: 18px; height: 18px; flex-shrink: 0; }
+
+      /* ===== Chips ===== */
+      .chips { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 22px auto 0; max-width: 640px; }
+      .chip {
+        background: var(--card); border: 1px solid var(--border);
+        border-radius: 999px; padding: 8px 16px; font-size: 13.5px; font-weight: 500;
+        color: var(--text); cursor: pointer; transition: all .15s; font-family: inherit;
+        box-shadow: var(--shadow-sm);
+      }
+      .chip:hover { border-color: var(--navy); background: var(--navy-soft); }
+
+      /* ===== States ===== */
+      .panel { margin: 40px 0 64px; }
+      .empty, .loading {
+        text-align: center; padding: 72px 24px;
+        background: var(--card); border: 1px solid var(--border);
+        border-radius: var(--radius); box-shadow: var(--shadow);
+      }
+      .empty-icon { width: 52px; height: 52px; margin: 0 auto 18px; color: var(--text); opacity: .85; }
+      .empty h3, .loading h3 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
+      .empty p, .loading p { color: var(--text-2); margin-top: 8px; max-width: 440px; margin-left: auto; margin-right: auto; }
+      .hidden { display: none !important; }
+
+      /* Spinner */
+      .spinner {
+        width: 44px; height: 44px; margin: 0 auto 20px;
+        border: 3px solid var(--border); border-top-color: var(--navy);
+        border-radius: 50%; animation: spin 0.8s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* fade-in */
+      .fade-in { animation: fade .4s ease both; }
+      @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+
+      /* ===== Cards ===== */
+      .card {
+        background: var(--card); border: 1px solid var(--border);
+        border-radius: var(--radius); box-shadow: var(--shadow);
+      }
+
+      /* Business header card */
+      .biz {
+        padding: 26px; display: grid; gap: 22px;
+        grid-template-columns: auto 1fr auto; align-items: center;
+      }
+      @media (max-width: 720px) { .biz { grid-template-columns: auto 1fr; } }
+      .biz-logo {
+        width: 76px; height: 76px; border-radius: 16px; flex-shrink: 0;
+        object-fit: cover; border: 1px solid var(--border); background: var(--navy-soft);
+      }
+      .biz-logo-fallback {
+        width: 76px; height: 76px; border-radius: 16px; flex-shrink: 0;
+        background: var(--navy); color: #fff; display: grid; place-items: center;
+        font-size: 28px; font-weight: 800; letter-spacing: .5px;
+      }
+      .biz-name { font-size: clamp(22px, 4vw, 28px); font-weight: 800; letter-spacing: -.6px; line-height: 1.15; }
+      .biz-addr { color: var(--text-2); font-size: 14.5px; margin-top: 5px; display: flex; align-items: center; gap: 6px; }
+      .biz-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+      @media (max-width: 720px) { .biz-actions { grid-column: 1 / -1; } }
+
+      /* Trust score */
+      .trust {
+        text-align: center; padding-left: 22px; border-left: 1px solid var(--border);
+        min-width: 130px;
+      }
+      @media (max-width: 720px) {
+        .trust { grid-column: 1 / -1; border-left: none; border-top: 1px solid var(--border); padding: 18px 0 0; }
+      }
+      .trust-num { font-size: 46px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; color: var(--navy); }
+      .trust-num span { font-size: 20px; color: var(--text-2); font-weight: 600; }
+      .trust-label { text-transform: uppercase; letter-spacing: 1.2px; font-size: 11px; font-weight: 700; color: var(--text-2); margin-top: 8px; }
+      .trust-sub { font-size: 12.5px; color: var(--text-2); margin-top: 4px; }
+
+      /* ===== Ratings grid ===== */
+      .section-title { font-size: 15px; font-weight: 700; letter-spacing: -.2px; margin: 34px 0 14px; display: flex; align-items: center; gap: 8px; }
+      .section-title .muted { color: var(--text-2); font-weight: 500; }
+      .grid { display: grid; gap: 14px; }
+      .ratings-grid { grid-template-columns: repeat(4, 1fr); }
+      @media (max-width: 860px) { .ratings-grid { grid-template-columns: repeat(2, 1fr); } }
+      @media (max-width: 460px) { .ratings-grid { grid-template-columns: 1fr; } }
+
+      .rating-card { padding: 18px; }
+      .rating-head { display: flex; align-items: center; gap: 10px; }
+      .platform-icon {
+        width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
+        display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 17px;
+      }
+      .platform-name { font-weight: 600; font-size: 14px; }
+      .rating-value { font-size: 30px; font-weight: 800; letter-spacing: -1px; margin-top: 14px; }
+      .rating-value span { font-size: 15px; color: var(--text-2); font-weight: 600; }
+      .stars { display: flex; gap: 2px; margin-top: 6px; }
+      .star { width: 15px; height: 15px; color: var(--black); }
+      .star.empty { color: var(--border); }
+      .star.half { position: relative; }
+      .reviews-count { font-size: 12.5px; color: var(--text-2); margin-top: 8px; }
+      .bar { height: 6px; border-radius: 999px; background: var(--grey-btn); margin-top: 12px; overflow: hidden; }
+      .bar-fill { height: 100%; background: var(--navy); border-radius: 999px; width: 0; transition: width .7s cubic-bezier(.2,.8,.2,1); }
+
+      /* ===== Insight grid ===== */
+      .insight-grid { grid-template-columns: repeat(3, 1fr); }
+      @media (max-width: 860px) { .insight-grid { grid-template-columns: repeat(2, 1fr); } }
+      @media (max-width: 560px) { .insight-grid { grid-template-columns: 1fr; } }
+      .insight { padding: 20px; }
+      .insight-head { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
+      .insight-ico { width: 18px; height: 18px; color: var(--text); flex-shrink: 0; }
+      .insight-title { font-weight: 700; font-size: 14px; letter-spacing: -.1px; }
+      .insight-body { font-size: 13.5px; color: var(--text-2); line-height: 1.55; }
+      .insight-body.dark { color: var(--text); }
+
+      .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
+      .tag { background: var(--navy-soft); color: var(--navy); font-size: 12.5px; font-weight: 600; padding: 5px 11px; border-radius: 999px; }
+
+      .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 999px; margin-top: 12px; letter-spacing: .2px; }
+      .pill-navy { background: var(--navy); color: #fff; }
+      .pill-soft { background: var(--navy-soft); color: var(--navy); }
+      .pill-line { background: #fff; color: var(--text); border: 1px solid var(--border); }
+
+      .alert {
+        border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13.5px; line-height: 1.5;
+        display: flex; gap: 10px; align-items: flex-start;
+      }
+      .alert-warn { background: #fff; border: 1px solid var(--border); color: var(--text); }
+      .alert-warn .insight-ico { color: var(--black); }
+      .flag-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+      .flag-list li { display: flex; gap: 9px; align-items: flex-start; font-size: 13.5px; color: var(--text); }
+      .flag-list .insight-ico { margin-top: 1px; }
+
+      /* ===== Nearby ===== */
+      .nearby-grid { grid-template-columns: repeat(3, 1fr); }
+      @media (max-width: 720px) { .nearby-grid { grid-template-columns: 1fr; } }
+      .nearby-card { padding: 18px; cursor: pointer; transition: border-color .15s, transform .1s, box-shadow .15s; }
+      .nearby-card:hover { border-color: var(--navy); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(5,5,5,.08); }
+      .nearby-name { font-weight: 700; font-size: 15px; letter-spacing: -.2px; }
+      .nearby-score { color: var(--text-2); font-size: 13px; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
+      .nearby-score b { color: var(--navy); font-weight: 800; font-size: 15px; }
+      .nearby-go { margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--navy); display: flex; align-items: center; gap: 5px; }
+
+      /* ===== Summary panel ===== */
+      .summary { padding: 26px; margin-top: 34px; background: var(--navy); color: #fff; border: none; }
+      .summary h3 { font-size: 19px; font-weight: 800; letter-spacing: -.3px; }
+      .summary p { color: rgba(255,255,255,.8); font-size: 14.5px; margin-top: 10px; line-height: 1.6; }
+      .summary .summary-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+      .summary .btn-ghost { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.2); }
+      .summary .btn-ghost:hover { background: rgba(255,255,255,.18); }
+      .summary .btn-white { background: #fff; color: var(--navy); }
+      .summary .btn-white:hover { background: #eef3ff; }
+
+      footer { text-align: center; color: var(--text-2); font-size: 12.5px; padding: 0 0 40px; }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="wrap topbar-inner">
+        <div class="brand-mark">CR</div>
+        <div class="brand-name">Compare Reviews</div>
+        <div class="brand-tag">Trust before you book</div>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <!-- Hero -->
+      <section class="hero">
+        <h1>Compare Reviews</h1>
+        <p class="subtitle">Don't trust one rating. Compare Google, TripAdvisor, Yelp and Facebook reviews before you buy, book or visit.</p>
+
+        <div class="search-row">
+          <input id="searchInput" class="search-input" type="search" autocomplete="off"
+                 placeholder="Enter a business name, restaurant, hotel, cafe..." />
+          <button id="searchBtn" class="btn btn-primary">
+            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
+            Check Trust Score
+          </button>
+        </div>
+
+        <div class="chips" id="chips">
+          <button class="chip">Nobu Melbourne</button>
+          <button class="chip">Grossi Florentino</button>
+          <button class="chip">Crown Melbourne</button>
+          <button class="chip">Attica Restaurant</button>
+        </div>
+      </section>
+
+      <!-- Empty state -->
+      <section class="panel" id="emptyState">
+        <div class="empty">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <h3>Search a business to start</h3>
+          <p>The app will fetch the business profile, ratings, trust score, red flags and review summary.</p>
+        </div>
+      </section>
+
+      <!-- Loading -->
+      <section class="panel hidden" id="loadingState">
+        <div class="loading">
+          <div class="spinner"></div>
+          <h3>Analysing&hellip;</h3>
+          <p>Fetching ratings, analysing trust signals and checking review gaps...</p>
+        </div>
+      </section>
+
+      <!-- Results -->
+      <section class="panel hidden" id="results"></section>
+    </main>
+
+    <footer class="wrap">Compare Reviews &middot; Demo data shown. Connect a live reviews API to go live.</footer>
+
+    <script>
+      /* =====================================================================
+         Compare Reviews — single-file demo app
+         =====================================================================
+
+         >>> REAL SEARCH API CONNECTION POINT <<<
+         Replace the body of fetchBusinessReviews(query) below with a real call
+         to your reviews/search provider. The function must return an object
+         with this exact shape so the rest of the UI keeps working:
+
+         {
+           name:         string,
+           address:      string,
+           logoText:     string,   // initials fallback, e.g. "NM"
+           logoUrl:      string,   // full-colour logo URL, or "" if none
+           website:      string,   // https://...
+           phone:        string,   // tel digits, e.g. "+61391234567"
+           directionsUrl:string,   // Google Maps URL
+           google:      { rating: number, reviews: number },
+           tripadvisor: { rating: number, reviews: number },
+           yelp:        { rating: number, reviews: number },
+           facebook:    { rating: number, reviews: number }
+         }
+
+         Example future wiring:
+           async function fetchBusinessReviews(query) {
+             const res = await fetch(`/api/reviews?q=${encodeURIComponent(query)}`);
+             if (!res.ok) throw new Error("Lookup failed");
+             return await res.json(); // must match the shape above
+           }
+      ===================================================================== */
+
+      // ---- Demo data helpers ----
+      function rnd(min, max, decimals) {
+        const v = Math.random() * (max - min) + min;
+        return decimals != null ? Number(v.toFixed(decimals)) : Math.round(v);
+      }
+      function initials(name) {
+        return name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('');
+      }
+
+      // Estimated trust scores for the "nearby" cards (so clicking them feels consistent)
+      const NEARBY = [
+        { name: 'Gimlet Melbourne', score: 91 },
+        { name: 'Vue de Monde', score: 89 },
+        { name: 'Tipo 00', score: 87 }
+      ];
+
+      /**
+       * fetchBusinessReviews(query)
+       * DEMO IMPLEMENTATION — returns simulated data.
+       * >>> Connect your real Search API here (see header comment). <<<
+       */
+      function fetchBusinessReviews(query) {
+        const name = query.trim();
+        return {
+          name: name,
+          address: sampleAddress(),
+          logoText: initials(name),
+          logoUrl: '', // No real logo in demo. Real API should supply a full-colour logo URL.
+          website: 'https://www.google.com/search?q=' + encodeURIComponent(name + ' official website'),
+          phone: '+61390000000',
+          directionsUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(name),
+          google:      { rating: rnd(4.1, 4.9, 1), reviews: rnd(800, 5200) },
+          tripadvisor: { rating: rnd(3.9, 4.8, 1), reviews: rnd(300, 2600) },
+          yelp:        { rating: rnd(3.5, 4.7, 1), reviews: rnd(120, 1400) },
+          facebook:    { rating: rnd(4.0, 5.0, 1), reviews: rnd(200, 3000) }
+        };
+      }
+
+      function sampleAddress() {
+        const list = [
+          '1 Flinders Lane, Melbourne VIC 3000',
+          '80 Collins Street, Melbourne VIC 3000',
+          '525 Flinders Street, Melbourne VIC 3000',
+          '8 Whiteman Street, Southbank VIC 3006',
+          '74 Bourke Street, Melbourne VIC 3000'
+        ];
+        return list[Math.floor(Math.random() * list.length)];
+      }
+
+      // ---- Platform metadata (brand colours stay on icons) ----
+      const PLATFORMS = [
+        { key: 'google',      label: 'Google',      color: 'var(--google)',      letter: 'G' },
+        { key: 'tripadvisor', label: 'TripAdvisor', color: 'var(--tripadvisor)', letter: 'T' },
+        { key: 'yelp',        label: 'Yelp',        color: 'var(--yelp)',        letter: 'Y' },
+        { key: 'facebook',    label: 'Facebook',    color: 'var(--facebook)',    letter: 'F' }
+      ];
+
+      // ---- Star rendering (black stars, supports partial fills via clip) ----
+      function starsHtml2(rating) {
+        let html = '<div class="stars">';
+        for (let i = 1; i <= 5; i++) {
+          const fillPct = Math.max(0, Math.min(1, rating - (i - 1))) * 100;
+          html += '<span style="position:relative;display:inline-block;width:15px;height:15px;">' +
+            '<svg class="star empty" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="position:absolute;inset:0;"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>' +
+            '<span style="position:absolute;inset:0;overflow:hidden;width:' + fillPct + '%;">' +
+            '<svg class="star" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="width:15px;height:15px;"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>' +
+            '</span></span>';
+        }
+        return html + '</div>';
+      }
+
+      // ---- Trust score computation ----
+      function computeMetrics(data) {
+        const ratings = PLATFORMS.map(p => data[p.key].rating);
+        const reviews = PLATFORMS.map(p => data[p.key].reviews);
+        const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
+        const totalReviews = reviews.reduce((a, b) => a + b, 0);
+        const gap = Math.max(...ratings) - Math.min(...ratings);
+
+        // Trust score (0-100): weighted on average rating, volume, and consistency.
+        let score = (avg / 5) * 70;               // up to 70 from average rating
+        score += Math.min(totalReviews / 6000, 1) * 18; // up to 18 from review volume
+        score += Math.max(0, 1 - gap / 1.5) * 12; // up to 12 from consistency
+        score = Math.round(Math.max(0, Math.min(100, score)));
+
+        return { avg, totalReviews, gap, score };
+      }
+
+      // ---- Icon helpers ----
+      const ICO = {
+        web: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/></svg>',
+        phone: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.6a2 2 0 01-.5 2.1L8.1 9.5a16 16 0 006 6l1.1-1.1a2 2 0 012.1-.5c.8.3 1.7.5 2.6.6a2 2 0 011.7 2z"/></svg>',
+        pin: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+        link: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7L12 19"/></svg>',
+        gap: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>',
+        summary: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+        best: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>',
+        flag: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22V15"/></svg>',
+        trend: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>',
+        check: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 11-5.9-9.1"/><path d="M22 4L12 14.1l-3-3"/></svg>',
+        ok: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 11-5.9-9.1"/><path d="M22 4L12 14.1l-3-3"/></svg>',
+        arrow: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>'
+      };
+
+      // ---- Insight logic ----
+      function ratingGapAlert(gap) {
+        if (gap >= 0.9) return { text: 'Warning: ratings vary strongly between platforms. Check reviews carefully before booking or buying.' };
+        if (gap >= 0.5) return { text: 'Moderate rating gap detected. Customer experience may vary depending on the platform.' };
+        return { text: 'Ratings are consistent across platforms. This is a positive trust signal.' };
+      }
+      function reviewSummary(score, gap) {
+        if (score >= 85 && gap < 0.5) return 'Customers appear to have a strong and consistent experience across multiple review platforms. The business shows a high rating average, good review volume and low rating gap.';
+        if (score >= 70) return 'The business appears generally trusted, but there are some differences between platforms. Users should read recent reviews before making a decision.';
+        return 'The business may have mixed customer feedback. Ratings are either lower, inconsistent, or supported by limited review volume.';
+      }
+      function bestForTags(avg) {
+        if (avg >= 4.5) return ['Customer Service', 'Trusted Choice', 'Premium Experience', 'Highly Rated'];
+        return ['Good Value', 'Worth Comparing', 'Check Recent Reviews'];
+      }
+      function redFlags(totalReviews, gap, avg) {
+        const flags = [];
+        if (totalReviews < 300) flags.push('Low review volume');
+        if (gap >= 0.7) flags.push('Large rating gap between platforms');
+        if (avg < 4.0) flags.push('Lower average rating');
+        if (flags.length === 0) flags.push('No major red flags found');
+        return flags;
+      }
+      function reputationTrend(score, gap) {
+        if (score >= 85 && gap < 0.5) return { text: 'The reputation trend looks strong. Ratings are high and consistent across multiple platforms.', pill: 'Strong Reputation', cls: 'pill-navy' };
+        if (score >= 70) return { text: 'The reputation trend looks stable, but users should check recent reviews before deciding.', pill: 'Stable', cls: 'pill-soft' };
+        return { text: 'The reputation trend may need attention. Ratings show mixed or weaker signals.', pill: 'Check Carefully', cls: 'pill-line' };
+      }
+
+      // ---- DOM refs ----
+      const els = {
+        input: document.getElementById('searchInput'),
+        searchBtn: document.getElementById('searchBtn'),
+        chips: document.getElementById('chips'),
+        empty: document.getElementById('emptyState'),
+        loading: document.getElementById('loadingState'),
+        results: document.getElementById('results')
+      };
+
+      function show(which) {
+        els.empty.classList.toggle('hidden', which !== 'empty');
+        els.loading.classList.toggle('hidden', which !== 'loading');
+        els.results.classList.toggle('hidden', which !== 'results');
+      }
+
+      // ---- Main search flow ----
+      function runSearch(query) {
+        const q = (query != null ? query : els.input.value).trim();
+        if (!q) { els.input.focus(); return; }
+        els.input.value = q;
+        show('loading');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // Simulated network latency. With a real API this is the awaited fetch.
+        setTimeout(function () {
+          const data = fetchBusinessReviews(q);
+          const metrics = computeMetrics(data);
+          renderResults(data, metrics);
+          show('results');
+        }, 850);
+      }
+
+      // ---- Render ----
+      function renderResults(data, m) {
+        const logo = data.logoUrl
+          ? '<img class="biz-logo" src="' + escapeAttr(data.logoUrl) + '" alt="' + escapeAttr(data.name) + ' logo" />'
+          : '<div class="biz-logo-fallback">' + escapeHtml(data.logoText) + '</div>';
+
+        // Ratings cards
+        const ratingCards = PLATFORMS.map(function (p) {
+          const r = data[p.key];
+          const pct = Math.round((r.rating / 5) * 100);
+          return '' +
+            '<div class="card rating-card">' +
+              '<div class="rating-head">' +
+                '<div class="platform-icon" style="background:' + p.color + '">' + p.letter + '</div>' +
+                '<div class="platform-name">' + p.label + '</div>' +
+              '</div>' +
+              '<div class="rating-value">' + r.rating.toFixed(1) + '<span>/5</span></div>' +
+              starsHtml2(r.rating) +
+              '<div class="reviews-count">' + r.reviews.toLocaleString() + ' reviews</div>' +
+              '<div class="bar"><div class="bar-fill" data-pct="' + pct + '"></div></div>' +
+            '</div>';
+        }).join('');
+
+        // Insights
+        const gapAlert = ratingGapAlert(m.gap);
+        const summaryText = reviewSummary(m.score, m.gap);
+        const tags = bestForTags(m.avg);
+        const flags = redFlags(m.totalReviews, m.gap, m.avg);
+        const noFlags = flags.length === 1 && flags[0] === 'No major red flags found';
+        const trend = reputationTrend(m.score, m.gap);
+
+        const insightCards = '' +
+          insightCard(ICO.gap, 'Rating Gap Alert',
+            '<div class="alert alert-warn">' + ICO.gap + '<span>' + gapAlert.text + '</span></div>') +
+          insightCard(ICO.summary, 'Review Summary',
+            '<div class="insight-body">' + summaryText + '</div>') +
+          insightCard(ICO.best, 'Best For',
+            '<div class="tags">' + tags.map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('') + '</div>') +
+          insightCard(ICO.flag, 'Red Flags',
+            '<ul class="flag-list">' + flags.map(function (f) {
+              const ic = noFlags ? ICO.ok : ICO.gap;
+              return '<li>' + ic + '<span>' + f + '</span></li>';
+            }).join('') + '</ul>') +
+          insightCard(ICO.trend, 'Reputation Trend',
+            '<div class="insight-body">' + trend.text + '</div>' +
+            '<span class="pill ' + trend.cls + '">' + trend.pill + '</span>') +
+          insightCard(ICO.check, 'Review Pay Verified',
+            '<div class="insight-body">Review Pay verified customer data can be connected later to show whether real transaction-based reviews are available.</div>' +
+            '<span class="pill pill-soft">Coming Soon</span>');
+
+        // Nearby
+        const nearbyCards = NEARBY.map(function (n) {
+          return '' +
+            '<div class="card nearby-card" data-name="' + escapeAttr(n.name) + '">' +
+              '<div class="nearby-name">' + escapeHtml(n.name) + '</div>' +
+              '<div class="nearby-score">Estimated Trust Score: <b>' + n.score + '/100</b></div>' +
+              '<div class="nearby-go">Compare ' + ICO.arrow + '</div>' +
+            '</div>';
+        }).join('');
+
+        els.results.innerHTML = '' +
+          '<div class="card biz fade-in">' +
+            logo +
+            '<div>' +
+              '<div class="biz-name">' + escapeHtml(data.name) + '</div>' +
+              '<div class="biz-addr">' + ICO.pin + escapeHtml(data.address) + '</div>' +
+              '<div class="biz-actions">' +
+                '<button class="btn btn-ghost" data-act="website">' + ICO.link + 'Visit Website</button>' +
+                '<button class="btn btn-ghost" data-act="call">' + ICO.phone + 'Call</button>' +
+                '<button class="btn btn-ghost" data-act="directions">' + ICO.pin + 'Directions</button>' +
+              '</div>' +
+            '</div>' +
+            '<div class="trust">' +
+              '<div class="trust-num">' + m.score + '<span>/100</span></div>' +
+              '<div class="trust-label">Trust Score</div>' +
+              '<div class="trust-sub">Based on 4 platforms</div>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="section-title">Ratings <span class="muted">across platforms</span></div>' +
+          '<div class="grid ratings-grid">' + ratingCards + '</div>' +
+
+          '<div class="section-title">Insights <span class="muted">what the numbers mean</span></div>' +
+          '<div class="grid insight-grid">' + insightCards + '</div>' +
+
+          '<div class="section-title">Compare with similar businesses nearby</div>' +
+          '<div class="grid nearby-grid">' + nearbyCards + '</div>' +
+
+          '<div class="card summary">' +
+            '<h3>' + escapeHtml(data.name) + ' trust comparison</h3>' +
+            '<p>' + escapeHtml(data.name) + ' has a Trust Score of ' + m.score + '/100 based on ratings from Google, TripAdvisor, Yelp and Facebook. ' +
+              'The average rating is ' + m.avg.toFixed(1) + '/5 across ' + m.totalReviews.toLocaleString() + ' public reviews.</p>' +
+            '<div class="summary-actions">' +
+              '<button class="btn btn-white" data-act="new-search">New Search</button>' +
+              '<button class="btn btn-ghost" data-act="save">Save Comparison</button>' +
+            '</div>' +
+          '</div>';
+
+        // Animate progress bars
+        requestAnimationFrame(function () {
+          els.results.querySelectorAll('.bar-fill').forEach(function (b) {
+            b.style.width = b.getAttribute('data-pct') + '%';
+          });
+        });
+
+        // Wire result-card actions
+        els.results.querySelectorAll('[data-act]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const act = btn.getAttribute('data-act');
+            if (act === 'website') window.open(data.website, '_blank');
+            else if (act === 'call') window.location.href = 'tel:' + data.phone;
+            else if (act === 'directions') window.open(data.directionsUrl, '_blank');
+            else if (act === 'save') alert('Comparison saved. Your developer can connect this to your database.');
+            else if (act === 'new-search') resetApp();
+          });
+        });
+        els.results.querySelectorAll('.nearby-card').forEach(function (card) {
+          card.addEventListener('click', function () {
+            runSearch(card.getAttribute('data-name'));
+          });
+        });
+      }
+
+      function insightCard(icon, title, bodyHtml) {
+        return '' +
+          '<div class="card insight">' +
+            '<div class="insight-head">' + icon + '<div class="insight-title">' + title + '</div></div>' +
+            bodyHtml +
+          '</div>';
+      }
+
+      function resetApp() {
+        els.input.value = '';
+        els.results.innerHTML = '';
+        show('empty');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        els.input.focus();
+      }
+
+      // ---- Escaping helpers ----
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+        });
+      }
+      function escapeAttr(s) { return escapeHtml(s); }
+
+      // ---- Events ----
+      els.searchBtn.addEventListener('click', function () { runSearch(); });
+      els.input.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') { e.preventDefault(); runSearch(); }
+      });
+      els.chips.querySelectorAll('.chip').forEach(function (chip) {
+        chip.addEventListener('click', function () { runSearch(chip.textContent); });
+      });
+
+      // Initial state
+      show('empty');
+    </script>
+  </body>
+</html>

@@ -1,0 +1,228 @@
+Create a one-page clickable HTML/CSS/JavaScript web app called “Compare Reviews”.
+
+Purpose:
+The user enters a business name and the app compares that business’s public review ratings across Google, TripAdvisor, Yelp and Facebook.
+
+Design style:
+Use a premium black-and-white design with dark navy blue accents.
+Do not use orange or purple gradients.
+Keep the app clean, modern, mobile responsive and professional.
+
+Colour palette:
+- Background: #F7F7F4
+- Card background: #FFFFFF
+- Primary text: #050505
+- Secondary text: #5F6368
+- Border: #E5E5E5
+- Black: #000000
+- Dark navy: #071A3D
+- Navy hover: #0B2A5B
+- Soft navy background: #EEF3FF
+- Light grey button: #F1F1F1
+
+Important visual rules:
+- Business logo should appear in full colour if available.
+- Business photos/images should remain in full colour.
+- Review platform icons should remain in their brand colours:
+  - Google: #4285F4
+  - TripAdvisor: #00AA6C
+  - Yelp: #D32323
+  - Facebook: #1877F2
+- All generic app icons should be black and white.
+- Stars should be black, not yellow.
+- Progress bars should be dark navy.
+
+Build this as a single index.html file with inline CSS and JavaScript.
+
+Page layout:
+1. Hero section
+   - Small square app logo with “CR”
+   - Main heading: Compare Reviews
+   - Subtitle:
+     “Don’t trust one rating. Compare Google, TripAdvisor, Yelp and Facebook reviews before you buy, book or visit.”
+   - Search input placeholder:
+     “Enter a business name, restaurant, hotel, cafe...”
+   - Main button:
+     “Check Trust Score”
+   - Quick search chips:
+     “Nobu Melbourne”
+     “Grossi Florentino”
+     “Crown Melbourne”
+     “Attica Restaurant”
+
+2. Empty state before searching
+   - Text:
+     “Search a business to start”
+   - Subtext:
+     “The app will fetch the business profile, ratings, trust score, red flags and review summary.”
+
+3. Loading status
+   - Text:
+     “Fetching ratings, analysing trust signals and checking review gaps...”
+
+4. Business result card
+   Display:
+   - Business logo / placeholder initials
+   - Business name
+   - Address
+   - Trust Score out of 100
+   - Small text under Trust Score:
+     “Based on 4 platforms”
+   - Visit Website button
+   - Call button
+   - Directions button
+
+5. Ratings grid
+   Four cards:
+   - Google
+   - TripAdvisor
+   - Yelp
+   - Facebook
+
+Each rating card should show:
+   - Platform name
+   - Coloured platform icon with first letter
+   - Rating number out of 5
+   - Star display
+   - Number of reviews
+   - Progress bar based on rating
+
+6. Insight grid
+   Add cards for:
+   - Rating Gap Alert
+   - Review Summary
+   - Best For
+   - Red Flags
+   - Reputation Trend
+   - Review Pay Verified
+
+Rating Gap Alert logic:
+- If the highest rating minus lowest rating is 0.9 or more, show warning:
+  “Warning: ratings vary strongly between platforms. Check reviews carefully before booking or buying.”
+- If gap is 0.5 or more, show:
+  “Moderate rating gap detected. Customer experience may vary depending on the platform.”
+- Otherwise show:
+  “Ratings are consistent across platforms. This is a positive trust signal.”
+
+Review Summary logic:
+- If Trust Score >= 85 and gap < 0.5:
+  “Customers appear to have a strong and consistent experience across multiple review platforms. The business shows a high rating average, good review volume and low rating gap.”
+- If Trust Score >= 70:
+  “The business appears generally trusted, but there are some differences between platforms. Users should read recent reviews before making a decision.”
+- Otherwise:
+  “The business may have mixed customer feedback. Ratings are either lower, inconsistent, or supported by limited review volume.”
+
+Best For tags:
+If average rating >= 4.5 show:
+- Customer Service
+- Trusted Choice
+- Premium Experience
+- Highly Rated
+
+Otherwise show:
+- Good Value
+- Worth Comparing
+- Check Recent Reviews
+
+Red Flags:
+Show:
+- Low review volume if total reviews are under 300
+- Large rating gap if gap is 0.7 or above
+- Lower average rating if average rating is below 4.0
+If no red flags, show:
+- No major red flags found
+
+Reputation Trend:
+If Trust Score >= 85 and gap < 0.5:
+- Text: “The reputation trend looks strong. Ratings are high and consistent across multiple platforms.”
+- Pill: “Strong Reputation”
+
+If Trust Score >= 70:
+- Text: “The reputation trend looks stable, but users should check recent reviews before deciding.”
+- Pill: “Stable”
+
+Otherwise:
+- Text: “The reputation trend may need attention. Ratings show mixed or weaker signals.”
+- Pill: “Check Carefully”
+
+Review Pay Verified:
+Show:
+“Review Pay verified customer data can be connected later to show whether real transaction-based reviews are available.”
+Pill:
+“Coming Soon”
+
+7. Nearby comparison section
+Title:
+“Compare with similar businesses nearby”
+
+Show three clickable cards:
+- Gimlet Melbourne — Estimated Trust Score: 91/100
+- Vue de Monde — Estimated Trust Score: 89/100
+- Tipo 00 — Estimated Trust Score: 87/100
+
+When clicked, each nearby business should populate the search and run the comparison.
+
+8. Summary panel
+Display:
+- Title: “[Business Name] trust comparison”
+- Text:
+  “[Business Name] has a Trust Score of [score]/100 based on ratings from Google, TripAdvisor, Yelp and Facebook. The average rating is [average]/5 across [total reviews] public reviews.”
+- Buttons:
+  - New Search
+  - Save Comparison
+
+Functionality:
+- The app must be fully clickable.
+- Pressing Enter in the search box should trigger search.
+- Quick search chips should trigger search.
+- Nearby cards should trigger search.
+- Visit Website should open the business website in a new tab.
+- Call should use tel: link.
+- Directions should open Google Maps in a new tab.
+- Save Comparison should show an alert:
+  “Comparison saved. Your developer can connect this to your database.”
+- New Search resets the interface.
+
+Demo data:
+For now, use simulated demo data.
+Create a function called fetchBusinessReviews(query).
+It should return:
+{
+  name,
+  address,
+  logoText,
+  logoUrl,
+  website,
+  phone,
+  directionsUrl,
+  google: { rating, reviews },
+  tripadvisor: { rating, reviews },
+  yelp: { rating, reviews },
+  facebook: { rating, reviews }
+}
+
+Use randomised ratings and review counts for the demo:
+- Google rating between 4.1 and 4.9
+- TripAdvisor rating between 3.9 and 4.8
+- Yelp rating between 3.5 and 4.7
+- Facebook rating between 4.0 and 5.0
+- Review counts between realistic ranges
+
+Important:
+Include comments in the JavaScript showing where the real Search API should be connected later.
+
+The future real API response should support:
+- business name
+- address
+- logo URL
+- website
+- phone
+- directions URL
+- Google rating and review count
+- TripAdvisor rating and review count
+- Yelp rating and review count
+- Facebook rating and review count
+
+Make sure there are no syntax errors.
+Make sure the page works by opening index.html directly in a browser.
+Make it responsive for mobile.

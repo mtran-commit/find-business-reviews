@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "Compare Reviews"
+version = "1.0.0"
+id = "artifacts/compare-reviews"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 25785
+
+[services.development]
+run = "pnpm --filter @workspace/compare-reviews run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/compare-reviews", "run", "build" ]
+publicDir = "artifacts/compare-reviews/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "25785"
+BASE_PATH = "/"
