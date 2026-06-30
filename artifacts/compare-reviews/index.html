@@ -32,10 +32,18 @@
         --yelp: #D32323;
         --facebook: #1877F2;
         --reviewpay: #7C3AED;
-        --radius: 14px;
+        /* Premium accents */
+        --aqua: #60F0EF;
+        --aqua-soft: #EFFFFF;
+        --aqua-deep: #0B7E7C;
+        --green-dot: #52D273;
+        --amber: #C77700;
+        --amber-soft: #FFF6E6;
+        --radius: 16px;
         --radius-sm: 10px;
         --shadow: 0 1px 2px rgba(5,5,5,.04), 0 8px 24px rgba(5,5,5,.05);
         --shadow-sm: 0 1px 2px rgba(5,5,5,.05);
+        --shadow-lg: 0 2px 6px rgba(5,5,5,.05), 0 18px 48px rgba(5,5,5,.10);
       }
 
       * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -48,7 +56,7 @@
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
       }
-      .wrap { max-width: 980px; margin: 0 auto; padding: 0 20px; }
+      .wrap { max-width: 1000px; margin: 0 auto; padding: 0 20px; }
 
       /* ===== Top bar ===== */
       .topbar {
@@ -101,7 +109,7 @@
       .btn {
         font-family: inherit; font-size: 15px; font-weight: 600;
         border: none; border-radius: var(--radius); cursor: pointer;
-        padding: 16px 24px; transition: background .15s, transform .05s, box-shadow .15s;
+        padding: 16px 24px; transition: background .15s, transform .05s, box-shadow .15s, border-color .15s;
         display: inline-flex; align-items: center; justify-content: center; gap: 8px;
         white-space: nowrap;
       }
@@ -113,10 +121,11 @@
         border: 1px solid var(--border); padding: 11px 16px; font-size: 14px;
       }
       .btn-ghost:hover { background: #e9e9e9; }
+      .btn-sm { padding: 9px 14px; font-size: 13.5px; border-radius: var(--radius-sm); }
       .btn-icon { width: 18px; height: 18px; flex-shrink: 0; }
 
       /* ===== States ===== */
-      .panel { margin: 40px 0 64px; }
+      .panel { margin: 36px 0 64px; }
       .empty, .loading {
         text-align: center; padding: 72px 24px;
         background: var(--card); border: 1px solid var(--border);
@@ -145,133 +154,207 @@
         border-radius: var(--radius); box-shadow: var(--shadow);
       }
 
-      /* Business header card */
-      .biz {
-        padding: 26px; display: grid; gap: 22px;
-        grid-template-columns: auto 1fr auto; align-items: center;
+      /* ===== Results heading ===== */
+      .results-head {
+        display: flex; align-items: flex-start; justify-content: space-between;
+        gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
       }
-      @media (max-width: 720px) { .biz { grid-template-columns: auto 1fr; } }
-      .biz-logo {
-        width: 76px; height: 76px; border-radius: 16px; flex-shrink: 0;
+      .results-head h2 { font-size: clamp(22px, 4vw, 30px); font-weight: 800; letter-spacing: -.6px; line-height: 1.15; }
+      .results-head h2 span { color: var(--text-2); font-weight: 700; }
+      .results-meta { color: var(--text-2); font-size: 13.5px; margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
+      .live-dot { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; color: var(--text); }
+      .live-dot::before {
+        content: ''; width: 9px; height: 9px; border-radius: 50%;
+        background: var(--green-dot); box-shadow: 0 0 0 4px rgba(82,210,115,.18);
+        animation: pulse 1.8s ease-in-out infinite;
+      }
+      @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
+      .results-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+      /* ===== Featured (AI recommendation) card ===== */
+      .featured {
+        border: 2px solid var(--aqua); box-shadow: var(--shadow-lg);
+        position: relative; overflow: hidden;
+      }
+      .featured-badge {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: linear-gradient(90deg, var(--aqua) 0%, #BFFCFB 100%);
+        color: var(--aqua-deep); font-size: 12px; font-weight: 800;
+        letter-spacing: .8px; text-transform: uppercase;
+        padding: 8px 16px; border-radius: 0 0 12px 0;
+      }
+      .featured-grid {
+        display: grid; grid-template-columns: 1fr 230px; gap: 0;
+      }
+      @media (max-width: 760px) { .featured-grid { grid-template-columns: 1fr; } }
+      .featured-main { padding: 22px 26px 26px; }
+      .featured-head { display: flex; gap: 18px; align-items: flex-start; }
+      .biz-img {
+        width: 92px; height: 92px; border-radius: 16px; flex-shrink: 0;
         object-fit: cover; border: 1px solid var(--border); background: var(--navy-soft);
       }
-      .biz-logo-fallback {
-        width: 76px; height: 76px; border-radius: 16px; flex-shrink: 0;
+      .biz-img-fallback {
+        width: 92px; height: 92px; border-radius: 16px; flex-shrink: 0;
         background: var(--navy); color: #fff; display: grid; place-items: center;
-        font-size: 28px; font-weight: 800; letter-spacing: .5px;
+        font-size: 32px; font-weight: 800; letter-spacing: .5px;
       }
-      .biz-name { font-size: clamp(22px, 4vw, 28px); font-weight: 800; letter-spacing: -.6px; line-height: 1.15; }
-      .biz-addr { color: var(--text-2); font-size: 14.5px; margin-top: 5px; display: flex; align-items: center; gap: 6px; }
-      .biz-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
-      @media (max-width: 720px) { .biz-actions { grid-column: 1 / -1; } }
+      .biz-name { font-size: clamp(22px, 4vw, 27px); font-weight: 800; letter-spacing: -.6px; line-height: 1.12; }
+      .biz-addr { color: var(--text-2); font-size: 14px; margin-top: 5px; display: flex; align-items: flex-start; gap: 6px; }
+      .biz-addr svg { margin-top: 2px; }
+      .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+      .tag {
+        background: var(--navy-soft); color: var(--navy);
+        font-size: 11.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
+        padding: 5px 11px; border-radius: 999px;
+      }
+      .tag-aqua { background: var(--aqua-soft); color: var(--aqua-deep); border: 1px solid rgba(96,240,239,.5); }
 
-      /* Trust score */
-      .trust {
-        text-align: center; padding-left: 22px; border-left: 1px solid var(--border);
-        min-width: 130px;
-      }
-      @media (max-width: 720px) {
-        .trust { grid-column: 1 / -1; border-left: none; border-top: 1px solid var(--border); padding: 18px 0 0; }
-      }
-      .trust-num { font-size: 46px; font-weight: 800; letter-spacing: -1.5px; line-height: 1; color: var(--navy); }
-      .trust-num span { font-size: 20px; color: var(--text-2); font-weight: 600; }
-      .trust-label { text-transform: uppercase; letter-spacing: 1.2px; font-size: 11px; font-weight: 700; color: var(--text-2); margin-top: 8px; }
-      .trust-sub { font-size: 12.5px; color: var(--text-2); margin-top: 4px; }
+      .overall-rating { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
+      .overall-rating .num { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
+      .overall-rating .num span { font-size: 15px; color: var(--text-2); font-weight: 600; }
+      .overall-rating .count { color: var(--text-2); font-size: 13px; }
 
-      /* ===== Ratings grid ===== */
-      .section-title { font-size: 15px; font-weight: 700; letter-spacing: -.2px; margin: 34px 0 14px; display: flex; align-items: center; gap: 8px; }
-      .section-title .muted { color: var(--text-2); font-weight: 500; }
-      .grid { display: grid; gap: 14px; }
-      .ratings-grid { grid-template-columns: repeat(4, 1fr); }
-      @media (max-width: 860px) { .ratings-grid { grid-template-columns: repeat(2, 1fr); } }
-      @media (max-width: 460px) { .ratings-grid { grid-template-columns: 1fr; } }
+      .reviewpay-status {
+        display: inline-flex; align-items: center; gap: 8px; margin-top: 14px;
+        font-size: 13px; font-weight: 600; color: var(--reviewpay);
+        background: rgba(124,58,237,.07); border: 1px solid rgba(124,58,237,.22);
+        padding: 7px 12px; border-radius: 999px;
+      }
+      .reviewpay-status .demo-badge { background: var(--reviewpay); }
 
-      .rating-card { padding: 18px; }
-      .rating-card--na { opacity: .8; }
-      .rating-value.na { color: var(--text-2); }
-      .na-pill {
-        display: inline-block; margin-top: 10px; padding: 4px 10px;
-        font-size: 11.5px; font-weight: 600; color: var(--text-2);
-        background: var(--grey-btn); border: 1px solid var(--border); border-radius: 999px;
-      }
-      .demo-pill {
-        display: inline-block; margin-top: 10px; padding: 4px 10px;
-        font-size: 11.5px; font-weight: 700; color: var(--reviewpay);
-        background: rgba(124,58,237,.08); border: 1px solid rgba(124,58,237,.25); border-radius: 999px;
-      }
-      .rating-head { display: flex; align-items: center; gap: 10px; }
-      .platform-icon {
-        width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
-        display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 17px;
-      }
-      .platform-name { font-weight: 600; font-size: 14px; }
-      .rating-value { font-size: 30px; font-weight: 800; letter-spacing: -1px; margin-top: 14px; }
-      .rating-value span { font-size: 15px; color: var(--text-2); font-weight: 600; }
-      .stars { margin-top: 6px; line-height: 1; }
+      .biz-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
+
+      /* Stars (horizontal text only) */
+      .stars { line-height: 1; display: inline-flex; }
       .star-rating {
-        display: inline-block; position: relative; font-size: 15px; line-height: 1;
+        display: inline-block; position: relative; font-size: 16px; line-height: 1;
         letter-spacing: 2px; font-family: Arial, "Helvetica Neue", sans-serif;
       }
+      .star-rating.lg { font-size: 22px; }
       .star-rating::before { content: '\2605\2605\2605\2605\2605'; color: var(--border); }
       .star-rating::after {
-        content: '\2605\2605\2605\2605\2605'; color: var(--black);
+        content: '\2605\2605\2605\2605\2605'; color: #F5A623;
         position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap;
         width: var(--fill, 0%);
       }
-      .reviews-count { font-size: 12.5px; color: var(--text-2); margin-top: 8px; }
-      .bar { height: 6px; border-radius: 999px; background: var(--grey-btn); margin-top: 12px; overflow: hidden; }
-      .bar-fill { height: 100%; background: var(--navy); border-radius: 999px; width: 0; transition: width .7s cubic-bezier(.2,.8,.2,1); }
 
-      /* ===== Insight grid ===== */
-      .insight-grid { grid-template-columns: repeat(3, 1fr); }
-      @media (max-width: 860px) { .insight-grid { grid-template-columns: repeat(2, 1fr); } }
-      @media (max-width: 560px) { .insight-grid { grid-template-columns: 1fr; } }
-      .insight { padding: 20px; }
-      .insight-head { display: flex; align-items: center; gap: 9px; margin-bottom: 10px; }
-      .insight-ico { width: 18px; height: 18px; color: var(--text); flex-shrink: 0; }
-      .insight-title { font-weight: 700; font-size: 14px; letter-spacing: -.1px; }
-      .insight-body { font-size: 13.5px; color: var(--text-2); line-height: 1.55; }
-      .insight-body.dark { color: var(--text); }
+      /* Ratings-by-platform rows */
+      .platform-rows { margin-top: 24px; }
+      .section-label { font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--text-2); margin-bottom: 6px; }
+      .platform-row {
+        display: flex; align-items: center; gap: 12px;
+        padding: 13px 0; border-top: 1px solid var(--border);
+      }
+      .platform-row--na { opacity: .72; }
+      .platform-icon-sm {
+        width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
+        display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px;
+      }
+      .platform-row-name { font-weight: 600; font-size: 14.5px; }
+      .platform-row-meta { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+      .platform-row-meta b { font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
+      .platform-row-meta .muted { color: var(--text-2); font-size: 12.5px; }
+      .na-pill {
+        margin-left: auto; padding: 4px 10px; font-size: 11.5px; font-weight: 600;
+        color: var(--text-2); background: var(--grey-btn);
+        border: 1px solid var(--border); border-radius: 999px; white-space: nowrap;
+      }
 
-      .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 4px; }
-      .tag { background: var(--navy-soft); color: var(--navy); font-size: 12.5px; font-weight: 600; padding: 5px 11px; border-radius: 999px; }
+      /* Offer section */
+      .offer-section { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--border); }
+      .offer-card {
+        display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+        background: var(--amber-soft); border: 1px solid #F4DFB2;
+        border-radius: var(--radius-sm); padding: 14px 16px;
+      }
+      .offer-ico {
+        width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
+        background: var(--amber); color: #fff; display: grid; place-items: center;
+      }
+      .offer-text { flex: 1 1 200px; min-width: 0; }
+      .offer-title { font-weight: 700; font-size: 14.5px; color: var(--text); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .offer-desc { color: var(--text-2); font-size: 12.5px; margin-top: 2px; }
+      .offer-none { color: var(--text-2); font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
 
-      .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 5px 11px; border-radius: 999px; margin-top: 12px; letter-spacing: .2px; }
+      /* Trust panel */
+      .trust-panel {
+        background: var(--aqua-soft); border-left: 1px solid var(--border);
+        padding: 28px 22px; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; text-align: center; gap: 4px;
+      }
+      @media (max-width: 760px) { .trust-panel { border-left: none; border-top: 1px solid var(--border); } }
+      .trust-num { font-size: 52px; font-weight: 800; letter-spacing: -2px; line-height: 1; color: var(--navy); }
+      .trust-num span { font-size: 20px; color: var(--text-2); font-weight: 600; }
+      .trust-label { text-transform: uppercase; letter-spacing: 1.2px; font-size: 11px; font-weight: 800; color: var(--aqua-deep); margin-top: 10px; }
+      .trust-sub { font-size: 12.5px; color: var(--text-2); margin-top: 4px; }
+      .trust-bar { width: 100%; height: 7px; border-radius: 999px; background: rgba(7,26,61,.1); margin: 14px 0 16px; overflow: hidden; }
+      .trust-bar-fill { height: 100%; background: var(--navy); border-radius: 999px; width: 0; transition: width .8s cubic-bezier(.2,.8,.2,1); }
+      .trust-panel .btn { width: 100%; }
+
+      /* ===== Section titles ===== */
+      .section-title { font-size: 17px; font-weight: 800; letter-spacing: -.3px; margin: 36px 0 16px; display: flex; align-items: center; gap: 8px; }
+      .section-title .muted { color: var(--text-2); font-weight: 500; font-size: 14px; }
+
+      /* ===== AI analysis card ===== */
+      .analysis { padding: 24px 26px; }
+      .analysis-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
+      .analysis-head .ai-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: var(--navy); color: #fff; font-size: 11px; font-weight: 800;
+        letter-spacing: .6px; text-transform: uppercase; padding: 5px 10px; border-radius: 999px;
+      }
+      .analysis-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 26px; margin-top: 18px; }
+      @media (max-width: 720px) { .analysis-grid { grid-template-columns: 1fr; gap: 20px; } }
+      .analysis-block + .analysis-block { margin-top: 22px; }
+      .ab-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; margin-bottom: 8px; }
+      .ab-title .ico { width: 17px; height: 17px; flex-shrink: 0; color: var(--navy); }
+      .ab-body { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+      .ab-body.dark { color: var(--text); }
+      .flag-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+      .flag-list li { display: flex; gap: 9px; align-items: flex-start; font-size: 13.5px; color: var(--text); }
+      .flag-list .ico { width: 17px; height: 17px; flex-shrink: 0; margin-top: 1px; }
+      .flag-list .ico.warn { color: var(--amber); }
+      .flag-list .ico.ok { color: var(--tripadvisor); }
+      .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; margin-top: 10px; letter-spacing: .2px; }
       .pill-navy { background: var(--navy); color: #fff; }
       .pill-soft { background: var(--navy-soft); color: var(--navy); }
       .pill-line { background: #fff; color: var(--text); border: 1px solid var(--border); }
 
-      .alert {
-        border-radius: var(--radius-sm); padding: 12px 14px; font-size: 13.5px; line-height: 1.5;
+      /* ===== Nearby comparison rows ===== */
+      .nearby-list { display: flex; flex-direction: column; gap: 12px; }
+      .nearby-row {
+        display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+        padding: 16px 20px; cursor: pointer;
+        transition: border-color .15s, transform .1s, box-shadow .15s;
+      }
+      .nearby-row:hover { border-color: var(--aqua); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+      .nearby-id { flex: 1 1 200px; min-width: 0; }
+      .nearby-name { font-weight: 700; font-size: 15.5px; letter-spacing: -.2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+      .nearby-cat { color: var(--text-2); font-size: 13px; margin-top: 3px; }
+      .nearby-platforms { display: flex; gap: 18px; flex-wrap: wrap; }
+      .np { display: flex; align-items: center; gap: 7px; font-size: 13px; }
+      .np .dot { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 11px; flex-shrink: 0; }
+      .np b { font-weight: 800; letter-spacing: -.3px; }
+      .nearby-go { color: var(--navy); display: flex; align-items: center; gap: 5px; font-weight: 600; font-size: 13.5px; }
+
+      .demo-badge {
+        display: inline-flex; align-items: center;
+        font-size: 10.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
+        color: #fff; background: var(--text-2); padding: 3px 8px; border-radius: 999px;
+      }
+
+      /* ===== Footer note ===== */
+      .foot-note {
+        margin-top: 30px; padding: 18px 20px; border-radius: var(--radius-sm);
+        background: var(--card); border: 1px solid var(--border);
+        color: var(--text-2); font-size: 13px; line-height: 1.6;
         display: flex; gap: 10px; align-items: flex-start;
       }
-      .alert-warn { background: #fff; border: 1px solid var(--border); color: var(--text); }
-      .alert-warn .insight-ico { color: var(--black); }
-      .flag-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
-      .flag-list li { display: flex; gap: 9px; align-items: flex-start; font-size: 13.5px; color: var(--text); }
-      .flag-list .insight-ico { margin-top: 1px; }
+      .foot-note a { color: var(--navy); font-weight: 600; text-decoration: none; }
+      .foot-note a:hover { text-decoration: underline; }
+      .foot-note svg { flex-shrink: 0; color: var(--reviewpay); margin-top: 1px; }
 
-      /* ===== Nearby ===== */
-      .nearby-grid { grid-template-columns: repeat(3, 1fr); }
-      @media (max-width: 720px) { .nearby-grid { grid-template-columns: 1fr; } }
-      .nearby-card { padding: 18px; cursor: pointer; transition: border-color .15s, transform .1s, box-shadow .15s; }
-      .nearby-card:hover { border-color: var(--navy); transform: translateY(-2px); box-shadow: 0 10px 28px rgba(5,5,5,.08); }
-      .nearby-name { font-weight: 700; font-size: 15px; letter-spacing: -.2px; }
-      .nearby-score { color: var(--text-2); font-size: 13px; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
-      .nearby-score b { color: var(--navy); font-weight: 800; font-size: 15px; }
-      .nearby-go { margin-top: 12px; font-size: 13px; font-weight: 600; color: var(--navy); display: flex; align-items: center; gap: 5px; }
-
-      /* ===== Summary panel ===== */
-      .summary { padding: 26px; margin-top: 34px; background: var(--navy); color: #fff; border: none; }
-      .summary h3 { font-size: 19px; font-weight: 800; letter-spacing: -.3px; }
-      .summary p { color: rgba(255,255,255,.8); font-size: 14.5px; margin-top: 10px; line-height: 1.6; }
-      .summary .summary-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
-      .summary .btn-ghost { background: rgba(255,255,255,.1); color: #fff; border: 1px solid rgba(255,255,255,.2); }
-      .summary .btn-ghost:hover { background: rgba(255,255,255,.18); }
-      .summary .btn-white { background: #fff; color: var(--navy); }
-      .summary .btn-white:hover { background: #eef3ff; }
-
-      footer { text-align: center; color: var(--text-2); font-size: 12.5px; padding: 0 0 40px; }
+      footer { text-align: center; color: var(--text-2); font-size: 12.5px; padding: 6px 0 40px; }
     </style>
   </head>
   <body>
@@ -297,7 +380,6 @@
             Check Trust Score
           </button>
         </div>
-
       </section>
 
       <!-- Empty state -->
@@ -305,7 +387,7 @@
         <div class="empty">
           <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           <h3>Search a business to start</h3>
-          <p>The app will fetch the business profile, ratings, trust score, red flags and review summary.</p>
+          <p>The app will fetch the business profile, ratings, trust score, red flags, available offers and an AI review summary.</p>
         </div>
       </section>
 
@@ -314,7 +396,7 @@
         <div class="loading">
           <div class="spinner"></div>
           <h3>Analysing&hellip;</h3>
-          <p>Fetching ratings, analysing trust signals and checking review gaps...</p>
+          <p>Checking review platforms, comparing ratings and looking for offers...</p>
         </div>
       </section>
 
@@ -331,49 +413,38 @@
       <section class="panel hidden" id="results"></section>
     </main>
 
-    <footer class="wrap">Compare Reviews &middot; Live data from Google &amp; Yelp via SerpApi. TripAdvisor &amp; Facebook ratings are not publicly available.</footer>
+    <footer class="wrap">Compare Reviews &middot; Live data from Google, Yelp &amp; TripAdvisor via SerpApi. Facebook ratings are not publicly available.</footer>
 
     <script>
       /* =====================================================================
-         Compare Reviews — live reviews lookup
+         Compare Reviews — premium comparison dashboard
          =====================================================================
 
-         Data comes from the backend API at GET /api/reviews?q=<business name>,
-         which calls SerpApi (Google Maps + Yelp engines) server-side so the
-         API key stays secret. The endpoint returns this shape:
+         Data comes from the backend API (keys stay server-side):
+           GET  /api/search-business?query=<name>   -> full business profile
+           POST /api/analyze-reviews                 -> structured AI analysis
 
+         search-business returns:
          {
-           name, address, logoText, logoUrl, website, phone, directionsUrl,
-           google:      { rating, reviews } | null,
-           tripadvisor: { rating, reviews } | null,   // null: not available via SerpApi
-           yelp:        { rating, reviews } | null,
-           facebook:    { rating, reviews } | null,   // null: Facebook ratings are not public
-           unavailable: string[],   // platform keys with no data
-           source:      "serpapi"
+           name, address, logoText, logoUrl, imageUrl, website, phone, directionsUrl,
+           google|tripadvisor|yelp|facebook|reviewpay: { rating, reviews } | null,
+           offer:  { available, title, description, source, url, demo },
+           nearby: [ { name, category, google, yelp, tripadvisor, demo } ],
+           unavailable: string[], demo: string[], notes: {}, source: "serpapi"
          }
 
-         To swap providers later, change the backend route only — the UI below
-         already consumes this shape and gracefully handles null platforms.
+         analyze-reviews returns:
+         { reviewSummary, bestFor[], redFlags[], reputationTrend, offerSummary }
       ===================================================================== */
 
       // This app is served at "/"; the API server owns the "/api" path prefix.
       const API_BASE = '/api';
 
-      // Estimated trust scores for the "nearby" cards (illustrative shortcuts).
-      const NEARBY = [
-        { name: 'Gimlet Melbourne', score: 91 },
-        { name: 'Vue de Monde', score: 89 },
-        { name: 'Tipo 00', score: 87 }
-      ];
-
-      /**
-       * fetchBusinessReviews(query) — calls the live backend.
-       * Throws an Error with a user-friendly message on failure.
-       */
+      /** Calls the live backend search. Throws an Error with a friendly message. */
       async function fetchBusinessReviews(query) {
-        const res = await fetch(API_BASE + '/reviews?q=' + encodeURIComponent(query));
+        const res = await fetch(API_BASE + '/search-business?query=' + encodeURIComponent(query));
         let body = null;
-        try { body = await res.json(); } catch (e) { /* response was not JSON */ }
+        try { body = await res.json(); } catch (e) { /* not JSON */ }
         if (!res.ok) {
           const msg = body && body.error ? body.error : 'Lookup failed (' + res.status + ').';
           throw new Error(msg);
@@ -391,19 +462,19 @@
       ];
 
       // Demo/placeholder platforms (flagged by the backend's `demo` array) are
-      // shown as cards but excluded from Trust Score, metrics, and AI analysis.
+      // shown but excluded from Trust Score, metrics, and AI analysis.
       function isDemo(data, key) {
         return Array.isArray(data.demo) && data.demo.indexOf(key) !== -1;
       }
 
-      // ---- Star rendering (black stars over grey, partial fill via width %) ----
-      function starsHtml2(rating) {
+      // ---- Star rendering (gold over grey, partial fill via width %) ----
+      function starsHtml(rating, cls) {
         const r = Number.isFinite(rating) ? rating : 0;
         const pct = Math.max(0, Math.min(5, r)) / 5 * 100;
-        return '<div class="stars"><span class="star-rating" style="--fill:' + pct + '%"></span></div>';
+        return '<span class="stars"><span class="star-rating ' + (cls || '') + '" style="--fill:' + pct + '%"></span></span>';
       }
 
-      // ---- Helpers for available (non-null) platforms ----
+      // ---- Helpers for available (real, non-null, non-demo) platforms ----
       function hasRating(r) { return r && typeof r.rating === 'number'; }
       function availablePlatforms(data) {
         return PLATFORMS.filter(function (p) {
@@ -411,7 +482,7 @@
         });
       }
 
-      // ---- Trust score computation (ignores platforms with no data) ----
+      // ---- Trust score: spec formula = round(avg/5 * 100) over real platforms ----
       function computeMetrics(data) {
         const avail = availablePlatforms(data);
         const ratings = avail.map(function (p) { return data[p.key].rating; });
@@ -420,58 +491,59 @@
         const avg = count ? ratings.reduce(function (a, b) { return a + b; }, 0) / count : 0;
         const totalReviews = reviews.reduce(function (a, b) { return a + b; }, 0);
         const gap = count >= 2 ? Math.max.apply(null, ratings) - Math.min.apply(null, ratings) : 0;
-
-        // Trust score (0-100): weighted on average rating, volume, and consistency.
-        let score = (avg / 5) * 70;               // up to 70 from average rating
-        score += Math.min(totalReviews / 6000, 1) * 18; // up to 18 from review volume
-        score += Math.max(0, 1 - gap / 1.5) * 12; // up to 12 from consistency
-        score = Math.round(Math.max(0, Math.min(100, score)));
-
+        const score = Math.round((avg / 5) * 100);
         return { avg: avg, totalReviews: totalReviews, gap: gap, score: score, count: count };
       }
 
-      // ---- Icon helpers ----
+      // ---- Featured tags computed from this business's real metrics ----
+      function featuredTags(m) {
+        const tags = [];
+        if (m.avg >= 4.3) tags.push({ t: 'Best Overall', aqua: true });
+        if (m.count >= 2 && m.gap < 0.5) tags.push({ t: 'Consistent Ratings' });
+        if (m.totalReviews >= 1000) tags.push({ t: 'Most Reviews' });
+        if (!tags.length) tags.push({ t: 'Worth Comparing' });
+        return tags;
+      }
+
+      // ---- Icons ----
       const ICO = {
-        web: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a15 15 0 010 18M12 3a15 15 0 000 18"/></svg>',
         phone: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.6a2 2 0 01-.5 2.1L8.1 9.5a16 16 0 006 6l1.1-1.1a2 2 0 012.1-.5c.8.3 1.7.5 2.6.6a2 2 0 011.7 2z"/></svg>',
         pin: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>',
         link: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7L12 19"/></svg>',
-        gap: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>',
-        summary: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
-        best: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>',
-        flag: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22V15"/></svg>',
-        trend: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>',
-        check: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 11-5.9-9.1"/><path d="M22 4L12 14.1l-3-3"/></svg>',
-        ok: '<svg class="insight-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 11-5.9-9.1"/><path d="M22 4L12 14.1l-3-3"/></svg>',
+        save: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>',
+        report: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>',
+        tag: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0l-7.2-7.2a2 2 0 01-.6-1.4V4a2 2 0 012-2h8a2 2 0 011.4.6l6.4 6.4a2 2 0 010 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
+        summary: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+        best: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>',
+        flag: '<svg class="ico warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>',
+        ok: '<svg class="ico ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 11-5.9-9.1"/><path d="M22 4L12 14.1l-3-3"/></svg>',
+        trend: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>',
+        offer: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0l-7.2-7.2a2 2 0 01-.6-1.4V4a2 2 0 012-2h8a2 2 0 011.4.6l6.4 6.4a2 2 0 010 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
+        info: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
         arrow: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>'
       };
 
-      // ---- Insight logic ----
-      function ratingGapAlert(gap) {
-        if (gap >= 0.9) return { text: 'Warning: ratings vary strongly between platforms. Check reviews carefully before booking or buying.' };
-        if (gap >= 0.5) return { text: 'Moderate rating gap detected. Customer experience may vary depending on the platform.' };
-        return { text: 'Ratings are consistent across platforms. This is a positive trust signal.' };
-      }
-      function reviewSummary(score, gap) {
-        if (score >= 85 && gap < 0.5) return 'Customers appear to have a strong and consistent experience across multiple review platforms. The business shows a high rating average, good review volume and low rating gap.';
-        if (score >= 70) return 'The business appears generally trusted, but there are some differences between platforms. Users should read recent reviews before making a decision.';
+      // ---- Rule-based fallback analysis (used until/if AI responds) ----
+      function fbReviewSummary(score, gap) {
+        if (score >= 85 && gap < 0.5) return 'Customers appear to have a strong and consistent experience across multiple review platforms, with a high rating average and low rating gap.';
+        if (score >= 70) return 'The business appears generally trusted, but there are some differences between platforms. Read recent reviews before deciding.';
         return 'The business may have mixed customer feedback. Ratings are either lower, inconsistent, or supported by limited review volume.';
       }
-      function bestForTags(avg) {
-        if (avg >= 4.5) return ['Customer Service', 'Trusted Choice', 'Premium Experience', 'Highly Rated'];
-        return ['Good Value', 'Worth Comparing', 'Check Recent Reviews'];
+      function fbBestFor(avg) {
+        if (avg >= 4.5) return ['Customer Service', 'Trusted Choice', 'Highly Rated'];
+        if (avg >= 4.0) return ['Good Value', 'Worth Comparing'];
+        return ['Check Recent Reviews'];
       }
-      function redFlags(totalReviews, gap, avg) {
+      function fbRedFlags(totalReviews, gap, avg) {
         const flags = [];
         if (totalReviews < 300) flags.push('Low review volume');
         if (gap >= 0.7) flags.push('Large rating gap between platforms');
         if (avg < 4.0) flags.push('Lower average rating');
-        if (flags.length === 0) flags.push('No major red flags found');
         return flags;
       }
-      function reputationTrend(score, gap) {
-        if (score >= 85 && gap < 0.5) return { text: 'The reputation trend looks strong. Ratings are high and consistent across multiple platforms.', pill: 'Strong Reputation', cls: 'pill-navy' };
-        if (score >= 70) return { text: 'The reputation trend looks stable, but users should check recent reviews before deciding.', pill: 'Stable', cls: 'pill-soft' };
+      function fbTrend(score, gap) {
+        if (score >= 85 && gap < 0.5) return { text: 'The reputation trend looks strong. Ratings are high and consistent across platforms.', pill: 'Strong Reputation', cls: 'pill-navy' };
+        if (score >= 70) return { text: 'The reputation trend looks stable, but check recent reviews before deciding.', pill: 'Stable', cls: 'pill-soft' };
         return { text: 'The reputation trend may need attention. Ratings show mixed or weaker signals.', pill: 'Check Carefully', cls: 'pill-line' };
       }
 
@@ -506,200 +578,309 @@
         show('loading');
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
+        const started = performance.now();
         try {
           const data = await fetchBusinessReviews(q);
           const metrics = computeMetrics(data);
-          renderResults(data, metrics);
+          const seconds = Math.max(0.1, (performance.now() - started) / 1000);
+          renderResults(data, metrics, seconds);
           show('results');
-          loadAISummary(data); // fill the Review Summary card from OpenAI (non-blocking)
+          loadAIAnalysis(data); // fill the AI analysis card (non-blocking)
         } catch (err) {
           showError(err && err.message ? err.message : 'Something went wrong. Please try again.');
         }
       }
 
       /**
-       * Fetch an AI-written review summary based ONLY on real (non-demo) platform
-       * ratings and inject it into the Review Summary card. Falls back silently to
-       * the rule-based summary already rendered if the request fails.
+       * Fetch structured AI analysis based ONLY on real (non-demo) platform
+       * ratings and inject it into the AI analysis card. Falls back silently to
+       * the rule-based analysis already rendered if the request fails.
        */
-      async function loadAISummary(data) {
-        const el = document.getElementById('aiSummary');
-        if (!el) return;
+      async function loadAIAnalysis(data) {
+        const sumEl = document.getElementById('aiSummary');
+        if (!sumEl) return;
         const platforms = availablePlatforms(data).map(function (p) {
           const r = data[p.key];
           return { label: p.label, rating: r.rating, reviews: r.reviews || 0 };
         });
-        if (!platforms.length) return; // nothing real to summarise
+        if (!platforms.length) return;
 
-        el.textContent = 'Generating AI summary…';
+        // Preserve the rule-based fallback so we can restore it if AI is
+        // unavailable (e.g. the OpenAI integration isn't configured).
+        const fallbackSummary = sumEl.textContent;
+        sumEl.textContent = 'Generating AI summary…';
         try {
-          const res = await fetch(API_BASE + '/summary', {
+          const res = await fetch(API_BASE + '/analyze-reviews', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: data.name, platforms: platforms })
+            body: JSON.stringify({
+              name: data.name,
+              platforms: platforms,
+              // Only count a real (non-demo) public offer; demo offers must not
+              // influence the AI narrative.
+              offerAvailable: !!(data.offer && data.offer.available && !data.offer.demo)
+            })
           });
           const body = await res.json().catch(function () { return null; });
-          if (res.ok && body && body.summary) {
-            el.textContent = body.summary;
-          } else {
-            const m = computeMetrics(data);
-            el.textContent = reviewSummary(m.score, m.gap).replace(/<[^>]*>/g, '');
+          if (!res.ok || !body || !body.reviewSummary) {
+            sumEl.textContent = fallbackSummary; // restore rule-based summary
+            return;
+          }
+
+          sumEl.textContent = body.reviewSummary;
+
+          if (Array.isArray(body.bestFor) && body.bestFor.length) {
+            const bf = document.getElementById('aiBestFor');
+            if (bf) bf.innerHTML = body.bestFor.map(function (t) {
+              return '<span class="tag">' + escapeHtml(t) + '</span>';
+            }).join('');
+          }
+          if (Array.isArray(body.redFlags)) {
+            const rf = document.getElementById('aiRedFlags');
+            if (rf) rf.innerHTML = renderFlagList(body.redFlags);
+          }
+          if (body.reputationTrend) {
+            const tr = document.getElementById('aiTrend');
+            if (tr) tr.textContent = body.reputationTrend;
+          }
+          if (body.offerSummary) {
+            const os = document.getElementById('aiOffer');
+            if (os) os.textContent = body.offerSummary;
           }
         } catch (e) {
-          const m = computeMetrics(data);
-          el.textContent = reviewSummary(m.score, m.gap).replace(/<[^>]*>/g, '');
+          // Network/parse failure: restore the rule-based summary so the card
+          // never stays stuck on the loading text.
+          sumEl.textContent = fallbackSummary;
         }
       }
 
-      // ---- Render ----
-      function renderResults(data, m) {
-        const logo = data.logoUrl
-          ? '<img class="biz-logo" src="' + escapeAttr(data.logoUrl) + '" alt="' + escapeAttr(data.name) + ' logo" />'
-          : '<div class="biz-logo-fallback">' + escapeHtml(data.logoText) + '</div>';
+      function renderFlagList(flags) {
+        if (!flags || !flags.length) {
+          return '<li>' + ICO.ok + '<span>No major red flags found.</span></li>';
+        }
+        return flags.map(function (f) {
+          return '<li>' + ICO.flag + '<span>' + escapeHtml(f) + '</span></li>';
+        }).join('');
+      }
 
-        // Ratings cards (platforms with no data render a "Not available" state)
-        const ratingCards = PLATFORMS.map(function (p) {
+      // ---- Offer rendering (honestly labels demo data) ----
+      function renderOffer(offer) {
+        if (!offer || !offer.available) {
+          const note = offer && offer.description ? offer.description : 'No public discount or offer was found today.';
+          return '' +
+            '<div class="section-label">Available offer</div>' +
+            '<div class="offer-none">' + ICO.info + '<span>' + escapeHtml(note) + '</span></div>';
+        }
+        const demo = offer.demo
+          ? '<span class="demo-badge">Demo</span>'
+          : (offer.source ? '<span class="na-pill" style="margin:0">' + escapeHtml(offer.source) + '</span>' : '');
+        const btn = '<button class="btn btn-ghost btn-sm" data-act="offer">View offer ' + ICO.arrow + '</button>';
+        return '' +
+          '<div class="section-label">Available offer</div>' +
+          '<div class="offer-card">' +
+            '<div class="offer-ico">' + ICO.offer + '</div>' +
+            '<div class="offer-text">' +
+              '<div class="offer-title">' + escapeHtml(offer.title) + ' ' + demo + '</div>' +
+              '<div class="offer-desc">' + escapeHtml(offer.description || '') + '</div>' +
+            '</div>' +
+            btn +
+          '</div>';
+      }
+
+      // ---- Render ----
+      function renderResults(data, m, seconds) {
+        const img = data.imageUrl
+          ? '<img class="biz-img" src="' + escapeAttr(data.imageUrl) + '" alt="' + escapeAttr(data.name) + '" />'
+          : '<div class="biz-img-fallback">' + escapeHtml(data.logoText) + '</div>';
+
+        const tags = featuredTags(m).map(function (t) {
+          return '<span class="tag ' + (t.aqua ? 'tag-aqua' : '') + '">' + escapeHtml(t.t) + '</span>';
+        }).join('');
+
+        // Review Pay status (internal platform — demo data for now)
+        const rp = data.reviewpay;
+        const reviewpayStatus = hasRating(rp)
+          ? '<div class="reviewpay-status">Review Pay ' + rp.rating.toFixed(1) + '/5 · ' + (rp.reviews || 0).toLocaleString() + ' reviews <span class="demo-badge">Demo</span></div>'
+          : '';
+
+        // Ratings-by-platform rows (real platforms + demo Review Pay, clearly labelled)
+        const platformRows = PLATFORMS.map(function (p) {
           const r = data[p.key];
+          const demo = isDemo(data, p.key);
           if (!hasRating(r)) {
+            const note = (data.notes && data.notes[p.key]) ? data.notes[p.key] : 'Not available yet';
             return '' +
-              '<div class="card rating-card rating-card--na">' +
-                '<div class="rating-head">' +
-                  '<div class="platform-icon" style="background:' + p.color + '">' + p.letter + '</div>' +
-                  '<div class="platform-name">' + p.label + '</div>' +
-                '</div>' +
-                '<div class="rating-value na">&mdash;</div>' +
-                '<div class="reviews-count">Not available yet</div>' +
-                ((data.notes && data.notes[p.key]) ? '<div class="na-pill">' + escapeHtml(data.notes[p.key]) + '</div>' : '') +
+              '<div class="platform-row platform-row--na">' +
+                '<div class="platform-icon-sm" style="background:' + p.color + '">' + p.letter + '</div>' +
+                '<div class="platform-row-name">' + p.label + '</div>' +
+                '<div class="na-pill">' + escapeHtml(note) + '</div>' +
               '</div>';
           }
-          const pct = Math.round((r.rating / 5) * 100);
-          const demo = isDemo(data, p.key);
           return '' +
-            '<div class="card rating-card">' +
-              '<div class="rating-head">' +
-                '<div class="platform-icon" style="background:' + p.color + '">' + p.letter + '</div>' +
-                '<div class="platform-name">' + p.label + '</div>' +
+            '<div class="platform-row">' +
+              '<div class="platform-icon-sm" style="background:' + p.color + '">' + p.letter + '</div>' +
+              '<div class="platform-row-name">' + p.label + (demo ? ' <span class="demo-badge">Demo</span>' : '') + '</div>' +
+              '<div class="platform-row-meta">' +
+                starsHtml(r.rating) +
+                '<b>' + r.rating.toFixed(1) + '</b>' +
+                '<span class="muted">' + (r.reviews || 0).toLocaleString() + ' reviews</span>' +
               '</div>' +
-              '<div class="rating-value">' + r.rating.toFixed(1) + '<span>/5</span></div>' +
-              starsHtml2(r.rating) +
-              '<div class="reviews-count">' + (r.reviews || 0).toLocaleString() + ' reviews</div>' +
-              '<div class="bar"><div class="bar-fill" data-pct="' + pct + '"></div></div>' +
-              (demo ? '<div class="demo-pill">Demo data</div>' : '') +
             '</div>';
         }).join('');
 
-        // Platform names that actually returned data (for the summary copy).
-        const availLabels = availablePlatforms(data).map(function (p) { return p.label; });
-        const platformsText = availLabels.length
-          ? availLabels.join(', ').replace(/, ([^,]*)$/, ' and $1')
-          : 'the available platforms';
+        // AI analysis fallbacks (replaced live by loadAIAnalysis on success)
+        const fbSummary = fbReviewSummary(m.score, m.gap);
+        const fbTags = fbBestFor(m.avg);
+        const fbFlags = fbRedFlags(m.totalReviews, m.gap, m.avg);
+        const fbReputation = fbTrend(m.score, m.gap);
 
-        // Insights
-        const gapAlert = ratingGapAlert(m.gap);
-        const summaryText = reviewSummary(m.score, m.gap);
-        const tags = bestForTags(m.avg);
-        const flags = redFlags(m.totalReviews, m.gap, m.avg);
-        const noFlags = flags.length === 1 && flags[0] === 'No major red flags found';
-        const trend = reputationTrend(m.score, m.gap);
-
-        const insightCards = '' +
-          insightCard(ICO.gap, 'Rating Gap Alert',
-            '<div class="alert alert-warn">' + ICO.gap + '<span>' + gapAlert.text + '</span></div>') +
-          insightCard(ICO.summary, 'Review Summary',
-            '<div class="insight-body" id="aiSummary">' + summaryText + '</div>') +
-          insightCard(ICO.best, 'Best For',
-            '<div class="tags">' + tags.map(function (t) { return '<span class="tag">' + t + '</span>'; }).join('') + '</div>') +
-          insightCard(ICO.flag, 'Red Flags',
-            '<ul class="flag-list">' + flags.map(function (f) {
-              const ic = noFlags ? ICO.ok : ICO.gap;
-              return '<li>' + ic + '<span>' + f + '</span></li>';
-            }).join('') + '</ul>') +
-          insightCard(ICO.trend, 'Reputation Trend',
-            '<div class="insight-body">' + trend.text + '</div>' +
-            '<span class="pill ' + trend.cls + '">' + trend.pill + '</span>') +
-          insightCard(ICO.check, 'Review Pay Verified',
-            '<div class="insight-body">The Review Pay card shows demo data for now. Once connected, it will surface real transaction-verified reviews from paying customers.</div>' +
-            '<span class="pill pill-soft">Demo data</span>');
-
-        // Nearby
-        const nearbyCards = NEARBY.map(function (n) {
+        // Nearby comparison rows (illustrative demo data)
+        const nearby = Array.isArray(data.nearby) ? data.nearby : [];
+        const nearbyRows = nearby.map(function (n) {
+          const mini = [
+            { k: 'google', l: 'G', c: 'var(--google)' },
+            { k: 'yelp', l: 'Y', c: 'var(--yelp)' },
+            { k: 'tripadvisor', l: 'T', c: 'var(--tripadvisor)' }
+          ].map(function (x) {
+            const r = n[x.k];
+            if (!hasRating(r)) return '';
+            return '<span class="np"><span class="dot" style="background:' + x.c + '">' + x.l + '</span><b>' + r.rating.toFixed(1) + '</b></span>';
+          }).join('');
           return '' +
-            '<div class="card nearby-card" data-name="' + escapeAttr(n.name) + '">' +
-              '<div class="nearby-name">' + escapeHtml(n.name) + '</div>' +
-              '<div class="nearby-score">Estimated Trust Score: <b>' + n.score + '/100</b></div>' +
+            '<div class="card nearby-row" data-name="' + escapeAttr(n.name) + '">' +
+              '<div class="nearby-id">' +
+                '<div class="nearby-name">' + escapeHtml(n.name) + (n.demo ? ' <span class="demo-badge">Demo</span>' : '') + '</div>' +
+                '<div class="nearby-cat">' + escapeHtml(n.category || '') + '</div>' +
+              '</div>' +
+              '<div class="nearby-platforms">' + mini + '</div>' +
               '<div class="nearby-go">Compare ' + ICO.arrow + '</div>' +
             '</div>';
         }).join('');
 
+        const locality = data.address ? data.address.split(',').slice(-2).join(',').trim() : '';
+
         els.results.innerHTML = '' +
-          '<div class="card biz fade-in">' +
-            logo +
+          // Results heading
+          '<div class="results-head fade-in">' +
             '<div>' +
-              '<div class="biz-name">' + escapeHtml(data.name) + '</div>' +
-              '<div class="biz-addr">' + ICO.pin + escapeHtml(data.address) + '</div>' +
-              '<div class="biz-actions">' +
-                '<button class="btn btn-ghost" data-act="website">' + ICO.link + 'Visit Website</button>' +
-                '<button class="btn btn-ghost" data-act="call">' + ICO.phone + 'Call</button>' +
-                '<button class="btn btn-ghost" data-act="directions">' + ICO.pin + 'Directions</button>' +
+              '<h2><span>Results for:</span> ' + escapeHtml(data.name) + '</h2>' +
+              '<div class="results-meta">' +
+                '<span>AI checked ' + m.count + ' review platform' + (m.count === 1 ? '' : 's') + ' in ' + seconds.toFixed(1) + 's' + (locality ? ' · ' + escapeHtml(locality) : '') + '</span>' +
+                '<span class="live-dot">Live data checked just now</span>' +
               '</div>' +
             '</div>' +
-            '<div class="trust">' +
-              '<div class="trust-num">' + m.score + '<span>/100</span></div>' +
-              '<div class="trust-label">Trust Score</div>' +
-              '<div class="trust-sub">Based on ' + m.count + ' platform' + (m.count === 1 ? '' : 's') + '</div>' +
+            '<div class="results-actions">' +
+              '<button class="btn btn-ghost btn-sm" data-act="save">' + ICO.save + 'Save comparison</button>' +
+              '<button class="btn btn-ghost btn-sm" data-act="new-search">New search</button>' +
             '</div>' +
           '</div>' +
 
-          '<div class="section-title">Ratings <span class="muted">across platforms</span></div>' +
-          '<div class="grid ratings-grid">' + ratingCards + '</div>' +
-
-          '<div class="section-title">Insights <span class="muted">what the numbers mean</span></div>' +
-          '<div class="grid insight-grid">' + insightCards + '</div>' +
-
-          '<div class="section-title">Compare with similar businesses nearby</div>' +
-          '<div class="grid nearby-grid">' + nearbyCards + '</div>' +
-
-          '<div class="card summary">' +
-            '<h3>' + escapeHtml(data.name) + ' trust comparison</h3>' +
-            '<p>' + escapeHtml(data.name) + ' has a Trust Score of ' + m.score + '/100 based on ratings from ' + platformsText + '. ' +
-              'The average rating is ' + m.avg.toFixed(1) + '/5 across ' + m.totalReviews.toLocaleString() + ' public reviews.</p>' +
-            '<div class="summary-actions">' +
-              '<button class="btn btn-white" data-act="new-search">New Search</button>' +
-              '<button class="btn btn-ghost" data-act="save">Save Comparison</button>' +
+          // Featured AI-recommendation card
+          '<div class="card featured fade-in">' +
+            '<div class="featured-badge">&#10024; AI Recommendation</div>' +
+            '<div class="featured-grid">' +
+              '<div class="featured-main">' +
+                '<div class="featured-head">' +
+                  img +
+                  '<div class="featured-id">' +
+                    '<div class="biz-name">' + escapeHtml(data.name) + '</div>' +
+                    '<div class="biz-addr">' + ICO.pin + '<span>' + escapeHtml(data.address) + '</span></div>' +
+                    '<div class="tags">' + tags + '</div>' +
+                    '<div class="overall-rating">' +
+                      starsHtml(m.avg, 'lg') +
+                      '<span class="num">' + m.avg.toFixed(1) + '<span>/5 avg</span></span>' +
+                      '<span class="count">' + m.totalReviews.toLocaleString() + ' reviews across ' + m.count + ' platform' + (m.count === 1 ? '' : 's') + '</span>' +
+                    '</div>' +
+                    reviewpayStatus +
+                  '</div>' +
+                '</div>' +
+                '<div class="biz-actions">' +
+                  '<button class="btn btn-ghost" data-act="website">' + ICO.link + 'Visit website</button>' +
+                  '<button class="btn btn-ghost" data-act="call">' + ICO.phone + 'Call</button>' +
+                  '<button class="btn btn-ghost" data-act="directions">' + ICO.pin + 'Directions</button>' +
+                '</div>' +
+                '<div class="platform-rows">' +
+                  '<div class="section-label">Ratings by platform</div>' +
+                  platformRows +
+                '</div>' +
+                '<div class="offer-section">' + renderOffer(data.offer) + '</div>' +
+              '</div>' +
+              '<aside class="trust-panel">' +
+                '<div class="trust-num">' + m.score + '<span>/100</span></div>' +
+                '<div class="trust-label">Trust Score</div>' +
+                '<div class="trust-sub">Based on ' + m.count + ' platform' + (m.count === 1 ? '' : 's') + '</div>' +
+                '<div class="trust-bar"><div class="trust-bar-fill" data-pct="' + m.score + '"></div></div>' +
+                '<button class="btn btn-primary btn-sm" data-act="report">' + ICO.report + 'View report</button>' +
+              '</aside>' +
             '</div>' +
+          '</div>' +
+
+          // AI analysis card
+          '<div class="section-title">AI analysis <span class="muted">what the numbers mean</span></div>' +
+          '<div class="card analysis fade-in">' +
+            '<div class="analysis-head"><span class="ai-chip">&#10024; AI Insights</span></div>' +
+            '<div class="analysis-grid">' +
+              '<div>' +
+                '<div class="analysis-block">' +
+                  '<div class="ab-title">' + ICO.summary + 'Review summary</div>' +
+                  '<div class="ab-body dark" id="aiSummary">' + escapeHtml(fbSummary) + '</div>' +
+                '</div>' +
+                '<div class="analysis-block">' +
+                  '<div class="ab-title">' + ICO.best + 'Best for</div>' +
+                  '<div class="tags" id="aiBestFor">' + fbTags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div>' +
+                '<div class="analysis-block">' +
+                  '<div class="ab-title">' + ICO.flag + 'Red flags</div>' +
+                  '<ul class="flag-list" id="aiRedFlags">' + renderFlagList(fbFlags) + '</ul>' +
+                '</div>' +
+                '<div class="analysis-block">' +
+                  '<div class="ab-title">' + ICO.trend + 'Reputation trend</div>' +
+                  '<div class="ab-body" id="aiTrend">' + escapeHtml(fbReputation.text) + '</div>' +
+                  '<div class="ab-body" id="aiOffer" style="margin-top:8px">' + (data.offer && data.offer.available ? 'A public offer is currently available — see the featured card.' : 'No public offer was found today.') + '</div>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>' +
+
+          // Nearby comparison
+          (nearbyRows ?
+            '<div class="section-title">Compare with similar businesses nearby <span class="muted">demo data</span></div>' +
+            '<div class="nearby-list">' + nearbyRows + '</div>'
+            : '') +
+
+          // Footer note about Review Pay
+          '<div class="foot-note">' + ICO.info +
+            '<span><b>About Review Pay &amp; offers:</b> Review Pay ratings, offers and nearby comparisons currently show demo data and are excluded from the Trust Score. Once connected, Review Pay will surface real transaction-verified reviews from paying customers. ' +
+            '<a href="#" data-act="learn-more">Learn more</a></span>' +
           '</div>';
 
-        // Animate progress bars
+        // Animate trust bar
         requestAnimationFrame(function () {
-          els.results.querySelectorAll('.bar-fill').forEach(function (b) {
-            b.style.width = b.getAttribute('data-pct') + '%';
-          });
+          const bar = els.results.querySelector('.trust-bar-fill');
+          if (bar) bar.style.width = bar.getAttribute('data-pct') + '%';
         });
 
-        // Wire result-card actions
+        // Wire actions
         els.results.querySelectorAll('[data-act]').forEach(function (btn) {
-          btn.addEventListener('click', function () {
+          btn.addEventListener('click', function (e) {
             const act = btn.getAttribute('data-act');
-            if (act === 'website') window.open(data.website, '_blank');
-            else if (act === 'call') window.location.href = 'tel:' + data.phone;
-            else if (act === 'directions') window.open(data.directionsUrl, '_blank');
+            if (act === 'website') { if (data.website) window.open(data.website, '_blank'); else alert('No website on file for this business.'); }
+            else if (act === 'call') { if (data.phone) window.location.href = 'tel:' + data.phone; else alert('No phone number on file for this business.'); }
+            else if (act === 'directions') { if (data.directionsUrl) window.open(data.directionsUrl, '_blank'); }
+            else if (act === 'report') alert('Full trust report coming soon.');
+            else if (act === 'offer') { const u = data.offer && data.offer.url; if (u) window.open(u, '_blank'); else alert('This is demo offer data — no live link yet.'); }
             else if (act === 'save') alert('Comparison saved. Your developer can connect this to your database.');
             else if (act === 'new-search') resetApp();
+            else if (act === 'learn-more') { e.preventDefault(); alert('Review Pay is an internal platform. Demo data is shown until it is connected.'); }
           });
         });
-        els.results.querySelectorAll('.nearby-card').forEach(function (card) {
+        els.results.querySelectorAll('.nearby-row').forEach(function (card) {
           card.addEventListener('click', function () {
             runSearch(card.getAttribute('data-name'));
           });
         });
-      }
-
-      function insightCard(icon, title, bodyHtml) {
-        return '' +
-          '<div class="card insight">' +
-            '<div class="insight-head">' + icon + '<div class="insight-title">' + title + '</div></div>' +
-            bodyHtml +
-          '</div>';
       }
 
       function resetApp() {
@@ -712,7 +893,7 @@
 
       // ---- Escaping helpers ----
       function escapeHtml(s) {
-        return String(s).replace(/[&<>"']/g, function (c) {
+        return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
           return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
         });
       }
@@ -724,8 +905,12 @@
         if (e.key === 'Enter') { e.preventDefault(); runSearch(); }
       });
 
-      // Initial state
-      show('empty');
+      // Optional deep-link: ?q=<business> auto-runs a search on load.
+      (function () {
+        const q = new URLSearchParams(window.location.search).get('q');
+        if (q) { els.input.value = q; runSearch(q); }
+        else show('empty');
+      })();
     </script>
   </body>
 </html>

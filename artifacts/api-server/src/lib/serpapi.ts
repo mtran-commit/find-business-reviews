@@ -35,11 +35,37 @@ export interface PlatformRating {
   reviews: number;
 }
 
+/**
+ * A public discount/offer for a business. Until a real offer-search exists this
+ * is deterministic demo data flagged with `demo: true`, so the UI can clearly
+ * label it rather than presenting a fabricated offer as a real one.
+ */
+export interface Offer {
+  available: boolean;
+  title: string;
+  description: string;
+  source: string;
+  url: string;
+  demo: boolean;
+}
+
+/** A nearby business for the comparison rows (demo/illustrative data). */
+export interface NearbyBusiness {
+  name: string;
+  category: string;
+  google: PlatformRating | null;
+  yelp: PlatformRating | null;
+  tripadvisor: PlatformRating | null;
+  demo: boolean;
+}
+
 export interface BusinessReviews {
   name: string;
   address: string;
   logoText: string;
   logoUrl: string;
+  /** Colour business photo when available (Google Maps thumbnail). */
+  imageUrl: string;
   website: string;
   phone: string;
   directionsUrl: string;
@@ -49,6 +75,10 @@ export interface BusinessReviews {
   facebook: PlatformRating | null;
   /** Internal platform; demo placeholder data until a real API exists. */
   reviewpay: PlatformRating | null;
+  /** Public offer (demo data for now; flagged via `offer.demo`). */
+  offer: Offer;
+  /** Similar nearby businesses for comparison (demo/illustrative). */
+  nearby: NearbyBusiness[];
   unavailable: string[];
   /** Platform keys whose data is demo/placeholder (excluded from metrics). */
   demo: string[];
@@ -166,6 +196,7 @@ export async function fetchBusinessReviews(
   const website = typeof place["website"] === "string" ? place["website"] : "";
   const logoUrl =
     typeof place["thumbnail"] === "string" ? place["thumbnail"] : "";
+  const imageUrl = logoUrl;
 
   const google = toRating(place);
 
@@ -241,6 +272,7 @@ export async function fetchBusinessReviews(
     address,
     logoText: initials(name),
     logoUrl,
+    imageUrl,
     website,
     phone,
     directionsUrl,
@@ -249,6 +281,8 @@ export async function fetchBusinessReviews(
     yelp,
     facebook: null,
     reviewpay,
+    offer: buildDemoOffer(name, website),
+    nearby: buildDemoNearby(name),
     unavailable,
     demo: ["reviewpay"],
     notes,
@@ -256,19 +290,104 @@ export async function fetchBusinessReviews(
   };
 }
 
+/** Small, stable string hash so demo data stays constant per business name. */
+export function hashString(s: string): number {
+  let hash = 0;
+  for (let i = 0; i < s.length; i++) {
+    hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
+  }
+  return hash;
+}
+
 /**
  * Deterministic demo rating for the internal "Review Pay" platform so the card
  * stays stable per business. Clearly flagged as demo via `demo` and excluded
  * from real-data metrics and AI analysis on the client.
  */
-function demoReviewPay(name: string): PlatformRating {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
-  }
+export function demoReviewPay(name: string): PlatformRating {
+  const hash = hashString(name);
   const rating = Math.round((4.1 + (hash % 9) / 10) * 10) / 10; // 4.1–4.9
   const reviews = 80 + (hash % 420); // 80–499
   return { rating, reviews };
+}
+
+const OFFER_TITLES = [
+  "10% off your first booking",
+  "Free delivery on your first order",
+  "Special deal available this week",
+  "Complimentary drink with any meal",
+  "15% off for new customers",
+];
+
+/**
+ * Deterministic demo offer per business. About half of businesses get an
+ * "OFFER FOUND" placeholder; the rest report no offer. Flagged with `demo:true`
+ * and `source: "Demo data"` so the UI never presents it as a verified real offer.
+ * Replace with a real SerpApi/search-backed lookup later.
+ */
+export function buildDemoOffer(name: string, website: string): Offer {
+  const hash = hashString("offer:" + name);
+  const available = hash % 2 === 0;
+  if (!available) {
+    return {
+      available: false,
+      title: "",
+      description: "No public discount or offer was found today.",
+      source: "",
+      url: "",
+      demo: true,
+    };
+  }
+  return {
+    available: true,
+    title: OFFER_TITLES[hash % OFFER_TITLES.length] as string,
+    description: "Placeholder offer from demo data — not a verified public offer.",
+    source: "Demo data",
+    url: website || "",
+    demo: true,
+  };
+}
+
+const NEARBY_POOL: { name: string; category: string }[] = [
+  { name: "Gimlet Melbourne", category: "Cocktail Bar · CBD" },
+  { name: "Vue de Monde", category: "Fine Dining · CBD" },
+  { name: "Tipo 00", category: "Italian · CBD" },
+  { name: "Chin Chin", category: "Asian Eatery · CBD" },
+  { name: "Cumulus Inc.", category: "Modern Australian · CBD" },
+  { name: "Attica", category: "Fine Dining · Ripponlea" },
+];
+
+/** Deterministic demo rating in the 3.8–4.9 range for an arbitrary seed. */
+function demoRating(seed: string, minReviews: number, span: number): PlatformRating {
+  const h = hashString(seed);
+  const rating = Math.round((3.8 + (h % 12) / 10) * 10) / 10; // 3.8–4.9
+  const reviews = minReviews + (h % span);
+  return { rating, reviews };
+}
+
+/**
+ * Three illustrative nearby businesses for the comparison rows. These are
+ * clearly demo/placeholder (flagged `demo:true`); they are not real lookups.
+ */
+export function buildDemoNearby(name: string): NearbyBusiness[] {
+  const start = hashString("nearby:" + name) % NEARBY_POOL.length;
+  const out: NearbyBusiness[] = [];
+  for (let i = 0; i < 3; i++) {
+    const p = NEARBY_POOL[(start + i) % NEARBY_POOL.length] as {
+      name: string;
+      category: string;
+    };
+    const seed = name + "|" + p.name;
+    out.push({
+      name: p.name,
+      category: p.category,
+      google: demoRating(seed + "g", 800, 3000),
+      yelp: demoRating(seed + "y", 40, 200),
+      tripadvisor: demoRating(seed + "t", 200, 1500),
+      demo: true,
+    });
+  }
+  return out;
 }
 
 /**

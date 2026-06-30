@@ -1,12 +1,12 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
-import reviewsRouter from "./reviews";
-import summaryRouter from "./summary";
+import businessRouter from "./business";
+import analyzeRouter from "./analyze";
 
 const router: IRouter = Router();
 
 router.use(healthRouter);
-router.use(reviewsRouter);
-router.use(summaryRouter);
+router.use(businessRouter);
+router.use(analyzeRouter);
 
 export default router;

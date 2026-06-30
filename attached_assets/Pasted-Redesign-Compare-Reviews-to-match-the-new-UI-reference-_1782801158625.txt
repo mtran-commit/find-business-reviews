@@ -1,0 +1,432 @@
+Redesign Compare Reviews to match the new UI reference style.
+
+The app should look like a premium results/comparison page, similar to a modern price-comparison dashboard, but for business reviews.
+
+Main goal:
+When a user searches a business, show a clean results page with:
+- Business name
+- Business image/logo
+- Address
+- Google rating and number of reviews
+- Yelp rating and number of reviews
+- TripAdvisor rating and number of reviews
+- Review Pay verified review status
+- Trust Score based on the average across available review ratings
+- Discount / offer section if an offer is available
+- Visit Website, Call, Directions, View Report buttons
+
+Keep all API keys on the backend only.
+Do not expose SERPAPI_API_KEY or OPENAI_API_KEY in frontend code.
+
+Required APIs / data sources:
+- Google rating and reviews via SerpApi / Google API
+- Yelp rating and reviews via SerpApi Yelp Reviews API
+- TripAdvisor rating and reviews via SerpApi TripAdvisor Reviews API
+- Review Pay data from demo/internal placeholder only for now
+- OpenAI for review summary and trust analysis
+- Discount/offers from SerpApi/search results if available, otherwise show “No offer found today”
+
+Important:
+Review Pay is not from SerpApi.
+Review Pay should come from our own internal Review Pay database in the future.
+For now, use demo/internal placeholder Review Pay data.
+
+Design style:
+- White / off-white background
+- White cards
+- Black text
+- Dark navy accents
+- Aqua/teal thin border for AI recommendation card
+- Black call-to-action buttons
+- Rounded corners
+- Strong bold typography
+- Clean comparison-dashboard layout
+- Business photos/logos in colour
+- Review platform icons in colour
+- Generic icons black and white
+
+Colour palette:
+- Background: #F7F7F4
+- Card background: #FFFFFF
+- Text: #050505
+- Secondary text: #5F6368
+- Border: #E5E5E5
+- Dark navy: #071A3D
+- Black: #000000
+- Aqua accent: #60F0EF
+- Soft aqua: #EFFFFF
+- Soft navy: #EEF3FF
+- Green available dot: #52D273
+
+Top header:
+Create a sticky top header:
+- Left: small dark navy square logo with “CR”
+- Text: Compare Reviews
+- Right: Trust before you book
+
+Search area:
+Below header, add a centered search bar:
+- Rounded white search input
+- Aqua circular search icon on the left
+- Placeholder: “Search business name, restaurant, hotel, cafe...”
+- Black button: “Check”
+- Pressing Enter should run the search
+
+Results heading:
+After search, display:
+Title:
+“Results for: [Business Name]”
+
+Subtitle:
+“AI checked review platforms in [seconds] seconds · [location] results”
+
+Right side:
+“Live data checked just now” with a small green dot.
+
+Main featured result card:
+Create a large card with a thin aqua border.
+Top-left badge:
+“✨ AI RECOMMENDATION”
+
+Inside featured card:
+Left:
+- Large business image/logo in colour
+- Use real image if available
+- If no image, show colour placeholder with initials
+
+Middle:
+- Business name large and bold
+- Address with location icon
+- Tag pills:
+  BEST OVERALL
+  CONSISTENT RATINGS
+  MOST REVIEWS
+  VERIFIED DATA
+
+Under tags:
+- Star row
+- Text:
+  “[average]/5 average across [total reviews] reviews”
+
+Then:
+- “Review Pay verified reviews available” if Review Pay data exists
+- “Review Pay verified reviews not available yet” if no Review Pay data
+
+Buttons:
+- Visit Website
+- Call
+- Directions
+
+Middle/right platform ratings section:
+Add a clear section titled:
+“Ratings by platform”
+
+Display these as compact horizontal rows:
+
+Google:
+- Google icon
+- Google
+- rating
+- number of reviews
+
+Yelp:
+- Yelp icon
+- Yelp
+- rating
+- number of reviews
+
+TripAdvisor:
+- TripAdvisor icon
+- TripAdvisor
+- rating
+- number of reviews
+
+Review Pay:
+- Review Pay icon/logo
+- Review Pay
+- rating if available
+- verified review count if available
+- If not available, show “No verified reviews yet”
+
+Example:
+Google      ★ 4.5     (3,357 reviews)
+Yelp        ★ 4.1     (76 reviews)
+TripAdvisor ★ 4.5     (847 reviews)
+Review Pay  ★ 4.7     (128 verified reviews)
+
+If a platform is unavailable:
+Show:
+Rating: —
+Reviews: Not available yet
+Badge: Not available yet
+
+Trust Score panel:
+On the far right of the featured card:
+- Huge Trust Score:
+  “83/100”
+- Label:
+  “TRUST SCORE”
+- Small explanation:
+  “Average across Google, Yelp, TripAdvisor and Review Pay where available”
+- Black button:
+  “VIEW REPORT →”
+
+Trust Score calculation:
+Calculate the Trust Score from available rating sources.
+
+Use this logic:
+1. Collect available ratings from:
+   - Google
+   - Yelp
+   - TripAdvisor
+   - Review Pay only if verified and available
+2. Average the available ratings.
+3. Convert to score out of 100:
+   trustScore = Math.round((averageRating / 5) * 100)
+
+Example:
+Google 4.5
+Yelp 4.1
+TripAdvisor 4.5
+Average = 4.36
+Trust Score = 87/100
+
+If Review Pay is available and verified, include it in the average.
+If Review Pay is not available, do not punish the business.
+If Facebook is unavailable, do not include it in the score.
+
+Add discount / offer section:
+Add a new section inside the featured card under the platform ratings or near the buttons.
+
+Section title:
+“Available Offer”
+
+If an offer is found, show:
+- Offer badge:
+  “OFFER FOUND”
+- Offer title, for example:
+  “10% off first booking”
+  or
+  “Free delivery available”
+  or
+  “Special deal available today”
+- Offer source:
+  “Found from public search results”
+- Button:
+  “View Offer”
+
+If no offer is found, show:
+- Badge:
+  “NO OFFER FOUND”
+- Text:
+  “No public discount or offer was found today.”
+- Optional small text:
+  “Check the business website for direct promotions.”
+
+Offer data structure:
+Add this to the business data object:
+
+offer: {
+  available: true,
+  title: "10% off first booking",
+  description: "Public offer found from search results.",
+  source: "Search results",
+  url: "https://businesswebsite.com/offers"
+}
+
+If no offer:
+offer: {
+  available: false,
+  title: "",
+  description: "No public discount or offer was found today.",
+  source: "",
+  url: ""
+}
+
+Create a function:
+renderOffer(offer)
+
+If offer.available is true:
+- Show offer card
+- Enable “View Offer” button
+- Button opens offer.url in a new tab
+
+If offer.available is false:
+- Show “No offer found today”
+- Hide or disable View Offer button
+
+Future offer fetching:
+Add backend placeholder route:
+GET /api/find-offers?businessName=&website=
+
+For now this can return demo data randomly.
+
+Later this route should use SerpApi/search to search:
+“[Business Name] discount”
+“[Business Name] coupon”
+“[Business Name] promo code”
+“[Business Name] special offer”
+“[Business Name] deal”
+“[Business Name] free delivery”
+“[Business Name] booking offer”
+
+Important offer rules:
+- Do not invent an offer.
+- Only show offer available if the API/search result returns something credible.
+- If unsure, show “No public offer found today.”
+- Do not promise cashback unless we actually provide cashback.
+- Use wording “public offer found” not “guaranteed discount”.
+
+Lower comparison rows:
+Below featured card, show similar nearby businesses in horizontal rows.
+
+Each row should include:
+- Business logo/photo
+- Business name
+- Business category/location
+- Google rating and review count
+- Yelp rating and review count
+- TripAdvisor rating and review count
+- Average rating
+- Total review count
+- Trust Score
+- View Report button
+- Offer badge if available:
+  “Offer found”
+  or
+  “No offer”
+
+Example row:
+Gimlet Melbourne
+Cocktail Bar · CBD Melbourne
+Google 4.6 (2,154)
+Yelp 4.0 (68)
+TripAdvisor 4.7 (1,039)
+4.4 average (3,261 reviews)
+88/100
+VIEW REPORT →
+
+Discount badge examples:
+- OFFER FOUND
+- NO OFFER
+
+Footer note:
+Add small footer line:
+“Review Pay verifies that reviews are from real customers and helps reduce fake reviews.”
+Link:
+“Learn more about our process”
+
+Fix star display:
+The stars must be horizontal text only.
+Do not use vertical star boxes.
+
+Use:
+<div class="stars">★★★★★</div>
+
+CSS:
+.stars {
+  display: inline-flex;
+  gap: 2px;
+  align-items: center;
+  font-size: 18px;
+  line-height: 1;
+  color: #050505;
+  letter-spacing: 0;
+  height: auto;
+  overflow: visible;
+}
+
+Do not wrap each star in a tall box.
+
+Backend routes required:
+1. GET /api/search-business?query=
+Returns:
+{
+  name,
+  address,
+  imageUrl,
+  logoUrl,
+  website,
+  phone,
+  directionsUrl,
+  google,
+  yelp,
+  tripadvisor,
+  reviewpay,
+  offer,
+  nearby
+}
+
+2. GET /api/reviewpay-reviews?businessName=
+For now returns demo/internal placeholder data.
+
+3. GET /api/find-offers?businessName=&website=
+For now returns demo offer data randomly or no offer.
+
+4. POST /api/analyze-reviews
+Uses OpenAI to generate review summary and trust explanation.
+
+OpenAI analysis:
+The AI should analyse:
+- Google rating and reviews
+- Yelp rating and reviews
+- TripAdvisor rating and reviews
+- Review Pay if available
+- Offer availability if available
+
+OpenAI should return:
+{
+  trustScore,
+  ratingAverage,
+  totalReviews,
+  ratingGapAlert,
+  reviewSummary,
+  bestFor,
+  redFlags,
+  reputationTrend,
+  reviewPayStatus,
+  offerSummary,
+  confidence
+}
+
+Prompt rules:
+- Do not invent ratings.
+- Do not invent offers.
+- If offer is unavailable, say no public offer was found today.
+- If Review Pay data is unavailable, do not punish the business.
+- Use simple consumer-friendly language.
+- Return JSON only.
+
+Frontend behaviour:
+- Search button runs search
+- Enter key runs search
+- Featured card updates with real/demo data
+- Platform ratings update with ratings and review counts
+- Trust Score updates based on available rating average
+- Offer section updates
+- View Website opens website
+- Call opens tel link
+- Directions opens Google Maps
+- View Report can scroll to/report section or show alert for now:
+  “Full trust report coming soon.”
+- View Offer opens offer URL if available
+- If no offer, show alert:
+  “No public offer found today.”
+- Save Comparison shows alert:
+  “Comparison saved. Your developer can connect this to your database.”
+
+Make the UI look very close to the uploaded reference style:
+- Large featured card
+- Horizontal result rows
+- Strong black CTA buttons
+- Clear platform rating chips
+- Aqua outline for AI recommendation
+- Premium marketplace/comparison layout
+- Not like the old square dashboard cards
+
+Make sure it is mobile responsive:
+- Featured card stacks on mobile
+- Platform ratings become one column
+- Result rows stack cleanly
+- Buttons become full width
+- No horizontal overflow

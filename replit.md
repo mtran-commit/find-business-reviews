@@ -4,8 +4,8 @@ A single-page web app where someone enters a business name and compares its publ
 
 ## Where things live
 
-- Frontend: self-contained single file `artifacts/compare-reviews/index.html` (inline CSS + JS, no React/build deps). `fetchBusinessReviews(query)` calls the live backend at `GET /api/reviews?q=<name>`; `loadAISummary(data)` POSTs real (non-demo) ratings to `/api/summary` and fills the Review Summary card (rule-based fallback on failure). Both throw/handle user-friendly errors.
-- Backend: `artifacts/api-server/src/routes/reviews.ts` (reviews route + zod/v4) and `artifacts/api-server/src/lib/serpapi.ts` (SerpApi client, returns the `BusinessReviews` shape). `artifacts/api-server/src/routes/summary.ts` is the OpenAI-backed AI summary endpoint.
+- Frontend: self-contained single file `artifacts/compare-reviews/index.html` (inline CSS + JS, no React/build deps). Premium comparison-dashboard UI: a results heading, a featured "AI Recommendation" card (image, tags, overall stars, Review Pay status, action buttons, ratings-by-platform rows, trust-score panel, available-offer section), an AI analysis card, nearby comparison rows, and a footer note. `fetchBusinessReviews(query)` calls `GET /api/search-business?query=<name>`; `loadAIAnalysis(data)` POSTs real (non-demo) ratings to `/api/analyze-reviews` and fills the AI analysis card (rule-based fallback restored on failure). A `?q=<name>` URL param deep-links into an auto-run search.
+- Backend: `artifacts/api-server/src/routes/business.ts` (`/search-business`, `/find-offers`, `/reviewpay-reviews` + zod/v4) and `artifacts/api-server/src/lib/serpapi.ts` (SerpApi client + demo builders, returns the `BusinessReviews` shape). `artifacts/api-server/src/routes/analyze.ts` is the OpenAI-backed structured-analysis endpoint (`POST /api/analyze-reviews`).
 
 ## Run & Operate
 
@@ -32,13 +32,15 @@ A single-page web app where someone enters a business name and compares its publ
 - To protect quota, `yelp_reviews` is only called after a confident name match; non-matches short-circuit with no extra call.
 - TripAdvisor uses the `tripadvisor` search engine, which returns the aggregate `rating` + `reviews` count directly on each place — one call, matched by distinctive-token name (ties broken by review count). No `tripadvisor_reviews` call needed. Non-matches return `null` with note "No match found".
 - Facebook has no usable SerpApi rating source, so it always returns `null` with note "Not available yet".
-- Review Pay is an internal platform: the backend returns deterministic demo data (hash of the name) and flags it in the `demo` array. It renders as a 5th card with a "Demo data" badge but is excluded from Trust Score, metrics, and the AI summary.
-- AI review summary: `POST /api/summary` uses OpenAI (`gpt-5-mini` via the Replit AI Integrations proxy — `@workspace/integrations-openai-ai-server`, key never reaches the browser) to summarize ONLY the real non-demo platform ratings sent by the client. The OpenAI client is imported lazily inside the handler so a missing integration returns a clean 503 instead of crashing server boot.
-- Frontend metrics (avg, total reviews, gap, Trust Score) are computed over available (non-null, non-demo) platforms only, so missing platforms don't heavily penalize the score; the "nearby" cards remain illustrative placeholder data.
+- Review Pay is an internal platform: the backend returns deterministic demo data (hash of the name via `hashString`) and flags it in the `demo` array. It renders as a 5th platform row with a "Demo" badge but is excluded from Trust Score, metrics, and the AI analysis. `GET /api/reviewpay-reviews?businessName=` exposes it standalone.
+- Offers (`offer` on `BusinessReviews`, also `GET /api/find-offers?businessName=&website=`) are deterministic demo data (`buildDemoOffer`, ~50% "available" by hash) flagged `demo: true` / `source: "Demo data"`. The UI labels them "Demo" and never presents them as verified real offers. Replace with a real public-results lookup later.
+- Nearby comparison businesses (`nearby` on `BusinessReviews`, via `buildDemoNearby`) are illustrative demo data (3 picks from a fixed pool with deterministic per-platform ratings), flagged `demo: true` and clearly labelled in the UI. Clicking a nearby row runs a real search for that name.
+- AI analysis: `POST /api/analyze-reviews` uses OpenAI (`gpt-5-mini` via the Replit AI Integrations proxy — `@workspace/integrations-openai-ai-server`, key never reaches the browser) with `response_format: json_object` to return structured `{ reviewSummary, bestFor[], redFlags[], reputationTrend, offerSummary }` from ONLY the real non-demo platform ratings sent by the client. Validated server-side with zod. The OpenAI client is imported lazily inside the handler so a missing integration returns a clean 503 instead of crashing server boot; the frontend keeps/restores rule-based fallbacks on any failure.
+- Trust Score uses the spec formula `round(avg/5 * 100)` over available (non-null, non-demo) platforms; avg, total reviews and gap are also computed client-side over those platforms only, so missing platforms don't penalize the score.
 
 ## Product
 
-Enter a business name to see its public ratings side by side: real Google, Yelp and TripAdvisor ratings (with review counts and stars), a 0–100 Trust Score, a rating-gap alert, an AI-written review summary, a demo "Review Pay" card, and platform cards that clearly mark sources with no data yet (Facebook, or unmatched Yelp/TripAdvisor).
+Enter a business name (or deep-link with `?q=<name>`) to see a premium comparison dashboard: a featured AI-recommendation card with real Google, Yelp and TripAdvisor ratings (counts + horizontal text stars), computed tags, a 0–100 Trust Score panel, an available-offer section (demo), and a Review Pay row (demo); an AI analysis card (summary, best-for, red flags, reputation trend); nearby comparison rows (demo); and clearly-labelled "Not available yet" states (Facebook, or unmatched Yelp/TripAdvisor).
 
 ## User preferences
 
