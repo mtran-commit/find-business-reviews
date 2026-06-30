@@ -20,9 +20,7 @@ import type { Logger } from "pino";
  * directly on each place result, so a single call (matched by name) suffices.
  *
  * Facebook has no usable SerpApi rating source, so it is always returned as
- * null with a "Not available yet" note. Review Pay is an internal platform
- * with no public API yet, so it is returned as deterministic demo data
- * (flagged in `demo`) and excluded from real-data metrics/analysis.
+ * null with a "Not available yet" note.
  *
  * Docs: https://serpapi.com/google-maps-api , https://serpapi.com/yelp-api ,
  *       https://serpapi.com/yelp-reviews-api , https://serpapi.com/tripadvisor
@@ -96,8 +94,6 @@ export interface BusinessReviews {
   tripadvisor: PlatformRating | null;
   yelp: PlatformRating | null;
   facebook: PlatformRating | null;
-  /** Internal platform; demo placeholder data until a real API exists. */
-  reviewpay: PlatformRating | null;
   /** Public offer (demo data for now; flagged via `offer.demo`). */
   offer: Offer;
   /** Detected industry/category of this business. */
@@ -315,9 +311,6 @@ export async function fetchBusinessReviews(
   // ---- Facebook: no usable public rating source ----
   notes["facebook"] = "Not available yet";
 
-  // ---- Review Pay: internal platform, demo data until a real API exists ----
-  const reviewpay = demoReviewPay(name);
-
   const unavailable: string[] = [];
   if (!google) unavailable.push("google");
   if (!yelp) unavailable.push("yelp");
@@ -342,13 +335,12 @@ export async function fetchBusinessReviews(
     tripadvisor,
     yelp,
     facebook: null,
-    reviewpay,
     offer: buildDemoOffer(name, website),
     category,
     locality,
     nearby,
     unavailable,
-    demo: ["reviewpay"],
+    demo: [],
     notes,
     source: "serpapi",
   };
@@ -361,18 +353,6 @@ export function hashString(s: string): number {
     hash = (hash * 31 + s.charCodeAt(i)) >>> 0;
   }
   return hash;
-}
-
-/**
- * Deterministic demo rating for the internal "Review Pay" platform so the card
- * stays stable per business. Clearly flagged as demo via `demo` and excluded
- * from real-data metrics and AI analysis on the client.
- */
-export function demoReviewPay(name: string): PlatformRating {
-  const hash = hashString(name);
-  const rating = Math.round((4.1 + (hash % 9) / 10) * 10) / 10; // 4.1–4.9
-  const reviews = 80 + (hash % 420); // 80–499
-  return { rating, reviews };
 }
 
 const OFFER_TITLES = [

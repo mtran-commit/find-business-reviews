@@ -1,0 +1,112 @@
+Remove Review Pay from Compare Reviews for now.
+
+Delete or hide Review Pay everywhere in the app.
+
+Remove Review Pay from:
+1. Ratings by platform section
+2. Trust Score calculation
+3. Similar business rows
+4. AI Review Sentiment report
+5. Business Reputation Report
+6. Footer text
+7. Any Review Pay verified badge
+8. Any Review Pay demo data
+9. Any Review Pay API placeholder
+10. Any Review Pay logo/icon/card
+
+The platform list should now only show:
+- Google
+- Yelp
+- TripAdvisor
+- Facebook if available
+
+If Facebook is unavailable, still show:
+Facebook — Not available yet
+
+Trust Score calculation:
+Use only available real public review platforms:
+- Google
+- Yelp
+- TripAdvisor
+- Facebook only if rating is available
+
+Do not include Review Pay in the average.
+
+Update Trust Score explanation text to:
+
+“Average across available Google, Yelp, TripAdvisor and Facebook ratings”
+
+If only Google and TripAdvisor are available, show:
+
+“Average across Google and TripAdvisor where available”
+
+Update the rating platform card:
+Remove this row completely:
+
+Review Pay
+DEMO
+rating
+review count
+
+Update the footer:
+Remove:
+“Review Pay verifies that reviews are from real customers...”
+
+Replace footer with:
+
+“Compare Reviews checks public review platforms to help customers make better decisions before they buy, book or visit.”
+
+Update offer/report text:
+Remove any wording that says:
+- Review Pay verified
+- verified customer reviews
+- Review Pay demo data
+- Review Pay opportunity
+- transaction-verified reviews
+
+Update Business Reputation Report:
+Remove the section:
+“Review Pay verification opportunity”
+
+Replace it with:
+“Review improvement opportunity”
+
+Update OpenAI prompt:
+Do not mention Review Pay.
+Do not ask OpenAI to analyse Review Pay.
+Only analyse available public platforms:
+Google, Yelp, TripAdvisor, Facebook.
+
+Update backend demo data:
+Remove this object from all business data:
+
+reviewpay: {
+  rating,
+  reviews,
+  verified,
+  demo
+}
+
+Update frontend functions:
+Remove or stop calling:
+platformRow("reviewpay", ...)
+any Review Pay renderer
+any Review Pay verified card
+any Review Pay status logic
+
+Final platform display:
+The top result should show:
+
+Google
+Yelp
+TripAdvisor
+Facebook
+
+No Review Pay.
+
+Final check:
+Search any business and confirm:
+- Review Pay does not appear in the platform list
+- Review Pay does not appear in the reports
+- Review Pay does not appear in the footer
+- Trust Score only uses public review platforms

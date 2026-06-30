@@ -32,7 +32,6 @@
         --tripadvisor: #00AA6C;
         --yelp: #D32323;
         --facebook: #1877F2;
-        --reviewpay: #0B55D9;
         --shadow-pill: 0 12px 30px rgba(0,0,0,0.08);
         --shadow-soft: 0 1px 2px rgba(5,5,5,.04), 0 8px 24px rgba(5,5,5,.05);
       }
@@ -204,11 +203,6 @@
       .overall-rating { display: flex; align-items: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
       .overall-rating .txt { font-size: 14px; color: var(--text-2); }
       .overall-rating .txt b { color: var(--text); font-weight: 800; font-size: 15px; }
-      .reviewpay-line {
-        margin-top: 12px; font-size: 13.5px; color: var(--text-2);
-        display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap;
-      }
-      .reviewpay-line .rp { color: var(--rp-blue); font-weight: 700; }
       .biz-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
       .offer-chip {
         margin-top: 14px; display: inline-flex; align-items: center; gap: 9px; flex-wrap: wrap;
@@ -550,8 +544,7 @@
         { key: 'google',      label: 'Google',      color: 'var(--google)',      letter: 'G' },
         { key: 'yelp',        label: 'Yelp',        color: 'var(--yelp)',        letter: 'Y' },
         { key: 'tripadvisor', label: 'TripAdvisor', color: 'var(--tripadvisor)', letter: 'T' },
-        { key: 'facebook',    label: 'Facebook',    color: 'var(--facebook)',    letter: 'F' },
-        { key: 'reviewpay',   label: 'Review Pay',  color: 'var(--reviewpay)',   letter: 'R' }
+        { key: 'facebook',    label: 'Facebook',    color: 'var(--facebook)',    letter: 'F' }
       ];
 
       function isDemo(data, key) {
@@ -607,13 +600,12 @@
       // Remove a broken featured photo, revealing the navy fallback underneath.
       window.__photoFail = function (img) { img.remove(); };
 
-      // ---- Featured tags from real metrics (VERIFIED DATA always shown) ----
+      // ---- Featured tags from real metrics ----
       function featuredTags(m) {
         const tags = [];
         if (m.avg >= 4.3) tags.push({ t: 'Best Overall', aqua: true });
         if (m.count >= 2 && m.gap < 0.5) tags.push({ t: 'Consistent Ratings' });
         if (m.totalReviews >= 1000) tags.push({ t: 'Most Reviews' });
-        tags.push({ t: 'Verified Data' });
         return tags;
       }
 
@@ -742,12 +734,6 @@
           return '<span class="tag ' + (t.aqua ? 'tag-aqua' : '') + '">' + escapeHtml(t.t) + '</span>';
         }).join('');
 
-        // Review Pay line (internal platform — demo data, honestly labelled)
-        const rp = data.reviewpay;
-        const reviewpayLine = hasRating(rp)
-          ? '<div class="reviewpay-line"><span class="rp">Review Pay</span> reviews available <span class="demo-badge">Demo</span></div>'
-          : '';
-
         // Ratings-by-platform rows
         const platformRows = PLATFORMS.map(function (p) {
           const r = data[p.key];
@@ -848,7 +834,6 @@
               '<div class="overall-rating">' + starsHtml(m.avg) +
                 '<span class="txt"><b>' + m.avg.toFixed(1) + '</b> average across ' + m.totalReviews.toLocaleString() + ' reviews</span>' +
               '</div>' +
-              reviewpayLine +
               '<div class="biz-actions">' +
                 '<button class="btn btn-outline" data-act="website">' + ICO.link + 'Visit website</button>' +
                 '<button class="btn btn-outline" data-act="call">' + ICO.phone + 'Call</button>' +
@@ -880,8 +865,7 @@
 
           // Footer note
           '<div class="foot-note">' + ICO.shield +
-            '<span>Review Pay verifies that reviews are from real customers and helps remove fake reviews. ' +
-            '<a data-act="learn-more">Learn more about our process</a></span>' +
+            '<span>Compare Reviews checks public review platforms to help customers make better decisions before they buy, book or visit.</span>' +
           '</div>';
 
         // Wire featured-card / footer actions
@@ -895,7 +879,6 @@
             else if (act === 'sentiment') openReport(data, m);
             else if (act === 'business-report') openBusinessReport(data, m);
             else if (act === 'offer') { if (!safeOpen(data.offer && data.offer.url)) alert('This is demo offer data — no live link yet.'); }
-            else if (act === 'learn-more') { e.preventDefault(); alert('Review Pay is an internal platform. Demo data is shown until it is connected.'); }
           });
         });
 
@@ -976,7 +959,7 @@
           'Main risks losing you customers',
           'How you compare to nearby competitors',
           'Recommended offer to win more bookings',
-          'Review Pay verification opportunity',
+          'Review improvement opportunity',
           '7-day reputation action plan'
         ];
 
@@ -1017,7 +1000,6 @@
         }
         if (m.count >= 2 && m.gap < 0.5) out.push('Consistent ratings across the platforms checked');
         if (m.totalReviews >= 500) out.push('High review volume builds customer trust (' + m.totalReviews.toLocaleString() + ' total)');
-        if (hasRating(data.reviewpay)) out.push('Review Pay verified data is available (demo)');
         if (!out.length) out.push('Has a visible public review presence to build on');
         return out.slice(0, 2);
       }

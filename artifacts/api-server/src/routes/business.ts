@@ -3,7 +3,6 @@ import { z } from "zod/v4";
 import {
   fetchBusinessReviews,
   buildDemoOffer,
-  demoReviewPay,
   detectBusinessCategory,
   fetchSimilarBusinesses,
 } from "../lib/serpapi";
@@ -124,24 +123,6 @@ router.get("/similar-businesses", async (req, res): Promise<void> => {
       .status(502)
       .json({ error: "Could not fetch similar businesses right now." });
   }
-});
-
-const ReviewPayQuery = z.object({
-  businessName: z.string().trim().min(1).max(200),
-});
-
-/**
- * Review Pay status. Internal platform — demo/placeholder data for now until
- * the real Review Pay database is connected.
- */
-router.get("/reviewpay-reviews", (req, res): void => {
-  const parsed = ReviewPayQuery.safeParse(req.query);
-  if (!parsed.success) {
-    res.status(400).json({ error: "A businessName is required." });
-    return;
-  }
-  const rating = demoReviewPay(parsed.data.businessName);
-  res.json({ available: true, reviewpay: rating, demo: true });
 });
 
 export default router;
