@@ -1,0 +1,451 @@
+Redesign the current Compare Reviews page to match the uploaded reference image exactly in layout, spacing, colours and structure.
+
+The current version is wrong because:
+- The main result card is too tall and split awkwardly.
+- The trust score is inside a pale blue side panel, but it should be inside the same clean horizontal featured result card.
+- The ratings section is too low and too dashboard-like.
+- The page should look like a premium comparison-results page, similar to the provided reference mockup.
+- The result rows should look like a modern search/comparison list, not separate dashboard cards.
+
+Design goal:
+Make the app look like the uploaded reference image:
+- White/off-white page
+- Clean top header
+- Centered search bar
+- Results heading
+- One large horizontal AI recommendation card
+- Business image on the left
+- Business details in the middle
+- Platform ratings inside the same card
+- Large trust score on the right
+- Similar business rows below
+- Black buttons
+- Thin aqua border around the featured recommendation card
+- Strong black typography
+- Very clean premium comparison page
+
+Do not keep the current pale-blue vertical score panel.
+Do not keep the old dashboard card layout.
+Do not show large empty areas.
+Do not stack the ratings too low.
+Do not make the featured card overly tall.
+
+Use this exact layout structure:
+
+1. Header
+Create a top header:
+- Full width
+- Height around 64px
+- White background
+- Thin bottom border #E5E5E5
+- Left side: dark navy square logo with “CR”
+- Next to logo: “Compare Reviews”
+- Right side: “Trust before you book”
+
+2. Search section
+Below header, center the search bar.
+
+Search bar should look like the reference:
+- Width around 620px desktop
+- White rounded pill
+- Subtle shadow
+- Left aqua circle with search icon
+- Input text
+- Black rounded button on the right:
+  “Check”
+- Do not make it huge.
+- Do not use dark blue button here; use black.
+
+3. Results heading section
+Under search bar:
+Left aligned inside max-width container.
+
+Show:
+Results for: [Business Name]
+
+Subtitle:
+AI checked [number] review platforms in [seconds] seconds · [location] results
+
+On the right side of this same row:
+Live data checked just now
+with small green dot.
+
+Do not place Save comparison/New search buttons above the recommendation card in this design. Move those actions lower or remove them from the top.
+
+4. Main featured recommendation card
+Create one wide horizontal card with max width around 1180px.
+
+Card style:
+- Background white
+- Border: 1.5px solid #60F0EF
+- Border-radius: 10px or 12px
+- Padding: 18px 22px
+- Display grid with 4 sections:
+  A. business image
+  B. business details
+  C. ratings by platform
+  D. trust score panel
+- Gap around 24px
+- Align items center
+- Min height around 230px
+- Do not make it tall like the current version.
+
+At top-left of the card, place a black badge:
+“✨ AI RECOMMENDATION”
+Badge style:
+- Black background
+- White text
+- Border radius bottom-right
+- Positioned slightly overlapping top edge if possible.
+
+Section A: Business image
+- Large image, landscape rectangle
+- Width around 330px
+- Height around 175px
+- Border-radius 8px
+- object-fit cover
+- Keep image in colour.
+- If no image, show coloured placeholder.
+
+Section B: Business details
+Show:
+- Business name large bold, around 34px
+- Address line with location icon
+- Pill tags:
+  BEST OVERALL
+  CONSISTENT RATINGS
+  MOST REVIEWS
+  VERIFIED DATA
+
+Then show:
+★★★★★ 4.4 average across 4,280 reviews
+
+Then show:
+Review Pay verified reviews available
+with Review Pay in blue.
+
+Then action buttons:
+Visit Website
+Call
+Directions
+
+Buttons:
+- Small white outline buttons
+- Rounded
+- Black text
+- Icons black
+
+Section C: Ratings by platform
+Inside the featured card, create a compact box titled:
+Ratings by platform
+
+Show rows:
+Google       ★ 4.5    (3,357 reviews)
+Yelp         ★ 4.1    (76 reviews)
+TripAdvisor  ★ 4.5    (847 reviews)
+Review Pay   ★ 4.7    (468 verified reviews) if available
+
+Each row:
+- White background
+- Thin light border
+- Rounded 8px
+- Platform icon on left in colour
+- Platform name
+- Rating
+- Review count
+- Compact height, around 38px
+
+Important:
+If a platform is not available, keep row visible but show:
+—
+Not available yet
+
+Section D: Trust score
+Right side of card:
+- Add vertical divider line on left
+- Large score:
+  83/100
+- Text:
+  TRUST SCORE
+- Small explanation:
+  Average across Google, Yelp, TripAdvisor and Review Pay where available
+- Black button:
+  VIEW REPORT →
+
+Do not use pale blue background for the trust score.
+The trust score should be on white background like the reference.
+
+5. Similar business rows
+Below the featured card, create a list of horizontal comparison rows.
+
+Each row must look like the reference:
+- White background
+- Thin grey border
+- Rounded 8px
+- Height around 76px
+- Display grid columns:
+  logo/image
+  business info
+  Google rating chip
+  Yelp rating chip
+  TripAdvisor rating chip
+  average rating
+  trust score
+  view report button
+
+Example row:
+Logo
+Gimlet Melbourne
+Cocktail Bar · CBD Melbourne
+
+Google chip:
+G 4.6 (2,154)
+
+Yelp chip:
+Y 4.0 (68)
+
+TripAdvisor chip:
+T 4.7 (1,039)
+
+Average:
+4.4 average
+(3,261 reviews)
+
+Trust score:
+88/100
+
+Button:
+VIEW REPORT →
+
+The result rows should be compact, horizontal and aligned.
+Do not use big cards.
+Do not use a grid of insight cards here.
+
+6. Footer note
+At the bottom, add a small centered note:
+Review Pay verifies that reviews are from real customers and helps reduce fake reviews.
+Learn more about our process
+
+7. Colours
+Use exactly this palette:
+- Page background: #F7F7F4
+- Card background: #FFFFFF
+- Text: #050505
+- Secondary text: #5F6368
+- Border: #E5E5E5
+- Black button: #000000
+- Dark navy logo: #071A3D
+- Aqua border: #60F0EF
+- Aqua search circle: #60F0EF
+- Green live dot: #52D273
+- Blue link for Review Pay: #0B55D9
+
+8. Typography
+Use:
+font-family: Inter, Arial, sans-serif;
+
+Headings:
+- Bold
+- Strong black
+- Similar to reference
+
+Do not use soft grey for main business names.
+Business names must be black and bold.
+
+9. Stars
+Fix star display.
+Stars must be simple horizontal text.
+No vertical star boxes.
+No weird star containers.
+
+Use:
+<div class="stars">★★★★★</div>
+
+CSS:
+.stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 18px;
+  line-height: 1;
+  color: #050505;
+  letter-spacing: 0;
+  height: auto;
+  overflow: visible;
+}
+
+10. Trust Score calculation
+The Trust Score must be calculated from the average of available ratings.
+
+Use:
+availableRatings = Google, Yelp, TripAdvisor, Review Pay if verified and available.
+
+averageRating = sum(availableRatings) / availableRatings.length
+
+trustScore = Math.round((averageRating / 5) * 100)
+
+Example:
+Google 4.5
+Yelp 4.1
+TripAdvisor 4.5
+Average = 4.36
+Trust Score = 87/100
+
+If Review Pay has verified data, include it.
+If Review Pay has no data, exclude it.
+Do not punish the score when Review Pay is unavailable.
+Do not include Facebook if unavailable.
+
+11. Offer section
+Add offer information but keep it subtle.
+
+In the featured card, below the platform ratings or under the action buttons, add a small offer chip only if available:
+
+If offer available:
+Badge:
+OFFER FOUND
+Text:
+10% off first booking
+Button/link:
+View Offer
+
+If no offer:
+Do not show a large offer card.
+Only show a small muted chip:
+No public offer found today
+
+This should not dominate the UI.
+The review comparison and trust score should remain the focus.
+
+12. Do not use the old insight card layout on the main results page
+Remove or hide these from the main results page:
+- Rating Gap Alert card
+- Review Summary card
+- Best For card
+- Red Flags card
+- Reputation Trend card
+
+Instead, those can be shown later only inside the full report after clicking VIEW REPORT.
+
+Main page must look like a comparison-results list, not an analytics dashboard.
+
+13. Mobile responsive
+On mobile:
+- Header stacks cleanly
+- Search bar full width
+- Featured card becomes one column
+- Business image full width
+- Platform ratings full width
+- Trust score below ratings
+- Similar rows become stacked cards
+- No horizontal overflow
+
+14. Use these CSS layout classes
+Create or update these classes:
+
+.page-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.search-wrap {
+  display: flex;
+  justify-content: center;
+  padding: 28px 0 34px;
+}
+
+.search-pill {
+  width: min(620px, 100%);
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #fff;
+  border: 1px solid #E5E5E5;
+  border-radius: 999px;
+  padding: 10px 12px 10px 14px;
+  box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+}
+
+.featured-card {
+  position: relative;
+  background: #fff;
+  border: 1.5px solid #60F0EF;
+  border-radius: 12px;
+  padding: 34px 24px 22px;
+  display: grid;
+  grid-template-columns: 330px 1fr 310px 230px;
+  gap: 24px;
+  align-items: center;
+}
+
+.featured-image {
+  width: 330px;
+  height: 175px;
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.ai-badge {
+  position: absolute;
+  top: 0;
+  left: 18px;
+  background: #000;
+  color: #fff;
+  font-weight: 900;
+  padding: 9px 16px;
+  border-radius: 0 0 6px 6px;
+}
+
+.platform-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.platform-row {
+  display: grid;
+  grid-template-columns: 32px 1fr auto auto;
+  gap: 10px;
+  align-items: center;
+  border: 1px solid #E5E5E5;
+  border-radius: 8px;
+  padding: 9px 10px;
+  background: #fff;
+}
+
+.score-panel {
+  border-left: 1px solid #D8D8D8;
+  padding-left: 28px;
+  text-align: center;
+}
+
+.score-number {
+  font-size: 62px;
+  font-weight: 950;
+  color: #050505;
+  line-height: 1;
+}
+
+.result-row {
+  display: grid;
+  grid-template-columns: 84px 1.5fr 140px 140px 160px 150px 120px 170px;
+  gap: 14px;
+  align-items: center;
+  background: #fff;
+  border: 1px solid #E5E5E5;
+  border-radius: 8px;
+  padding: 10px 18px;
+  min-height: 76px;
+}
+
+15. Final check
+After redesign:
+- The page must visually match the uploaded reference image.
+- The featured result must be horizontal.
+- The trust score must be on the right inside the same white card.
+- The ratings by platform must be inside the featured card.
+- Similar businesses must be horizontal rows.
+- No pale blue vertical score block.
+- No dashboard insight cards on the main page.
+- No broken vertical stars.

@@ -12,435 +12,451 @@
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
-      /* ===== Design tokens ===== */
+      /* ===== Design tokens (exact palette from spec) ===== */
       :root {
         --bg: #F7F7F4;
         --card: #FFFFFF;
         --text: #050505;
         --text-2: #5F6368;
         --border: #E5E5E5;
+        --divider: #D8D8D8;
         --black: #000000;
         --navy: #071A3D;
-        --navy-hover: #0B2A5B;
-        --navy-soft: #EEF3FF;
-        --grey-btn: #F1F1F1;
+        --aqua: #60F0EF;
+        --green-dot: #52D273;
+        --rp-blue: #0B55D9;
         /* Brand colours for platform icons */
         --google: #4285F4;
         --tripadvisor: #00AA6C;
         --yelp: #D32323;
         --facebook: #1877F2;
-        --reviewpay: #7C3AED;
-        /* Premium accents */
-        --aqua: #60F0EF;
-        --aqua-soft: #EFFFFF;
-        --aqua-deep: #0B7E7C;
-        --green-dot: #52D273;
-        --amber: #C77700;
-        --amber-soft: #FFF6E6;
-        --radius: 16px;
-        --radius-sm: 10px;
-        --shadow: 0 1px 2px rgba(5,5,5,.04), 0 8px 24px rgba(5,5,5,.05);
-        --shadow-sm: 0 1px 2px rgba(5,5,5,.05);
-        --shadow-lg: 0 2px 6px rgba(5,5,5,.05), 0 18px 48px rgba(5,5,5,.10);
+        --reviewpay: #0B55D9;
+        --shadow-pill: 0 12px 30px rgba(0,0,0,0.08);
+        --shadow-soft: 0 1px 2px rgba(5,5,5,.04), 0 8px 24px rgba(5,5,5,.05);
       }
 
       * { box-sizing: border-box; margin: 0; padding: 0; }
       html { -webkit-text-size-adjust: 100%; }
       body {
-        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        font-family: 'Inter', Arial, sans-serif;
         background: var(--bg);
         color: var(--text);
         line-height: 1.5;
         -webkit-font-smoothing: antialiased;
         text-rendering: optimizeLegibility;
       }
-      .wrap { max-width: 1000px; margin: 0 auto; padding: 0 20px; }
+      .page-shell { max-width: 1180px; margin: 0 auto; padding: 0 24px; }
 
-      /* ===== Top bar ===== */
+      /* ===== Header ===== */
       .topbar {
-        position: sticky; top: 0; z-index: 20;
-        background: rgba(247,247,244,.85);
-        backdrop-filter: saturate(180%) blur(12px);
-        border-bottom: 1px solid var(--border);
+        position: sticky; top: 0; z-index: 30;
+        background: #fff; border-bottom: 1px solid var(--border);
       }
       .topbar-inner { display: flex; align-items: center; gap: 12px; height: 64px; }
       .brand-mark {
-        width: 38px; height: 38px; border-radius: 10px;
+        width: 36px; height: 36px; border-radius: 8px;
         background: var(--navy); color: #fff;
         display: grid; place-items: center;
-        font-weight: 800; font-size: 15px; letter-spacing: .5px;
-        flex-shrink: 0;
+        font-weight: 800; font-size: 14px; letter-spacing: .5px; flex-shrink: 0;
       }
-      .brand-name { font-weight: 700; font-size: 17px; letter-spacing: -.2px; }
-      .brand-tag { color: var(--text-2); font-size: 13px; margin-left: auto; display: none; }
-      @media (min-width: 640px) { .brand-tag { display: block; } }
-
-      /* ===== Hero ===== */
-      .hero { text-align: center; padding: 56px 0 36px; }
-      .hero h1 {
-        font-size: clamp(34px, 6vw, 56px);
-        font-weight: 800; letter-spacing: -1.5px; line-height: 1.05;
-        color: var(--text);
-      }
-      .hero .subtitle {
-        max-width: 620px; margin: 18px auto 0;
-        color: var(--text-2); font-size: clamp(15px, 2.4vw, 18px);
-      }
+      .brand-name { font-weight: 800; font-size: 18px; letter-spacing: -.3px; }
+      .brand-tag { color: var(--text-2); font-size: 14px; margin-left: auto; }
+      @media (max-width: 560px) { .brand-tag { display: none; } }
 
       /* ===== Search ===== */
-      .search-row {
-        display: flex; gap: 10px; max-width: 640px; margin: 30px auto 0;
-        flex-wrap: wrap;
+      .search-wrap { display: flex; justify-content: center; padding: 28px 0 22px; }
+      .search-pill {
+        width: min(620px, 100%);
+        display: flex; align-items: center; gap: 12px;
+        background: #fff; border: 1px solid var(--border);
+        border-radius: 999px; padding: 9px 9px 9px 14px;
+        box-shadow: var(--shadow-pill);
+        transition: box-shadow .15s, border-color .15s;
+      }
+      .search-pill:focus-within { border-color: var(--aqua); box-shadow: 0 12px 30px rgba(96,240,239,.25); }
+      .search-circle {
+        width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+        background: var(--aqua); color: #052b2b;
+        display: grid; place-items: center;
       }
       .search-input {
-        flex: 1 1 280px; min-width: 0;
-        background: var(--card); border: 1px solid var(--border);
-        border-radius: var(--radius); padding: 16px 18px;
+        flex: 1 1 auto; min-width: 0; border: none; outline: none; background: transparent;
         font-size: 16px; color: var(--text); font-family: inherit;
-        box-shadow: var(--shadow-sm); transition: border-color .15s, box-shadow .15s;
       }
       .search-input::placeholder { color: var(--text-2); }
-      .search-input:focus {
-        outline: none; border-color: var(--navy);
-        box-shadow: 0 0 0 3px rgba(7,26,61,.12);
+      .search-check {
+        flex-shrink: 0; font-family: inherit; font-weight: 700; font-size: 15px;
+        color: #fff; background: var(--black); border: none; cursor: pointer;
+        border-radius: 999px; padding: 11px 24px;
+        transition: opacity .15s, transform .05s;
       }
+      .search-check:hover { opacity: .9; }
+      .search-check:active { transform: translateY(1px); }
+
+      /* ===== Buttons ===== */
       .btn {
-        font-family: inherit; font-size: 15px; font-weight: 600;
-        border: none; border-radius: var(--radius); cursor: pointer;
-        padding: 16px 24px; transition: background .15s, transform .05s, box-shadow .15s, border-color .15s;
-        display: inline-flex; align-items: center; justify-content: center; gap: 8px;
-        white-space: nowrap;
+        font-family: inherit; cursor: pointer; border-radius: 8px;
+        display: inline-flex; align-items: center; justify-content: center; gap: 7px;
+        white-space: nowrap; transition: background .15s, opacity .15s, transform .05s, border-color .15s;
       }
       .btn:active { transform: translateY(1px); }
-      .btn-primary { background: var(--navy); color: #fff; box-shadow: var(--shadow-sm); }
-      .btn-primary:hover { background: var(--navy-hover); }
-      .btn-ghost {
-        background: var(--grey-btn); color: var(--text);
-        border: 1px solid var(--border); padding: 11px 16px; font-size: 14px;
+      .btn-black { background: var(--black); color: #fff; border: 1px solid var(--black); font-weight: 700; }
+      .btn-black:hover { opacity: .9; }
+      .btn-outline {
+        background: #fff; color: var(--text); border: 1px solid var(--border);
+        font-weight: 600; font-size: 13.5px; padding: 8px 14px;
       }
-      .btn-ghost:hover { background: #e9e9e9; }
-      .btn-sm { padding: 9px 14px; font-size: 13.5px; border-radius: var(--radius-sm); }
-      .btn-icon { width: 18px; height: 18px; flex-shrink: 0; }
+      .btn-outline:hover { border-color: #c9c9c9; background: #fafafa; }
+      .btn-outline svg { width: 15px; height: 15px; }
+      .icon-btn-svg { width: 14px; height: 14px; flex-shrink: 0; }
 
       /* ===== States ===== */
-      .panel { margin: 36px 0 64px; }
-      .empty, .loading {
-        text-align: center; padding: 72px 24px;
+      .panel { padding: 6px 0 70px; }
+      .state {
+        text-align: center; padding: 64px 24px;
         background: var(--card); border: 1px solid var(--border);
-        border-radius: var(--radius); box-shadow: var(--shadow);
+        border-radius: 12px; box-shadow: var(--shadow-soft); margin-top: 18px;
       }
-      .empty-icon { width: 52px; height: 52px; margin: 0 auto 18px; color: var(--text); opacity: .85; }
-      .empty h3, .loading h3 { font-size: 20px; font-weight: 700; letter-spacing: -.3px; }
-      .empty p, .loading p { color: var(--text-2); margin-top: 8px; max-width: 440px; margin-left: auto; margin-right: auto; }
+      .state-icon { width: 48px; height: 48px; margin: 0 auto 16px; color: var(--text); opacity: .8; }
+      .state h3 { font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
+      .state p { color: var(--text-2); margin-top: 8px; max-width: 460px; margin-left: auto; margin-right: auto; }
       .hidden { display: none !important; }
-
-      /* Spinner */
       .spinner {
-        width: 44px; height: 44px; margin: 0 auto 20px;
+        width: 42px; height: 42px; margin: 0 auto 18px;
         border: 3px solid var(--border); border-top-color: var(--navy);
-        border-radius: 50%; animation: spin 0.8s linear infinite;
+        border-radius: 50%; animation: spin .8s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
-
-      /* fade-in */
-      .fade-in { animation: fade .4s ease both; }
+      .fade-in { animation: fade .35s ease both; }
       @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-
-      /* ===== Cards ===== */
-      .card {
-        background: var(--card); border: 1px solid var(--border);
-        border-radius: var(--radius); box-shadow: var(--shadow);
-      }
 
       /* ===== Results heading ===== */
       .results-head {
-        display: flex; align-items: flex-start; justify-content: space-between;
-        gap: 16px; flex-wrap: wrap; margin-bottom: 20px;
+        display: flex; align-items: flex-end; justify-content: space-between;
+        gap: 14px; flex-wrap: wrap; margin: 8px 0 16px;
       }
-      .results-head h2 { font-size: clamp(22px, 4vw, 30px); font-weight: 800; letter-spacing: -.6px; line-height: 1.15; }
-      .results-head h2 span { color: var(--text-2); font-weight: 700; }
-      .results-meta { color: var(--text-2); font-size: 13.5px; margin-top: 8px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px 14px; }
-      .live-dot { display: inline-flex; align-items: center; gap: 7px; font-weight: 600; color: var(--text); }
-      .live-dot::before {
+      .results-head h2 { font-size: clamp(24px, 4vw, 30px); font-weight: 900; letter-spacing: -.6px; line-height: 1.1; }
+      .results-meta { color: var(--text-2); font-size: 13.5px; margin-top: 7px; }
+      .live-dot { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: var(--text-2); }
+      .live-dot::after {
         content: ''; width: 9px; height: 9px; border-radius: 50%;
         background: var(--green-dot); box-shadow: 0 0 0 4px rgba(82,210,115,.18);
         animation: pulse 1.8s ease-in-out infinite;
       }
-      @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .45; } }
-      .results-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+      @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: .5; } }
 
       /* ===== Featured (AI recommendation) card ===== */
-      .featured {
-        border: 2px solid var(--aqua); box-shadow: var(--shadow-lg);
-        position: relative; overflow: hidden;
+      .featured-card {
+        position: relative; background: #fff;
+        border: 1.5px solid var(--aqua); border-radius: 12px;
+        padding: 34px 24px 22px;
+        display: grid;
+        grid-template-columns: 330px 1fr 320px 230px;
+        grid-template-areas: "img info rate score";
+        gap: 24px 28px; align-items: start;
       }
-      .featured-badge {
+      .ai-badge {
+        position: absolute; top: 0; left: 18px;
+        background: var(--black); color: #fff;
+        font-weight: 900; font-size: 11px; letter-spacing: .8px; text-transform: uppercase;
+        padding: 8px 14px; border-radius: 0 0 6px 6px;
         display: inline-flex; align-items: center; gap: 6px;
-        background: linear-gradient(90deg, var(--aqua) 0%, #BFFCFB 100%);
-        color: var(--aqua-deep); font-size: 12px; font-weight: 800;
-        letter-spacing: .8px; text-transform: uppercase;
-        padding: 8px 16px; border-radius: 0 0 12px 0;
       }
-      .featured-grid {
-        display: grid; grid-template-columns: 1fr 230px; gap: 0;
+      .featured-image {
+        grid-area: img; width: 330px; height: 175px; border-radius: 8px;
+        object-fit: cover; background: var(--navy);
       }
-      @media (max-width: 760px) { .featured-grid { grid-template-columns: 1fr; } }
-      .featured-main { padding: 22px 26px 26px; }
-      .featured-head { display: flex; gap: 18px; align-items: flex-start; }
-      .biz-img {
-        width: 92px; height: 92px; border-radius: 16px; flex-shrink: 0;
-        object-fit: cover; border: 1px solid var(--border); background: var(--navy-soft);
-      }
-      .biz-img-fallback {
-        width: 92px; height: 92px; border-radius: 16px; flex-shrink: 0;
+      .featured-image-fallback {
+        grid-area: img; width: 330px; height: 175px; border-radius: 8px;
         background: var(--navy); color: #fff; display: grid; place-items: center;
-        font-size: 32px; font-weight: 800; letter-spacing: .5px;
+        font-size: 46px; font-weight: 900; letter-spacing: 1px;
       }
-      .biz-name { font-size: clamp(22px, 4vw, 27px); font-weight: 800; letter-spacing: -.6px; line-height: 1.12; }
-      .biz-addr { color: var(--text-2); font-size: 14px; margin-top: 5px; display: flex; align-items: flex-start; gap: 6px; }
-      .biz-addr svg { margin-top: 2px; }
-      .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+      .featured-info { grid-area: info; min-width: 0; }
+      .biz-name { font-size: clamp(26px, 3.4vw, 34px); font-weight: 900; letter-spacing: -.8px; line-height: 1.08; color: var(--text); }
+      .biz-addr { color: var(--text-2); font-size: 14px; margin-top: 7px; display: flex; align-items: flex-start; gap: 6px; }
+      .biz-addr svg { margin-top: 2px; flex-shrink: 0; }
+      .tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 13px; }
       .tag {
-        background: var(--navy-soft); color: var(--navy);
-        font-size: 11.5px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase;
-        padding: 5px 11px; border-radius: 999px;
-      }
-      .tag-aqua { background: var(--aqua-soft); color: var(--aqua-deep); border: 1px solid rgba(96,240,239,.5); }
-
-      .overall-rating { display: flex; align-items: center; gap: 12px; margin-top: 16px; flex-wrap: wrap; }
-      .overall-rating .num { font-size: 26px; font-weight: 800; letter-spacing: -1px; }
-      .overall-rating .num span { font-size: 15px; color: var(--text-2); font-weight: 600; }
-      .overall-rating .count { color: var(--text-2); font-size: 13px; }
-
-      .reviewpay-status {
-        display: inline-flex; align-items: center; gap: 8px; margin-top: 14px;
-        font-size: 13px; font-weight: 600; color: var(--reviewpay);
-        background: rgba(124,58,237,.07); border: 1px solid rgba(124,58,237,.22);
-        padding: 7px 12px; border-radius: 999px;
-      }
-      .reviewpay-status .demo-badge { background: var(--reviewpay); }
-
-      .biz-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
-
-      /* Stars (horizontal text only) */
-      .stars { line-height: 1; display: inline-flex; }
-      .star-rating {
-        display: inline-block; position: relative; font-size: 16px; line-height: 1;
-        letter-spacing: 2px; font-family: Arial, "Helvetica Neue", sans-serif;
-      }
-      .star-rating.lg { font-size: 22px; }
-      .star-rating::before { content: '\2605\2605\2605\2605\2605'; color: var(--border); }
-      .star-rating::after {
-        content: '\2605\2605\2605\2605\2605'; color: #F5A623;
-        position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap;
-        width: var(--fill, 0%);
-      }
-
-      /* Ratings-by-platform rows */
-      .platform-rows { margin-top: 24px; }
-      .section-label { font-size: 12px; font-weight: 700; letter-spacing: .8px; text-transform: uppercase; color: var(--text-2); margin-bottom: 6px; }
-      .platform-row {
-        display: flex; align-items: center; gap: 12px;
-        padding: 13px 0; border-top: 1px solid var(--border);
-      }
-      .platform-row--na { opacity: .72; }
-      .platform-icon-sm {
-        width: 30px; height: 30px; border-radius: 8px; flex-shrink: 0;
-        display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 14px;
-      }
-      .platform-row-name { font-weight: 600; font-size: 14.5px; }
-      .platform-row-meta { margin-left: auto; display: flex; align-items: center; gap: 10px; }
-      .platform-row-meta b { font-size: 15px; font-weight: 800; letter-spacing: -.3px; }
-      .platform-row-meta .muted { color: var(--text-2); font-size: 12.5px; }
-      .na-pill {
-        margin-left: auto; padding: 4px 10px; font-size: 11.5px; font-weight: 600;
-        color: var(--text-2); background: var(--grey-btn);
-        border: 1px solid var(--border); border-radius: 999px; white-space: nowrap;
-      }
-
-      /* Offer section */
-      .offer-section { margin-top: 22px; padding-top: 20px; border-top: 1px solid var(--border); }
-      .offer-card {
-        display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
-        background: var(--amber-soft); border: 1px solid #F4DFB2;
-        border-radius: var(--radius-sm); padding: 14px 16px;
-      }
-      .offer-ico {
-        width: 38px; height: 38px; border-radius: 9px; flex-shrink: 0;
-        background: var(--amber); color: #fff; display: grid; place-items: center;
-      }
-      .offer-text { flex: 1 1 200px; min-width: 0; }
-      .offer-title { font-weight: 700; font-size: 14.5px; color: var(--text); display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-      .offer-desc { color: var(--text-2); font-size: 12.5px; margin-top: 2px; }
-      .offer-none { color: var(--text-2); font-size: 13.5px; display: flex; align-items: center; gap: 8px; }
-
-      /* Trust panel */
-      .trust-panel {
-        background: var(--aqua-soft); border-left: 1px solid var(--border);
-        padding: 28px 22px; display: flex; flex-direction: column;
-        align-items: center; justify-content: center; text-align: center; gap: 4px;
-      }
-      @media (max-width: 760px) { .trust-panel { border-left: none; border-top: 1px solid var(--border); } }
-      .trust-num { font-size: 52px; font-weight: 800; letter-spacing: -2px; line-height: 1; color: var(--navy); }
-      .trust-num span { font-size: 20px; color: var(--text-2); font-weight: 600; }
-      .trust-label { text-transform: uppercase; letter-spacing: 1.2px; font-size: 11px; font-weight: 800; color: var(--aqua-deep); margin-top: 10px; }
-      .trust-sub { font-size: 12.5px; color: var(--text-2); margin-top: 4px; }
-      .trust-bar { width: 100%; height: 7px; border-radius: 999px; background: rgba(7,26,61,.1); margin: 14px 0 16px; overflow: hidden; }
-      .trust-bar-fill { height: 100%; background: var(--navy); border-radius: 999px; width: 0; transition: width .8s cubic-bezier(.2,.8,.2,1); }
-      .trust-panel .btn { width: 100%; }
-
-      /* ===== Section titles ===== */
-      .section-title { font-size: 17px; font-weight: 800; letter-spacing: -.3px; margin: 36px 0 16px; display: flex; align-items: center; gap: 8px; }
-      .section-title .muted { color: var(--text-2); font-weight: 500; font-size: 14px; }
-
-      /* ===== AI analysis card ===== */
-      .analysis { padding: 24px 26px; }
-      .analysis-head { display: flex; align-items: center; gap: 10px; margin-bottom: 4px; }
-      .analysis-head .ai-chip {
-        display: inline-flex; align-items: center; gap: 6px;
-        background: var(--navy); color: #fff; font-size: 11px; font-weight: 800;
-        letter-spacing: .6px; text-transform: uppercase; padding: 5px 10px; border-radius: 999px;
-      }
-      .analysis-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 26px; margin-top: 18px; }
-      @media (max-width: 720px) { .analysis-grid { grid-template-columns: 1fr; gap: 20px; } }
-      .analysis-block + .analysis-block { margin-top: 22px; }
-      .ab-title { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 13.5px; margin-bottom: 8px; }
-      .ab-title .ico { width: 17px; height: 17px; flex-shrink: 0; color: var(--navy); }
-      .ab-body { font-size: 14px; color: var(--text-2); line-height: 1.6; }
-      .ab-body.dark { color: var(--text); }
-      .flag-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
-      .flag-list li { display: flex; gap: 9px; align-items: flex-start; font-size: 13.5px; color: var(--text); }
-      .flag-list .ico { width: 17px; height: 17px; flex-shrink: 0; margin-top: 1px; }
-      .flag-list .ico.warn { color: var(--amber); }
-      .flag-list .ico.ok { color: var(--tripadvisor); }
-      .pill { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 999px; margin-top: 10px; letter-spacing: .2px; }
-      .pill-navy { background: var(--navy); color: #fff; }
-      .pill-soft { background: var(--navy-soft); color: var(--navy); }
-      .pill-line { background: #fff; color: var(--text); border: 1px solid var(--border); }
-
-      /* ===== Nearby comparison rows ===== */
-      .nearby-list { display: flex; flex-direction: column; gap: 12px; }
-      .nearby-row {
-        display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
-        padding: 16px 20px; cursor: pointer;
-        transition: border-color .15s, transform .1s, box-shadow .15s;
-      }
-      .nearby-row:hover { border-color: var(--aqua); transform: translateY(-2px); box-shadow: var(--shadow-lg); }
-      .nearby-id { flex: 1 1 200px; min-width: 0; }
-      .nearby-name { font-weight: 700; font-size: 15.5px; letter-spacing: -.2px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-      .nearby-cat { color: var(--text-2); font-size: 13px; margin-top: 3px; }
-      .nearby-platforms { display: flex; gap: 18px; flex-wrap: wrap; }
-      .np { display: flex; align-items: center; gap: 7px; font-size: 13px; }
-      .np .dot { width: 22px; height: 22px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 11px; flex-shrink: 0; }
-      .np b { font-weight: 800; letter-spacing: -.3px; }
-      .nearby-go { color: var(--navy); display: flex; align-items: center; gap: 5px; font-weight: 600; font-size: 13.5px; }
-
-      .demo-badge {
-        display: inline-flex; align-items: center;
+        background: #F0F1F3; color: #3A3D42;
         font-size: 10.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
-        color: #fff; background: var(--text-2); padding: 3px 8px; border-radius: 999px;
+        padding: 5px 10px; border-radius: 5px;
+      }
+      .tag-aqua { background: #E5FCFB; color: #0B7E7C; }
+      .overall-rating { display: flex; align-items: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
+      .overall-rating .txt { font-size: 14px; color: var(--text-2); }
+      .overall-rating .txt b { color: var(--text); font-weight: 800; font-size: 15px; }
+      .reviewpay-line {
+        margin-top: 12px; font-size: 13.5px; color: var(--text-2);
+        display: inline-flex; align-items: center; gap: 7px; flex-wrap: wrap;
+      }
+      .reviewpay-line .rp { color: var(--rp-blue); font-weight: 700; }
+      .biz-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+      .offer-chip {
+        margin-top: 14px; display: inline-flex; align-items: center; gap: 9px; flex-wrap: wrap;
+        font-size: 13px; color: var(--text-2);
+      }
+      .offer-found {
+        font-size: 10.5px; font-weight: 900; letter-spacing: .6px; text-transform: uppercase;
+        color: #8A5800; background: #FFF3D6; border: 1px solid #F4E0A8;
+        padding: 4px 9px; border-radius: 5px;
+      }
+      .offer-chip .offer-name { color: var(--text); font-weight: 600; }
+      .offer-chip a { color: var(--rp-blue); font-weight: 700; text-decoration: none; cursor: pointer; }
+      .offer-chip a:hover { text-decoration: underline; }
+      .offer-chip.muted { color: var(--text-2); }
+
+      /* Stars (horizontal text; partial fill in black) */
+      .stars {
+        display: inline-flex; align-items: center; line-height: 1; height: auto; overflow: visible;
+      }
+      .star-rating {
+        display: inline-block; position: relative; font-size: 17px; line-height: 1;
+        letter-spacing: 1px; font-family: Arial, "Helvetica Neue", sans-serif;
+      }
+      .star-rating::before { content: '\2605\2605\2605\2605\2605'; color: var(--divider); }
+      .star-rating::after {
+        content: '\2605\2605\2605\2605\2605'; color: var(--text);
+        position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap; width: var(--fill, 0%);
+      }
+
+      /* Ratings-by-platform panel (inside featured card) */
+      .platform-panel { grid-area: rate; display: flex; flex-direction: column; gap: 8px; }
+      .panel-title { font-size: 12.5px; font-weight: 700; color: var(--text-2); display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+      .panel-title svg { width: 14px; height: 14px; opacity: .7; }
+      .platform-row {
+        display: grid; grid-template-columns: 26px 1fr auto; gap: 9px; align-items: center;
+        border: 1px solid var(--border); border-radius: 8px; padding: 8px 11px; background: #fff;
+      }
+      .platform-row--na { color: var(--text-2); }
+      .platform-icon-sm {
+        width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0;
+        display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px;
+      }
+      .platform-row-name { font-weight: 600; font-size: 13.5px; display: flex; align-items: center; gap: 6px; }
+      .platform-row-meta { display: flex; align-items: center; gap: 7px; justify-self: end; }
+      .platform-row-meta .star1 { color: var(--text); font-size: 13px; }
+      .platform-row-meta b { font-size: 13.5px; font-weight: 800; }
+      .platform-row-meta .count { color: var(--text-2); font-size: 12px; }
+      .platform-row-na-text { justify-self: end; font-size: 12.5px; color: var(--text-2); }
+
+      /* Trust score panel (white, right side) */
+      .score-panel {
+        grid-area: score; border-left: 1px solid var(--divider);
+        padding-left: 28px; text-align: center;
+      }
+      .score-number { font-size: 58px; font-weight: 900; color: var(--text); line-height: 1; letter-spacing: -2px; }
+      .score-number span { font-size: 22px; font-weight: 700; color: var(--text-2); letter-spacing: -1px; }
+      .score-label { text-transform: uppercase; letter-spacing: 1px; font-size: 11px; font-weight: 900; color: var(--text); margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 5px; }
+      .score-label svg { width: 13px; height: 13px; opacity: .55; }
+      .score-sub { font-size: 11.5px; color: var(--text-2); margin-top: 6px; line-height: 1.45; }
+      .score-panel .btn { margin-top: 14px; width: 100%; padding: 10px 14px; font-size: 12.5px; letter-spacing: .5px; text-transform: uppercase; }
+
+      @media (max-width: 1080px) {
+        .featured-card {
+          grid-template-columns: 300px 1fr;
+          grid-template-areas: "img info" "rate rate" "score score";
+        }
+        .score-panel { border-left: none; border-top: 1px solid var(--border); padding-left: 0; padding-top: 18px; text-align: left; }
+        .score-label, .score-sub { justify-content: flex-start; }
+        .score-panel .btn { width: auto; }
+      }
+      @media (max-width: 680px) {
+        .featured-card { grid-template-columns: 1fr; grid-template-areas: "img" "info" "rate" "score"; }
+        .featured-image, .featured-image-fallback { width: 100%; }
+      }
+
+      /* ===== Similar business rows ===== */
+      .similar-head { font-size: 13px; font-weight: 700; color: var(--text-2); margin: 26px 0 12px; display: flex; align-items: center; gap: 8px; }
+      .similar-head .demo-badge { margin: 0; }
+      .similar-list { display: flex; flex-direction: column; gap: 12px; }
+      .result-row {
+        display: grid;
+        grid-template-columns: 64px 1.5fr 130px 130px 150px 140px 96px 150px;
+        gap: 14px; align-items: center;
+        background: #fff; border: 1px solid var(--border); border-radius: 8px;
+        padding: 12px 18px; min-height: 76px;
+        transition: border-color .15s, box-shadow .15s, transform .1s;
+      }
+      .result-row:hover { border-color: var(--aqua); box-shadow: var(--shadow-soft); }
+      .result-logo {
+        width: 52px; height: 52px; border-radius: 8px; flex-shrink: 0;
+        background: var(--navy); color: #fff; display: grid; place-items: center;
+        font-weight: 900; font-size: 16px; letter-spacing: .5px;
+      }
+      .result-info { min-width: 0; }
+      .result-name { font-weight: 800; font-size: 15px; letter-spacing: -.2px; }
+      .result-cat { color: var(--text-2); font-size: 12.5px; margin-top: 2px; }
+      .rchip { display: flex; align-items: center; gap: 7px; font-size: 13.5px; }
+      .rchip .dot { width: 22px; height: 22px; border-radius: 5px; display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 11px; flex-shrink: 0; }
+      .rchip b { font-weight: 800; }
+      .rchip .count { color: var(--text-2); font-size: 12px; }
+      .result-avg .v { font-weight: 800; font-size: 15px; }
+      .result-avg .v .s { color: var(--text); font-size: 13px; }
+      .result-avg .count { color: var(--text-2); font-size: 12px; display: block; margin-top: 1px; }
+      .result-score { font-weight: 900; font-size: 18px; }
+      .result-score span { color: var(--text-2); font-size: 13px; font-weight: 700; }
+      .result-row .btn { padding: 9px 14px; font-size: 11.5px; letter-spacing: .5px; text-transform: uppercase; }
+
+      @media (max-width: 980px) {
+        .result-row { display: flex; flex-direction: column; align-items: stretch; gap: 12px; }
+        .result-top { display: flex; align-items: center; gap: 14px; }
+        .result-chips { display: flex; flex-wrap: wrap; gap: 16px; }
+        .result-foot { display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap; }
+        .result-row .btn { width: 100%; }
+      }
+      @media (min-width: 981px) {
+        .result-top { display: contents; }
+        .result-chips { display: contents; }
+        .result-foot { display: contents; }
       }
 
       /* ===== Footer note ===== */
       .foot-note {
-        margin-top: 30px; padding: 18px 20px; border-radius: var(--radius-sm);
-        background: var(--card); border: 1px solid var(--border);
+        margin: 30px auto 0; max-width: 720px; text-align: center;
         color: var(--text-2); font-size: 13px; line-height: 1.6;
-        display: flex; gap: 10px; align-items: flex-start;
+        display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: wrap;
       }
-      .foot-note a { color: var(--navy); font-weight: 600; text-decoration: none; }
+      .foot-note svg { color: var(--rp-blue); flex-shrink: 0; }
+      .foot-note a { color: var(--rp-blue); font-weight: 600; text-decoration: none; }
       .foot-note a:hover { text-decoration: underline; }
-      .foot-note svg { flex-shrink: 0; color: var(--reviewpay); margin-top: 1px; }
 
-      footer { text-align: center; color: var(--text-2); font-size: 12.5px; padding: 6px 0 40px; }
+      .demo-badge {
+        display: inline-flex; align-items: center;
+        font-size: 9.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
+        color: #fff; background: #9AA0A6; padding: 2px 7px; border-radius: 999px;
+      }
+
+      footer { text-align: center; color: var(--text-2); font-size: 12.5px; padding: 26px 0 40px; }
+
+      /* ===== Report modal (full insights live here, not on main page) ===== */
+      .modal-overlay {
+        position: fixed; inset: 0; z-index: 60; background: rgba(5,5,5,.5);
+        display: flex; align-items: flex-start; justify-content: center;
+        padding: 40px 20px; overflow-y: auto;
+      }
+      .modal {
+        background: #fff; border-radius: 14px; width: min(780px, 100%);
+        box-shadow: 0 20px 60px rgba(0,0,0,.3); animation: fade .25s ease both;
+      }
+      .modal-head {
+        display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+        padding: 22px 26px; border-bottom: 1px solid var(--border);
+      }
+      .modal-head h3 { font-size: 20px; font-weight: 900; letter-spacing: -.4px; }
+      .modal-head p { color: var(--text-2); font-size: 13px; margin-top: 3px; }
+      .modal-close {
+        border: 1px solid var(--border); background: #fff; border-radius: 8px;
+        width: 34px; height: 34px; display: grid; place-items: center; cursor: pointer; flex-shrink: 0;
+      }
+      .modal-close:hover { background: #f5f5f5; }
+      .modal-body { padding: 22px 26px 26px; }
+      .ai-chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        background: var(--navy); color: #fff; font-size: 11px; font-weight: 800;
+        letter-spacing: .6px; text-transform: uppercase; padding: 5px 11px; border-radius: 999px;
+      }
+      .analysis-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: 26px; margin-top: 18px; }
+      @media (max-width: 640px) { .analysis-grid { grid-template-columns: 1fr; gap: 20px; } }
+      .analysis-block + .analysis-block { margin-top: 22px; }
+      .ab-title { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 13.5px; margin-bottom: 8px; }
+      .ab-title svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--navy); }
+      .ab-body { font-size: 14px; color: var(--text-2); line-height: 1.6; }
+      .ab-body.dark { color: var(--text); }
+      .flag-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+      .flag-list li { display: flex; gap: 9px; align-items: flex-start; font-size: 13.5px; color: var(--text); }
+      .flag-list svg { width: 16px; height: 16px; flex-shrink: 0; margin-top: 1px; }
+      .flag-list svg.warn { color: #C77700; }
+      .flag-list svg.ok { color: var(--tripadvisor); }
+      .report-scores { display: flex; gap: 22px; flex-wrap: wrap; margin-bottom: 6px; }
+      .report-score .n { font-size: 34px; font-weight: 900; letter-spacing: -1px; }
+      .report-score .n span { font-size: 15px; color: var(--text-2); font-weight: 700; }
+      .report-score .l { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--text-2); }
     </style>
   </head>
   <body>
     <header class="topbar">
-      <div class="wrap topbar-inner">
+      <div class="page-shell topbar-inner">
         <div class="brand-mark">CR</div>
         <div class="brand-name">Compare Reviews</div>
         <div class="brand-tag">Trust before you book</div>
       </div>
     </header>
 
-    <main class="wrap">
-      <!-- Hero -->
-      <section class="hero">
-        <h1>Compare Reviews</h1>
-        <p class="subtitle">Don't trust one rating. Compare Google, TripAdvisor, Yelp and Facebook reviews before you buy, book or visit.</p>
-
-        <div class="search-row">
+    <main class="page-shell">
+      <!-- Search -->
+      <div class="search-wrap">
+        <div class="search-pill">
+          <div class="search-circle">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          </div>
           <input id="searchInput" class="search-input" type="search" autocomplete="off"
-                 placeholder="Enter a business name, restaurant, hotel, cafe..." />
-          <button id="searchBtn" class="btn btn-primary">
-            <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg>
-            Check Trust Score
-          </button>
+                 placeholder="Search a business, restaurant, hotel or cafe…" />
+          <button id="searchBtn" class="search-check">Check</button>
         </div>
-      </section>
+      </div>
 
-      <!-- Empty state -->
-      <section class="panel" id="emptyState">
-        <div class="empty">
-          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          <h3>Search a business to start</h3>
-          <p>The app will fetch the business profile, ratings, trust score, red flags, available offers and an AI review summary.</p>
+      <section class="panel">
+        <!-- Empty -->
+        <div id="emptyState" class="state">
+          <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <h3>Compare reviews before you book</h3>
+          <p>Enter a business name to compare its Google, Yelp and TripAdvisor ratings side by side, with a computed Trust Score.</p>
         </div>
-      </section>
 
-      <!-- Loading -->
-      <section class="panel hidden" id="loadingState">
-        <div class="loading">
+        <!-- Loading -->
+        <div id="loadingState" class="state hidden">
           <div class="spinner"></div>
-          <h3>Analysing&hellip;</h3>
-          <p>Checking review platforms, comparing ratings and looking for offers...</p>
+          <h3>Checking review platforms&hellip;</h3>
+          <p>Comparing ratings across Google, Yelp and TripAdvisor and looking for offers…</p>
         </div>
-      </section>
 
-      <!-- Error -->
-      <section class="panel hidden" id="errorState">
-        <div class="empty">
-          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+        <!-- Error -->
+        <div id="errorState" class="state hidden">
+          <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
           <h3>Couldn't load that business</h3>
           <p id="errorMsg"></p>
         </div>
-      </section>
 
-      <!-- Results -->
-      <section class="panel hidden" id="results"></section>
+        <!-- Results -->
+        <div id="results" class="hidden"></div>
+      </section>
     </main>
 
-    <footer class="wrap">Compare Reviews &middot; Live data from Google, Yelp &amp; TripAdvisor via SerpApi. Facebook ratings are not publicly available.</footer>
+    <footer class="page-shell">Compare Reviews &middot; Live data from Google, Yelp &amp; TripAdvisor via SerpApi. Facebook ratings are not publicly available.</footer>
+
+    <!-- Report modal (full AI insights live here, opened from VIEW REPORT) -->
+    <div id="reportModal" class="modal-overlay hidden">
+      <div class="modal" role="dialog" aria-modal="true" aria-labelledby="reportTitle">
+        <div class="modal-head">
+          <div>
+            <h3 id="reportTitle">Trust report</h3>
+            <p id="reportSub"></p>
+          </div>
+          <button class="modal-close" id="reportClose" aria-label="Close report">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="modal-body" id="reportBody"></div>
+      </div>
+    </div>
 
     <script>
       /* =====================================================================
-         Compare Reviews — premium comparison dashboard
-         =====================================================================
+         Compare Reviews — premium comparison-results page
 
          Data comes from the backend API (keys stay server-side):
            GET  /api/search-business?query=<name>   -> full business profile
            POST /api/analyze-reviews                 -> structured AI analysis
 
-         search-business returns:
-         {
-           name, address, logoText, logoUrl, imageUrl, website, phone, directionsUrl,
-           google|tripadvisor|yelp|facebook|reviewpay: { rating, reviews } | null,
-           offer:  { available, title, description, source, url, demo },
-           nearby: [ { name, category, google, yelp, tripadvisor, demo } ],
-           unavailable: string[], demo: string[], notes: {}, source: "serpapi"
-         }
-
-         analyze-reviews returns:
-         { reviewSummary, bestFor[], redFlags[], reputationTrend, offerSummary }
+         The main page shows only the comparison (featured card + similar rows).
+         The full AI analysis (summary, best-for, red flags, trend) is shown
+         only inside the report modal, opened via VIEW REPORT.
       ===================================================================== */
 
-      // This app is served at "/"; the API server owns the "/api" path prefix.
       const API_BASE = '/api';
 
-      /** Calls the live backend search. Throws an Error with a friendly message. */
       async function fetchBusinessReviews(query) {
         const res = await fetch(API_BASE + '/search-business?query=' + encodeURIComponent(query));
         let body = null;
@@ -455,31 +471,18 @@
       // ---- Platform metadata (brand colours stay on icons) ----
       const PLATFORMS = [
         { key: 'google',      label: 'Google',      color: 'var(--google)',      letter: 'G' },
-        { key: 'tripadvisor', label: 'TripAdvisor', color: 'var(--tripadvisor)', letter: 'T' },
         { key: 'yelp',        label: 'Yelp',        color: 'var(--yelp)',        letter: 'Y' },
+        { key: 'tripadvisor', label: 'TripAdvisor', color: 'var(--tripadvisor)', letter: 'T' },
         { key: 'facebook',    label: 'Facebook',    color: 'var(--facebook)',    letter: 'F' },
         { key: 'reviewpay',   label: 'Review Pay',  color: 'var(--reviewpay)',   letter: 'R' }
       ];
 
-      // Demo/placeholder platforms (flagged by the backend's `demo` array) are
-      // shown but excluded from Trust Score, metrics, and AI analysis.
       function isDemo(data, key) {
         return Array.isArray(data.demo) && data.demo.indexOf(key) !== -1;
       }
-
-      // ---- Star rendering (gold over grey, partial fill via width %) ----
-      function starsHtml(rating, cls) {
-        const r = Number.isFinite(rating) ? rating : 0;
-        const pct = Math.max(0, Math.min(5, r)) / 5 * 100;
-        return '<span class="stars"><span class="star-rating ' + (cls || '') + '" style="--fill:' + pct + '%"></span></span>';
-      }
-
-      // ---- Helpers for available (real, non-null, non-demo) platforms ----
       function hasRating(r) { return r && typeof r.rating === 'number'; }
       function availablePlatforms(data) {
-        return PLATFORMS.filter(function (p) {
-          return hasRating(data[p.key]) && !isDemo(data, p.key);
-        });
+        return PLATFORMS.filter(function (p) { return hasRating(data[p.key]) && !isDemo(data, p.key); });
       }
 
       // ---- Trust score: spec formula = round(avg/5 * 100) over real platforms ----
@@ -492,35 +495,52 @@
         const totalReviews = reviews.reduce(function (a, b) { return a + b; }, 0);
         const gap = count >= 2 ? Math.max.apply(null, ratings) - Math.min.apply(null, ratings) : 0;
         const score = Math.round((avg / 5) * 100);
-        return { avg: avg, totalReviews: totalReviews, gap: gap, score: score, count: count };
+        return { avg: avg, totalReviews: totalReviews, gap: gap, score: score, count: count, labels: avail.map(function (p) { return p.label; }) };
       }
 
-      // ---- Featured tags computed from this business's real metrics ----
+      // Average over a nearby business's three demo platforms.
+      function nearbyMetrics(n) {
+        const keys = ['google', 'yelp', 'tripadvisor'];
+        const rs = [], rev = [];
+        keys.forEach(function (k) { if (hasRating(n[k])) { rs.push(n[k].rating); rev.push(n[k].reviews || 0); } });
+        const avg = rs.length ? rs.reduce(function (a, b) { return a + b; }, 0) / rs.length : 0;
+        const totalReviews = rev.reduce(function (a, b) { return a + b; }, 0);
+        return { avg: avg, totalReviews: totalReviews, score: Math.round((avg / 5) * 100) };
+      }
+
+      // ---- Featured tags from real metrics (VERIFIED DATA always shown) ----
       function featuredTags(m) {
         const tags = [];
         if (m.avg >= 4.3) tags.push({ t: 'Best Overall', aqua: true });
         if (m.count >= 2 && m.gap < 0.5) tags.push({ t: 'Consistent Ratings' });
         if (m.totalReviews >= 1000) tags.push({ t: 'Most Reviews' });
-        if (!tags.length) tags.push({ t: 'Worth Comparing' });
+        tags.push({ t: 'Verified Data' });
         return tags;
+      }
+
+      // ---- Star bar (partial fill) ----
+      function starsHtml(rating) {
+        const r = Number.isFinite(rating) ? rating : 0;
+        const pct = Math.max(0, Math.min(5, r)) / 5 * 100;
+        return '<span class="stars"><span class="star-rating" style="--fill:' + pct + '%"></span></span>';
+      }
+      function initials(name) {
+        return String(name || '').trim().split(/\s+/).slice(0, 2).map(function (w) { return (w[0] || '').toUpperCase(); }).join('');
       }
 
       // ---- Icons ----
       const ICO = {
-        phone: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.6a2 2 0 01-.5 2.1L8.1 9.5a16 16 0 006 6l1.1-1.1a2 2 0 012.1-.5c.8.3 1.7.5 2.6.6a2 2 0 011.7 2z"/></svg>',
-        pin: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>',
-        link: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7L12 19"/></svg>',
-        save: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>',
-        report: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M9 15l2 2 4-4"/></svg>',
-        tag: '<svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0l-7.2-7.2a2 2 0 01-.6-1.4V4a2 2 0 012-2h8a2 2 0 011.4.6l6.4 6.4a2 2 0 010 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
-        summary: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
-        best: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>',
-        flag: '<svg class="ico warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>',
-        ok: '<svg class="ico ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 11-5.9-9.1"/><path d="M22 4L12 14.1l-3-3"/></svg>',
-        trend: '<svg class="ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>',
-        offer: '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-7.2 7.2a2 2 0 01-2.8 0l-7.2-7.2a2 2 0 01-.6-1.4V4a2 2 0 012-2h8a2 2 0 011.4.6l6.4 6.4a2 2 0 010 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg>',
-        info: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
-        arrow: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>'
+        pin: '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+        phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.9v3a2 2 0 01-2.2 2 19.8 19.8 0 01-8.6-3.1 19.5 19.5 0 01-6-6A19.8 19.8 0 012.1 4.2 2 2 0 014.1 2h3a2 2 0 012 1.7c.1.9.3 1.8.6 2.6a2 2 0 01-.5 2.1L8.1 9.5a16 16 0 006 6l1.1-1.1a2 2 0 012.1-.5c.8.3 1.7.5 2.6.6a2 2 0 011.7 2z"/></svg>',
+        link: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 007.5.5l3-3a5 5 0 00-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 00-7.5-.5l-3 3a5 5 0 007 7L12 19"/></svg>',
+        arrow: '<svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>',
+        info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg>',
+        shield: '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',
+        summary: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>',
+        best: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>',
+        flag: '<svg class="warn" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>',
+        ok: '<svg class="ok" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.1V12a10 10 0 11-5.9-9.1"/><path d="M22 4L12 14.1l-3-3"/></svg>',
+        trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 6l-9.5 9.5-5-5L1 18"/><path d="M17 6h6v6"/></svg>'
       };
 
       // ---- Rule-based fallback analysis (used until/if AI responds) ----
@@ -542,9 +562,9 @@
         return flags;
       }
       function fbTrend(score, gap) {
-        if (score >= 85 && gap < 0.5) return { text: 'The reputation trend looks strong. Ratings are high and consistent across platforms.', pill: 'Strong Reputation', cls: 'pill-navy' };
-        if (score >= 70) return { text: 'The reputation trend looks stable, but check recent reviews before deciding.', pill: 'Stable', cls: 'pill-soft' };
-        return { text: 'The reputation trend may need attention. Ratings show mixed or weaker signals.', pill: 'Check Carefully', cls: 'pill-line' };
+        if (score >= 85 && gap < 0.5) return 'The reputation trend looks strong. Ratings are high and consistent across platforms.';
+        if (score >= 70) return 'The reputation trend looks stable, but check recent reviews before deciding.';
+        return 'The reputation trend may need attention. Ratings show mixed or weaker signals.';
       }
 
       // ---- DOM refs ----
@@ -554,7 +574,12 @@
         empty: document.getElementById('emptyState'),
         loading: document.getElementById('loadingState'),
         error: document.getElementById('errorState'),
-        results: document.getElementById('results')
+        results: document.getElementById('results'),
+        modal: document.getElementById('reportModal'),
+        modalClose: document.getElementById('reportClose'),
+        reportTitle: document.getElementById('reportTitle'),
+        reportSub: document.getElementById('reportSub'),
+        reportBody: document.getElementById('reportBody')
       };
 
       function show(which) {
@@ -563,18 +588,22 @@
         els.error.classList.toggle('hidden', which !== 'error');
         els.results.classList.toggle('hidden', which !== 'results');
       }
-
       function showError(message) {
         document.getElementById('errorMsg').textContent = message;
         show('error');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
 
+      // Keep the last result so the report modal can use it.
+      let currentData = null;
+      let currentMetrics = null;
+
       // ---- Main search flow ----
       async function runSearch(query) {
         const q = (query != null ? query : els.input.value).trim();
         if (!q) { els.input.focus(); return; }
         els.input.value = q;
+        closeReport();
         show('loading');
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -583,18 +612,243 @@
           const data = await fetchBusinessReviews(q);
           const metrics = computeMetrics(data);
           const seconds = Math.max(0.1, (performance.now() - started) / 1000);
+          currentData = data; currentMetrics = metrics;
           renderResults(data, metrics, seconds);
           show('results');
-          loadAIAnalysis(data); // fill the AI analysis card (non-blocking)
         } catch (err) {
           showError(err && err.message ? err.message : 'Something went wrong. Please try again.');
         }
       }
 
+      // ---- Render main results ----
+      function renderResults(data, m, seconds) {
+        const img = data.imageUrl
+          ? '<img class="featured-image" src="' + escapeAttr(data.imageUrl) + '" alt="' + escapeAttr(data.name) + '" />'
+          : '<div class="featured-image-fallback">' + escapeHtml(initials(data.name)) + '</div>';
+
+        const tags = featuredTags(m).map(function (t) {
+          return '<span class="tag ' + (t.aqua ? 'tag-aqua' : '') + '">' + escapeHtml(t.t) + '</span>';
+        }).join('');
+
+        // Review Pay line (internal platform — demo data, honestly labelled)
+        const rp = data.reviewpay;
+        const reviewpayLine = hasRating(rp)
+          ? '<div class="reviewpay-line"><span class="rp">Review Pay</span> reviews available <span class="demo-badge">Demo</span></div>'
+          : '';
+
+        // Ratings-by-platform rows
+        const platformRows = PLATFORMS.map(function (p) {
+          const r = data[p.key];
+          const demo = isDemo(data, p.key);
+          if (!hasRating(r)) {
+            const note = (data.notes && data.notes[p.key]) ? data.notes[p.key] : 'Not available yet';
+            return '' +
+              '<div class="platform-row platform-row--na">' +
+                '<div class="platform-icon-sm" style="background:' + p.color + '">' + p.letter + '</div>' +
+                '<div class="platform-row-name">' + p.label + '</div>' +
+                '<div class="platform-row-na-text">&mdash; ' + escapeHtml(note) + '</div>' +
+              '</div>';
+          }
+          return '' +
+            '<div class="platform-row">' +
+              '<div class="platform-icon-sm" style="background:' + p.color + '">' + p.letter + '</div>' +
+              '<div class="platform-row-name">' + p.label + (demo ? ' <span class="demo-badge">Demo</span>' : '') + '</div>' +
+              '<div class="platform-row-meta">' +
+                '<span class="star1">&#9733;</span>' +
+                '<b>' + r.rating.toFixed(1) + '</b>' +
+                '<span class="count">(' + (r.reviews || 0).toLocaleString() + ')</span>' +
+              '</div>' +
+            '</div>';
+        }).join('');
+
+        // Offer chip (subtle; honestly labelled as demo)
+        const offer = data.offer;
+        let offerChip = '';
+        if (offer && offer.available) {
+          offerChip = '<div class="offer-chip">' +
+            '<span class="offer-found">Offer found</span>' +
+            '<span class="offer-name">' + escapeHtml(offer.title) + '</span>' +
+            '<a data-act="offer">View offer</a>' +
+            (offer.demo ? ' <span class="demo-badge">Demo</span>' : '') +
+          '</div>';
+        } else {
+          offerChip = '<div class="offer-chip muted">No public offer found today</div>';
+        }
+
+        // Similar businesses (demo/illustrative rows)
+        const nearby = Array.isArray(data.nearby) ? data.nearby : [];
+        const similarRows = nearby.map(function (n) {
+          const nm = nearbyMetrics(n);
+          const chips = [
+            { k: 'google', l: 'G', c: 'var(--google)' },
+            { k: 'yelp', l: 'Y', c: 'var(--yelp)' },
+            { k: 'tripadvisor', l: 'T', c: 'var(--tripadvisor)' }
+          ].map(function (x) {
+            const r = n[x.k];
+            if (!hasRating(r)) return '<div class="rchip"><span class="dot" style="background:' + x.c + '">' + x.l + '</span><span class="count">&mdash;</span></div>';
+            return '<div class="rchip"><span class="dot" style="background:' + x.c + '">' + x.l + '</span><b>' + r.rating.toFixed(1) + '</b><span class="count">(' + (r.reviews || 0).toLocaleString() + ')</span></div>';
+          }).join('');
+          return '' +
+            '<div class="result-row" data-name="' + escapeAttr(n.name) + '">' +
+              '<div class="result-top">' +
+                '<div class="result-logo">' + escapeHtml(initials(n.name)) + '</div>' +
+                '<div class="result-info">' +
+                  '<div class="result-name">' + escapeHtml(n.name) + '</div>' +
+                  '<div class="result-cat">' + escapeHtml(n.category || '') + '</div>' +
+                '</div>' +
+              '</div>' +
+              '<div class="result-chips">' + chips + '</div>' +
+              '<div class="result-foot">' +
+                '<div class="result-avg"><span class="v">' + nm.avg.toFixed(1) + ' <span class="s">&#9733; average</span></span><span class="count">(' + nm.totalReviews.toLocaleString() + ' reviews)</span></div>' +
+                '<div class="result-score">' + nm.score + '<span>/100</span></div>' +
+                '<button class="btn btn-black" data-report="' + escapeAttr(n.name) + '">View report ' + ICO.arrow + '</button>' +
+              '</div>' +
+            '</div>';
+        }).join('');
+
+        const locality = data.address ? data.address.split(',').slice(-2).join(',').trim() : '';
+        const scoreSub = m.labels.length
+          ? 'Average across ' + listToText(m.labels) + ' where available'
+          : 'No public ratings available yet';
+
+        els.results.innerHTML = '' +
+          // Results heading
+          '<div class="results-head fade-in">' +
+            '<div>' +
+              '<h2>Results for: ' + escapeHtml(data.name) + '</h2>' +
+              '<div class="results-meta">AI checked ' + m.count + ' review platform' + (m.count === 1 ? '' : 's') + ' in ' + seconds.toFixed(1) + ' seconds' + (locality ? ' &middot; ' + escapeHtml(locality) + ' results' : '') + '</div>' +
+            '</div>' +
+            '<div class="live-dot">Live data checked just now</div>' +
+          '</div>' +
+
+          // Featured AI-recommendation card
+          '<div class="featured-card fade-in">' +
+            '<div class="ai-badge">&#10024; AI Recommendation</div>' +
+            img +
+            '<div class="featured-info">' +
+              '<div class="biz-name">' + escapeHtml(data.name) + '</div>' +
+              '<div class="biz-addr">' + ICO.pin + '<span>' + escapeHtml(data.address) + '</span></div>' +
+              '<div class="tags">' + tags + '</div>' +
+              '<div class="overall-rating">' + starsHtml(m.avg) +
+                '<span class="txt"><b>' + m.avg.toFixed(1) + '</b> average across ' + m.totalReviews.toLocaleString() + ' reviews</span>' +
+              '</div>' +
+              reviewpayLine +
+              '<div class="biz-actions">' +
+                '<button class="btn btn-outline" data-act="website">' + ICO.link + 'Visit website</button>' +
+                '<button class="btn btn-outline" data-act="call">' + ICO.phone + 'Call</button>' +
+                '<button class="btn btn-outline" data-act="directions">' + ICO.pin + 'Directions</button>' +
+              '</div>' +
+              offerChip +
+            '</div>' +
+            '<div class="platform-panel">' +
+              '<div class="panel-title">Ratings by platform ' + ICO.info + '</div>' +
+              platformRows +
+            '</div>' +
+            '<div class="score-panel">' +
+              '<div class="score-number">' + m.score + '<span>/100</span></div>' +
+              '<div class="score-label">Trust Score ' + ICO.info + '</div>' +
+              '<div class="score-sub">' + escapeHtml(scoreSub) + '</div>' +
+              '<button class="btn btn-black" data-act="report">View report ' + ICO.arrow + '</button>' +
+            '</div>' +
+          '</div>' +
+
+          // Similar businesses
+          (similarRows ?
+            '<div class="similar-head">Similar businesses nearby <span class="demo-badge">Demo data</span></div>' +
+            '<div class="similar-list">' + similarRows + '</div>'
+            : '') +
+
+          // Footer note
+          '<div class="foot-note">' + ICO.shield +
+            '<span>Review Pay verifies that reviews are from real customers and helps remove fake reviews. ' +
+            '<a data-act="learn-more">Learn more about our process</a></span>' +
+          '</div>';
+
+        // Wire featured-card / footer actions
+        els.results.querySelectorAll('[data-act]').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            const act = btn.getAttribute('data-act');
+            if (act === 'website') { if (!safeOpen(data.website)) alert('No website on file for this business.'); }
+            else if (act === 'call') { if (data.phone) window.location.href = 'tel:' + data.phone; else alert('No phone number on file for this business.'); }
+            else if (act === 'directions') { safeOpen(data.directionsUrl); }
+            else if (act === 'report') openReport(data, m);
+            else if (act === 'offer') { if (!safeOpen(data.offer && data.offer.url)) alert('This is demo offer data — no live link yet.'); }
+            else if (act === 'learn-more') { e.preventDefault(); alert('Review Pay is an internal platform. Demo data is shown until it is connected.'); }
+          });
+        });
+
+        // Similar-business VIEW REPORT runs a fresh real search for that business
+        els.results.querySelectorAll('[data-report]').forEach(function (btn) {
+          btn.addEventListener('click', function (e) {
+            e.stopPropagation();
+            runSearch(btn.getAttribute('data-report'));
+          });
+        });
+        // Clicking elsewhere on a similar row also runs its search
+        els.results.querySelectorAll('.result-row').forEach(function (row) {
+          row.addEventListener('click', function () { runSearch(row.getAttribute('data-name')); });
+        });
+      }
+
+      // ---- Report modal: full AI insights live here (not on main page) ----
+      function openReport(data, m) {
+        els.reportTitle.textContent = 'Trust report — ' + data.name;
+        els.reportSub.textContent = 'Based on ' + m.count + ' real review platform' + (m.count === 1 ? '' : 's') + (m.labels.length ? ' (' + listToText(m.labels) + ')' : '');
+
+        const fbSummary = fbReviewSummary(m.score, m.gap);
+        const fbTags = fbBestFor(m.avg);
+        const fbFlags = fbRedFlags(m.totalReviews, m.gap, m.avg);
+        const fbReputation = fbTrend(m.score, m.gap);
+
+        els.reportBody.innerHTML = '' +
+          '<div class="report-scores">' +
+            '<div class="report-score"><div class="n">' + m.score + '<span>/100</span></div><div class="l">Trust Score</div></div>' +
+            '<div class="report-score"><div class="n">' + m.avg.toFixed(1) + '<span>/5</span></div><div class="l">Average rating</div></div>' +
+            '<div class="report-score"><div class="n">' + m.totalReviews.toLocaleString() + '</div><div class="l">Total reviews</div></div>' +
+          '</div>' +
+          '<div class="ab-title" style="margin-top:14px"><span class="ai-chip">&#10024; AI Insights</span></div>' +
+          '<div class="analysis-grid">' +
+            '<div>' +
+              '<div class="analysis-block">' +
+                '<div class="ab-title">' + ICO.summary + 'Review summary</div>' +
+                '<div class="ab-body dark" id="aiSummary">' + escapeHtml(fbSummary) + '</div>' +
+              '</div>' +
+              '<div class="analysis-block">' +
+                '<div class="ab-title">' + ICO.best + 'Best for</div>' +
+                '<div class="tags" id="aiBestFor">' + fbTags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div>' +
+              '<div class="analysis-block">' +
+                '<div class="ab-title">' + ICO.flag + 'Red flags</div>' +
+                '<ul class="flag-list" id="aiRedFlags">' + renderFlagList(fbFlags) + '</ul>' +
+              '</div>' +
+              '<div class="analysis-block">' +
+                '<div class="ab-title">' + ICO.trend + 'Reputation trend</div>' +
+                '<div class="ab-body" id="aiTrend">' + escapeHtml(fbReputation) + '</div>' +
+              '</div>' +
+            '</div>' +
+          '</div>';
+
+        els.modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+        loadAIAnalysis(data);
+      }
+
+      function closeReport() {
+        els.modal.classList.add('hidden');
+        document.body.style.overflow = '';
+      }
+
+      function renderFlagList(flags) {
+        if (!flags || !flags.length) return '<li>' + ICO.ok + '<span>No major red flags found.</span></li>';
+        return flags.map(function (f) { return '<li>' + ICO.flag + '<span>' + escapeHtml(f) + '</span></li>'; }).join('');
+      }
+
       /**
-       * Fetch structured AI analysis based ONLY on real (non-demo) platform
-       * ratings and inject it into the AI analysis card. Falls back silently to
-       * the rule-based analysis already rendered if the request fails.
+       * Fetch structured AI analysis (real non-demo platforms only) and inject
+       * it into the open report modal. Restores the rule-based fallback on any
+       * failure so the report never gets stuck.
        */
       async function loadAIAnalysis(data) {
         const sumEl = document.getElementById('aiSummary');
@@ -605,8 +859,6 @@
         });
         if (!platforms.length) return;
 
-        // Preserve the rule-based fallback so we can restore it if AI is
-        // unavailable (e.g. the OpenAI integration isn't configured).
         const fallbackSummary = sumEl.textContent;
         sumEl.textContent = 'Generating AI summary…';
         try {
@@ -616,24 +868,19 @@
             body: JSON.stringify({
               name: data.name,
               platforms: platforms,
-              // Only count a real (non-demo) public offer; demo offers must not
-              // influence the AI narrative.
+              // Demo offers must not influence the AI narrative.
               offerAvailable: !!(data.offer && data.offer.available && !data.offer.demo)
             })
           });
           const body = await res.json().catch(function () { return null; });
-          if (!res.ok || !body || !body.reviewSummary) {
-            sumEl.textContent = fallbackSummary; // restore rule-based summary
-            return;
-          }
+          // Guard: the user may have closed/changed the report meanwhile.
+          if (document.getElementById('aiSummary') !== sumEl) return;
+          if (!res.ok || !body || !body.reviewSummary) { sumEl.textContent = fallbackSummary; return; }
 
           sumEl.textContent = body.reviewSummary;
-
           if (Array.isArray(body.bestFor) && body.bestFor.length) {
             const bf = document.getElementById('aiBestFor');
-            if (bf) bf.innerHTML = body.bestFor.map(function (t) {
-              return '<span class="tag">' + escapeHtml(t) + '</span>';
-            }).join('');
+            if (bf) bf.innerHTML = body.bestFor.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('');
           }
           if (Array.isArray(body.redFlags)) {
             const rf = document.getElementById('aiRedFlags');
@@ -643,255 +890,26 @@
             const tr = document.getElementById('aiTrend');
             if (tr) tr.textContent = body.reputationTrend;
           }
-          if (body.offerSummary) {
-            const os = document.getElementById('aiOffer');
-            if (os) os.textContent = body.offerSummary;
-          }
         } catch (e) {
-          // Network/parse failure: restore the rule-based summary so the card
-          // never stays stuck on the loading text.
-          sumEl.textContent = fallbackSummary;
+          if (document.getElementById('aiSummary') === sumEl) sumEl.textContent = fallbackSummary;
         }
-      }
-
-      function renderFlagList(flags) {
-        if (!flags || !flags.length) {
-          return '<li>' + ICO.ok + '<span>No major red flags found.</span></li>';
-        }
-        return flags.map(function (f) {
-          return '<li>' + ICO.flag + '<span>' + escapeHtml(f) + '</span></li>';
-        }).join('');
-      }
-
-      // ---- Offer rendering (honestly labels demo data) ----
-      function renderOffer(offer) {
-        if (!offer || !offer.available) {
-          const note = offer && offer.description ? offer.description : 'No public discount or offer was found today.';
-          return '' +
-            '<div class="section-label">Available offer</div>' +
-            '<div class="offer-none">' + ICO.info + '<span>' + escapeHtml(note) + '</span></div>';
-        }
-        const demo = offer.demo
-          ? '<span class="demo-badge">Demo</span>'
-          : (offer.source ? '<span class="na-pill" style="margin:0">' + escapeHtml(offer.source) + '</span>' : '');
-        const btn = '<button class="btn btn-ghost btn-sm" data-act="offer">View offer ' + ICO.arrow + '</button>';
-        return '' +
-          '<div class="section-label">Available offer</div>' +
-          '<div class="offer-card">' +
-            '<div class="offer-ico">' + ICO.offer + '</div>' +
-            '<div class="offer-text">' +
-              '<div class="offer-title">' + escapeHtml(offer.title) + ' ' + demo + '</div>' +
-              '<div class="offer-desc">' + escapeHtml(offer.description || '') + '</div>' +
-            '</div>' +
-            btn +
-          '</div>';
-      }
-
-      // ---- Render ----
-      function renderResults(data, m, seconds) {
-        const img = data.imageUrl
-          ? '<img class="biz-img" src="' + escapeAttr(data.imageUrl) + '" alt="' + escapeAttr(data.name) + '" />'
-          : '<div class="biz-img-fallback">' + escapeHtml(data.logoText) + '</div>';
-
-        const tags = featuredTags(m).map(function (t) {
-          return '<span class="tag ' + (t.aqua ? 'tag-aqua' : '') + '">' + escapeHtml(t.t) + '</span>';
-        }).join('');
-
-        // Review Pay status (internal platform — demo data for now)
-        const rp = data.reviewpay;
-        const reviewpayStatus = hasRating(rp)
-          ? '<div class="reviewpay-status">Review Pay ' + rp.rating.toFixed(1) + '/5 · ' + (rp.reviews || 0).toLocaleString() + ' reviews <span class="demo-badge">Demo</span></div>'
-          : '';
-
-        // Ratings-by-platform rows (real platforms + demo Review Pay, clearly labelled)
-        const platformRows = PLATFORMS.map(function (p) {
-          const r = data[p.key];
-          const demo = isDemo(data, p.key);
-          if (!hasRating(r)) {
-            const note = (data.notes && data.notes[p.key]) ? data.notes[p.key] : 'Not available yet';
-            return '' +
-              '<div class="platform-row platform-row--na">' +
-                '<div class="platform-icon-sm" style="background:' + p.color + '">' + p.letter + '</div>' +
-                '<div class="platform-row-name">' + p.label + '</div>' +
-                '<div class="na-pill">' + escapeHtml(note) + '</div>' +
-              '</div>';
-          }
-          return '' +
-            '<div class="platform-row">' +
-              '<div class="platform-icon-sm" style="background:' + p.color + '">' + p.letter + '</div>' +
-              '<div class="platform-row-name">' + p.label + (demo ? ' <span class="demo-badge">Demo</span>' : '') + '</div>' +
-              '<div class="platform-row-meta">' +
-                starsHtml(r.rating) +
-                '<b>' + r.rating.toFixed(1) + '</b>' +
-                '<span class="muted">' + (r.reviews || 0).toLocaleString() + ' reviews</span>' +
-              '</div>' +
-            '</div>';
-        }).join('');
-
-        // AI analysis fallbacks (replaced live by loadAIAnalysis on success)
-        const fbSummary = fbReviewSummary(m.score, m.gap);
-        const fbTags = fbBestFor(m.avg);
-        const fbFlags = fbRedFlags(m.totalReviews, m.gap, m.avg);
-        const fbReputation = fbTrend(m.score, m.gap);
-
-        // Nearby comparison rows (illustrative demo data)
-        const nearby = Array.isArray(data.nearby) ? data.nearby : [];
-        const nearbyRows = nearby.map(function (n) {
-          const mini = [
-            { k: 'google', l: 'G', c: 'var(--google)' },
-            { k: 'yelp', l: 'Y', c: 'var(--yelp)' },
-            { k: 'tripadvisor', l: 'T', c: 'var(--tripadvisor)' }
-          ].map(function (x) {
-            const r = n[x.k];
-            if (!hasRating(r)) return '';
-            return '<span class="np"><span class="dot" style="background:' + x.c + '">' + x.l + '</span><b>' + r.rating.toFixed(1) + '</b></span>';
-          }).join('');
-          return '' +
-            '<div class="card nearby-row" data-name="' + escapeAttr(n.name) + '">' +
-              '<div class="nearby-id">' +
-                '<div class="nearby-name">' + escapeHtml(n.name) + (n.demo ? ' <span class="demo-badge">Demo</span>' : '') + '</div>' +
-                '<div class="nearby-cat">' + escapeHtml(n.category || '') + '</div>' +
-              '</div>' +
-              '<div class="nearby-platforms">' + mini + '</div>' +
-              '<div class="nearby-go">Compare ' + ICO.arrow + '</div>' +
-            '</div>';
-        }).join('');
-
-        const locality = data.address ? data.address.split(',').slice(-2).join(',').trim() : '';
-
-        els.results.innerHTML = '' +
-          // Results heading
-          '<div class="results-head fade-in">' +
-            '<div>' +
-              '<h2><span>Results for:</span> ' + escapeHtml(data.name) + '</h2>' +
-              '<div class="results-meta">' +
-                '<span>AI checked ' + m.count + ' review platform' + (m.count === 1 ? '' : 's') + ' in ' + seconds.toFixed(1) + 's' + (locality ? ' · ' + escapeHtml(locality) : '') + '</span>' +
-                '<span class="live-dot">Live data checked just now</span>' +
-              '</div>' +
-            '</div>' +
-            '<div class="results-actions">' +
-              '<button class="btn btn-ghost btn-sm" data-act="save">' + ICO.save + 'Save comparison</button>' +
-              '<button class="btn btn-ghost btn-sm" data-act="new-search">New search</button>' +
-            '</div>' +
-          '</div>' +
-
-          // Featured AI-recommendation card
-          '<div class="card featured fade-in">' +
-            '<div class="featured-badge">&#10024; AI Recommendation</div>' +
-            '<div class="featured-grid">' +
-              '<div class="featured-main">' +
-                '<div class="featured-head">' +
-                  img +
-                  '<div class="featured-id">' +
-                    '<div class="biz-name">' + escapeHtml(data.name) + '</div>' +
-                    '<div class="biz-addr">' + ICO.pin + '<span>' + escapeHtml(data.address) + '</span></div>' +
-                    '<div class="tags">' + tags + '</div>' +
-                    '<div class="overall-rating">' +
-                      starsHtml(m.avg, 'lg') +
-                      '<span class="num">' + m.avg.toFixed(1) + '<span>/5 avg</span></span>' +
-                      '<span class="count">' + m.totalReviews.toLocaleString() + ' reviews across ' + m.count + ' platform' + (m.count === 1 ? '' : 's') + '</span>' +
-                    '</div>' +
-                    reviewpayStatus +
-                  '</div>' +
-                '</div>' +
-                '<div class="biz-actions">' +
-                  '<button class="btn btn-ghost" data-act="website">' + ICO.link + 'Visit website</button>' +
-                  '<button class="btn btn-ghost" data-act="call">' + ICO.phone + 'Call</button>' +
-                  '<button class="btn btn-ghost" data-act="directions">' + ICO.pin + 'Directions</button>' +
-                '</div>' +
-                '<div class="platform-rows">' +
-                  '<div class="section-label">Ratings by platform</div>' +
-                  platformRows +
-                '</div>' +
-                '<div class="offer-section">' + renderOffer(data.offer) + '</div>' +
-              '</div>' +
-              '<aside class="trust-panel">' +
-                '<div class="trust-num">' + m.score + '<span>/100</span></div>' +
-                '<div class="trust-label">Trust Score</div>' +
-                '<div class="trust-sub">Based on ' + m.count + ' platform' + (m.count === 1 ? '' : 's') + '</div>' +
-                '<div class="trust-bar"><div class="trust-bar-fill" data-pct="' + m.score + '"></div></div>' +
-                '<button class="btn btn-primary btn-sm" data-act="report">' + ICO.report + 'View report</button>' +
-              '</aside>' +
-            '</div>' +
-          '</div>' +
-
-          // AI analysis card
-          '<div class="section-title">AI analysis <span class="muted">what the numbers mean</span></div>' +
-          '<div class="card analysis fade-in">' +
-            '<div class="analysis-head"><span class="ai-chip">&#10024; AI Insights</span></div>' +
-            '<div class="analysis-grid">' +
-              '<div>' +
-                '<div class="analysis-block">' +
-                  '<div class="ab-title">' + ICO.summary + 'Review summary</div>' +
-                  '<div class="ab-body dark" id="aiSummary">' + escapeHtml(fbSummary) + '</div>' +
-                '</div>' +
-                '<div class="analysis-block">' +
-                  '<div class="ab-title">' + ICO.best + 'Best for</div>' +
-                  '<div class="tags" id="aiBestFor">' + fbTags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
-                '</div>' +
-              '</div>' +
-              '<div>' +
-                '<div class="analysis-block">' +
-                  '<div class="ab-title">' + ICO.flag + 'Red flags</div>' +
-                  '<ul class="flag-list" id="aiRedFlags">' + renderFlagList(fbFlags) + '</ul>' +
-                '</div>' +
-                '<div class="analysis-block">' +
-                  '<div class="ab-title">' + ICO.trend + 'Reputation trend</div>' +
-                  '<div class="ab-body" id="aiTrend">' + escapeHtml(fbReputation.text) + '</div>' +
-                  '<div class="ab-body" id="aiOffer" style="margin-top:8px">' + (data.offer && data.offer.available ? 'A public offer is currently available — see the featured card.' : 'No public offer was found today.') + '</div>' +
-                '</div>' +
-              '</div>' +
-            '</div>' +
-          '</div>' +
-
-          // Nearby comparison
-          (nearbyRows ?
-            '<div class="section-title">Compare with similar businesses nearby <span class="muted">demo data</span></div>' +
-            '<div class="nearby-list">' + nearbyRows + '</div>'
-            : '') +
-
-          // Footer note about Review Pay
-          '<div class="foot-note">' + ICO.info +
-            '<span><b>About Review Pay &amp; offers:</b> Review Pay ratings, offers and nearby comparisons currently show demo data and are excluded from the Trust Score. Once connected, Review Pay will surface real transaction-verified reviews from paying customers. ' +
-            '<a href="#" data-act="learn-more">Learn more</a></span>' +
-          '</div>';
-
-        // Animate trust bar
-        requestAnimationFrame(function () {
-          const bar = els.results.querySelector('.trust-bar-fill');
-          if (bar) bar.style.width = bar.getAttribute('data-pct') + '%';
-        });
-
-        // Wire actions
-        els.results.querySelectorAll('[data-act]').forEach(function (btn) {
-          btn.addEventListener('click', function (e) {
-            const act = btn.getAttribute('data-act');
-            if (act === 'website') { if (data.website) window.open(data.website, '_blank'); else alert('No website on file for this business.'); }
-            else if (act === 'call') { if (data.phone) window.location.href = 'tel:' + data.phone; else alert('No phone number on file for this business.'); }
-            else if (act === 'directions') { if (data.directionsUrl) window.open(data.directionsUrl, '_blank'); }
-            else if (act === 'report') alert('Full trust report coming soon.');
-            else if (act === 'offer') { const u = data.offer && data.offer.url; if (u) window.open(u, '_blank'); else alert('This is demo offer data — no live link yet.'); }
-            else if (act === 'save') alert('Comparison saved. Your developer can connect this to your database.');
-            else if (act === 'new-search') resetApp();
-            else if (act === 'learn-more') { e.preventDefault(); alert('Review Pay is an internal platform. Demo data is shown until it is connected.'); }
-          });
-        });
-        els.results.querySelectorAll('.nearby-row').forEach(function (card) {
-          card.addEventListener('click', function () {
-            runSearch(card.getAttribute('data-name'));
-          });
-        });
       }
 
       function resetApp() {
         els.input.value = '';
         els.results.innerHTML = '';
+        closeReport();
         show('empty');
         window.scrollTo({ top: 0, behavior: 'smooth' });
         els.input.focus();
       }
 
-      // ---- Escaping helpers ----
+      // ---- Small helpers ----
+      function listToText(arr) {
+        if (arr.length === 1) return arr[0];
+        if (arr.length === 2) return arr[0] + ' and ' + arr[1];
+        return arr.slice(0, -1).join(', ') + ' and ' + arr[arr.length - 1];
+      }
       function escapeHtml(s) {
         return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
           return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
@@ -899,13 +917,27 @@
       }
       function escapeAttr(s) { return escapeHtml(s); }
 
+      // Only open http(s) URLs in a new tab — never javascript:/data: schemes.
+      function safeOpen(url) {
+        if (!url) return false;
+        try {
+          const u = new URL(url, window.location.href);
+          if (u.protocol === 'http:' || u.protocol === 'https:') {
+            window.open(u.href, '_blank', 'noopener,noreferrer');
+            return true;
+          }
+        } catch (e) { /* invalid URL */ }
+        return false;
+      }
+
       // ---- Events ----
       els.searchBtn.addEventListener('click', function () { runSearch(); });
-      els.input.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter') { e.preventDefault(); runSearch(); }
-      });
+      els.input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); runSearch(); } });
+      els.modalClose.addEventListener('click', closeReport);
+      els.modal.addEventListener('click', function (e) { if (e.target === els.modal) closeReport(); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeReport(); });
 
-      // Optional deep-link: ?q=<business> auto-runs a search on load.
+      // Deep-link: ?q=<business> auto-runs a search on load.
       (function () {
         const q = new URLSearchParams(window.location.search).get('q');
         if (q) { els.input.value = q; runSearch(q); }
