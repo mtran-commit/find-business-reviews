@@ -1,2 +1,3 @@
 - [SerpApi engine quirks](serpapi-engines.md) — which SerpApi engines expose aggregate ratings directly vs require derivation; TripAdvisor=direct, Yelp=derive.
 - [Replit OpenAI integration lazy import](openai-integration-lazy-import.md) — the AI-integrations OpenAI client throws at module load if env vars missing; import it lazily inside handlers.
+- [Featured card grid widths](featured-card-grid-widths.md) — don't use the spec's literal 330/1fr/330/230 cols; they starve the details column and break long business names.
