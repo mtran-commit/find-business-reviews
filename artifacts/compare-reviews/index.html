@@ -186,6 +186,8 @@
       @media (max-width: 460px) { .ratings-grid { grid-template-columns: 1fr; } }
 
       .rating-card { padding: 18px; }
+      .rating-card--na { opacity: .7; }
+      .rating-value.na { color: var(--text-2); }
       .rating-head { display: flex; align-items: center; gap: 10px; }
       .platform-icon {
         width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
@@ -298,54 +300,48 @@
         </div>
       </section>
 
+      <!-- Error -->
+      <section class="panel hidden" id="errorState">
+        <div class="empty">
+          <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
+          <h3>Couldn't load that business</h3>
+          <p id="errorMsg"></p>
+        </div>
+      </section>
+
       <!-- Results -->
       <section class="panel hidden" id="results"></section>
     </main>
 
-    <footer class="wrap">Compare Reviews &middot; Demo data shown. Connect a live reviews API to go live.</footer>
+    <footer class="wrap">Compare Reviews &middot; Live data from Google &amp; Yelp via SerpApi. TripAdvisor &amp; Facebook ratings are not publicly available.</footer>
 
     <script>
       /* =====================================================================
-         Compare Reviews — single-file demo app
+         Compare Reviews — live reviews lookup
          =====================================================================
 
-         >>> REAL SEARCH API CONNECTION POINT <<<
-         Replace the body of fetchBusinessReviews(query) below with a real call
-         to your reviews/search provider. The function must return an object
-         with this exact shape so the rest of the UI keeps working:
+         Data comes from the backend API at GET /api/reviews?q=<business name>,
+         which calls SerpApi (Google Maps + Yelp engines) server-side so the
+         API key stays secret. The endpoint returns this shape:
 
          {
-           name:         string,
-           address:      string,
-           logoText:     string,   // initials fallback, e.g. "NM"
-           logoUrl:      string,   // full-colour logo URL, or "" if none
-           website:      string,   // https://...
-           phone:        string,   // tel digits, e.g. "+61391234567"
-           directionsUrl:string,   // Google Maps URL
-           google:      { rating: number, reviews: number },
-           tripadvisor: { rating: number, reviews: number },
-           yelp:        { rating: number, reviews: number },
-           facebook:    { rating: number, reviews: number }
+           name, address, logoText, logoUrl, website, phone, directionsUrl,
+           google:      { rating, reviews } | null,
+           tripadvisor: { rating, reviews } | null,   // null: not available via SerpApi
+           yelp:        { rating, reviews } | null,
+           facebook:    { rating, reviews } | null,   // null: Facebook ratings are not public
+           unavailable: string[],   // platform keys with no data
+           source:      "serpapi"
          }
 
-         Example future wiring:
-           async function fetchBusinessReviews(query) {
-             const res = await fetch(`/api/reviews?q=${encodeURIComponent(query)}`);
-             if (!res.ok) throw new Error("Lookup failed");
-             return await res.json(); // must match the shape above
-           }
+         To swap providers later, change the backend route only — the UI below
+         already consumes this shape and gracefully handles null platforms.
       ===================================================================== */
 
-      // ---- Demo data helpers ----
-      function rnd(min, max, decimals) {
-        const v = Math.random() * (max - min) + min;
-        return decimals != null ? Number(v.toFixed(decimals)) : Math.round(v);
-      }
-      function initials(name) {
-        return name.trim().split(/\s+/).slice(0, 2).map(w => w[0].toUpperCase()).join('');
-      }
+      // This app is served at "/"; the API server owns the "/api" path prefix.
+      const API_BASE = '/api';
 
-      // Estimated trust scores for the "nearby" cards (so clicking them feels consistent)
+      // Estimated trust scores for the "nearby" cards (illustrative shortcuts).
       const NEARBY = [
         { name: 'Gimlet Melbourne', score: 91 },
         { name: 'Vue de Monde', score: 89 },
@@ -353,36 +349,18 @@
       ];
 
       /**
-       * fetchBusinessReviews(query)
-       * DEMO IMPLEMENTATION — returns simulated data.
-       * >>> Connect your real Search API here (see header comment). <<<
+       * fetchBusinessReviews(query) — calls the live backend.
+       * Throws an Error with a user-friendly message on failure.
        */
-      function fetchBusinessReviews(query) {
-        const name = query.trim();
-        return {
-          name: name,
-          address: sampleAddress(),
-          logoText: initials(name),
-          logoUrl: '', // No real logo in demo. Real API should supply a full-colour logo URL.
-          website: 'https://www.google.com/search?q=' + encodeURIComponent(name + ' official website'),
-          phone: '+61390000000',
-          directionsUrl: 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(name),
-          google:      { rating: rnd(4.1, 4.9, 1), reviews: rnd(800, 5200) },
-          tripadvisor: { rating: rnd(3.9, 4.8, 1), reviews: rnd(300, 2600) },
-          yelp:        { rating: rnd(3.5, 4.7, 1), reviews: rnd(120, 1400) },
-          facebook:    { rating: rnd(4.0, 5.0, 1), reviews: rnd(200, 3000) }
-        };
-      }
-
-      function sampleAddress() {
-        const list = [
-          '1 Flinders Lane, Melbourne VIC 3000',
-          '80 Collins Street, Melbourne VIC 3000',
-          '525 Flinders Street, Melbourne VIC 3000',
-          '8 Whiteman Street, Southbank VIC 3006',
-          '74 Bourke Street, Melbourne VIC 3000'
-        ];
-        return list[Math.floor(Math.random() * list.length)];
+      async function fetchBusinessReviews(query) {
+        const res = await fetch(API_BASE + '/reviews?q=' + encodeURIComponent(query));
+        let body = null;
+        try { body = await res.json(); } catch (e) { /* response was not JSON */ }
+        if (!res.ok) {
+          const msg = body && body.error ? body.error : 'Lookup failed (' + res.status + ').';
+          throw new Error(msg);
+        }
+        return body;
       }
 
       // ---- Platform metadata (brand colours stay on icons) ----
@@ -407,13 +385,21 @@
         return html + '</div>';
       }
 
-      // ---- Trust score computation ----
+      // ---- Helpers for available (non-null) platforms ----
+      function hasRating(r) { return r && typeof r.rating === 'number'; }
+      function availablePlatforms(data) {
+        return PLATFORMS.filter(function (p) { return hasRating(data[p.key]); });
+      }
+
+      // ---- Trust score computation (ignores platforms with no data) ----
       function computeMetrics(data) {
-        const ratings = PLATFORMS.map(p => data[p.key].rating);
-        const reviews = PLATFORMS.map(p => data[p.key].reviews);
-        const avg = ratings.reduce((a, b) => a + b, 0) / ratings.length;
-        const totalReviews = reviews.reduce((a, b) => a + b, 0);
-        const gap = Math.max(...ratings) - Math.min(...ratings);
+        const avail = availablePlatforms(data);
+        const ratings = avail.map(function (p) { return data[p.key].rating; });
+        const reviews = avail.map(function (p) { return data[p.key].reviews || 0; });
+        const count = ratings.length;
+        const avg = count ? ratings.reduce(function (a, b) { return a + b; }, 0) / count : 0;
+        const totalReviews = reviews.reduce(function (a, b) { return a + b; }, 0);
+        const gap = count >= 2 ? Math.max.apply(null, ratings) - Math.min.apply(null, ratings) : 0;
 
         // Trust score (0-100): weighted on average rating, volume, and consistency.
         let score = (avg / 5) * 70;               // up to 70 from average rating
@@ -421,7 +407,7 @@
         score += Math.max(0, 1 - gap / 1.5) * 12; // up to 12 from consistency
         score = Math.round(Math.max(0, Math.min(100, score)));
 
-        return { avg, totalReviews, gap, score };
+        return { avg: avg, totalReviews: totalReviews, gap: gap, score: score, count: count };
       }
 
       // ---- Icon helpers ----
@@ -475,30 +461,39 @@
         searchBtn: document.getElementById('searchBtn'),
         empty: document.getElementById('emptyState'),
         loading: document.getElementById('loadingState'),
+        error: document.getElementById('errorState'),
         results: document.getElementById('results')
       };
 
       function show(which) {
         els.empty.classList.toggle('hidden', which !== 'empty');
         els.loading.classList.toggle('hidden', which !== 'loading');
+        els.error.classList.toggle('hidden', which !== 'error');
         els.results.classList.toggle('hidden', which !== 'results');
       }
 
+      function showError(message) {
+        document.getElementById('errorMsg').textContent = message;
+        show('error');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
       // ---- Main search flow ----
-      function runSearch(query) {
+      async function runSearch(query) {
         const q = (query != null ? query : els.input.value).trim();
         if (!q) { els.input.focus(); return; }
         els.input.value = q;
         show('loading');
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        // Simulated network latency. With a real API this is the awaited fetch.
-        setTimeout(function () {
-          const data = fetchBusinessReviews(q);
+        try {
+          const data = await fetchBusinessReviews(q);
           const metrics = computeMetrics(data);
           renderResults(data, metrics);
           show('results');
-        }, 850);
+        } catch (err) {
+          showError(err && err.message ? err.message : 'Something went wrong. Please try again.');
+        }
       }
 
       // ---- Render ----
@@ -507,9 +502,20 @@
           ? '<img class="biz-logo" src="' + escapeAttr(data.logoUrl) + '" alt="' + escapeAttr(data.name) + ' logo" />'
           : '<div class="biz-logo-fallback">' + escapeHtml(data.logoText) + '</div>';
 
-        // Ratings cards
+        // Ratings cards (platforms with no data render a "Not available" state)
         const ratingCards = PLATFORMS.map(function (p) {
           const r = data[p.key];
+          if (!hasRating(r)) {
+            return '' +
+              '<div class="card rating-card rating-card--na">' +
+                '<div class="rating-head">' +
+                  '<div class="platform-icon" style="background:' + p.color + '">' + p.letter + '</div>' +
+                  '<div class="platform-name">' + p.label + '</div>' +
+                '</div>' +
+                '<div class="rating-value na">&mdash;</div>' +
+                '<div class="reviews-count">Not available</div>' +
+              '</div>';
+          }
           const pct = Math.round((r.rating / 5) * 100);
           return '' +
             '<div class="card rating-card">' +
@@ -519,10 +525,16 @@
               '</div>' +
               '<div class="rating-value">' + r.rating.toFixed(1) + '<span>/5</span></div>' +
               starsHtml2(r.rating) +
-              '<div class="reviews-count">' + r.reviews.toLocaleString() + ' reviews</div>' +
+              '<div class="reviews-count">' + (r.reviews || 0).toLocaleString() + ' reviews</div>' +
               '<div class="bar"><div class="bar-fill" data-pct="' + pct + '"></div></div>' +
             '</div>';
         }).join('');
+
+        // Platform names that actually returned data (for the summary copy).
+        const availLabels = availablePlatforms(data).map(function (p) { return p.label; });
+        const platformsText = availLabels.length
+          ? availLabels.join(', ').replace(/, ([^,]*)$/, ' and $1')
+          : 'the available platforms';
 
         // Insights
         const gapAlert = ratingGapAlert(m.gap);
@@ -576,7 +588,7 @@
             '<div class="trust">' +
               '<div class="trust-num">' + m.score + '<span>/100</span></div>' +
               '<div class="trust-label">Trust Score</div>' +
-              '<div class="trust-sub">Based on 4 platforms</div>' +
+              '<div class="trust-sub">Based on ' + m.count + ' platform' + (m.count === 1 ? '' : 's') + '</div>' +
             '</div>' +
           '</div>' +
 
@@ -591,7 +603,7 @@
 
           '<div class="card summary">' +
             '<h3>' + escapeHtml(data.name) + ' trust comparison</h3>' +
-            '<p>' + escapeHtml(data.name) + ' has a Trust Score of ' + m.score + '/100 based on ratings from Google, TripAdvisor, Yelp and Facebook. ' +
+            '<p>' + escapeHtml(data.name) + ' has a Trust Score of ' + m.score + '/100 based on ratings from ' + platformsText + '. ' +
               'The average rating is ' + m.avg.toFixed(1) + '/5 across ' + m.totalReviews.toLocaleString() + ' public reviews.</p>' +
             '<div class="summary-actions">' +
               '<button class="btn btn-white" data-act="new-search">New Search</button>' +

@@ -1,0 +1,298 @@
+Add OpenAI AI review analysis logic to the Compare Reviews app.
+
+Important security rule:
+Do NOT put the OpenAI API key in the frontend HTML or JavaScript.
+Create a backend API route that calls OpenAI securely using an environment variable:
+OPENAI_API_KEY
+
+The frontend should call our own backend route:
+POST /api/analyze-reviews
+
+The backend route should receive normalised review data from the frontend or from our Search API.
+
+Input example:
+{
+  "businessName": "Nobu Melbourne",
+  "address": "123 Collins Street, Melbourne VIC",
+  "ratings": {
+    "google": {
+      "rating": 4.7,
+      "reviewCount": 2450,
+      "sampleReviews": [
+        "Amazing service and food.",
+        "Expensive but excellent experience."
+      ]
+    },
+    "tripadvisor": {
+      "rating": 4.4,
+      "reviewCount": 890,
+      "sampleReviews": [
+        "Great atmosphere and professional staff.",
+        "Food was good but waiting time was long."
+      ]
+    },
+    "yelp": {
+      "rating": 3.8,
+      "reviewCount": 320,
+      "sampleReviews": [
+        "Overpriced for the portion size.",
+        "Nice location but inconsistent service."
+      ]
+    },
+    "facebook": {
+      "rating": 4.6,
+      "reviewCount": 540,
+      "sampleReviews": [
+        "Beautiful venue and friendly staff.",
+        "Would recommend for special occasions."
+      ]
+    }
+  }
+}
+
+Backend task:
+Use OpenAI to analyse the review data and return structured JSON only.
+
+The AI should return:
+{
+  "trustScore": 0-100,
+  "trustLabel": "Strong Reputation" | "Stable" | "Mixed" | "Check Carefully",
+  "ratingGapAlert": "short warning or positive message",
+  "reviewSummary": "short customer-friendly summary",
+  "bestFor": ["tag1", "tag2", "tag3", "tag4"],
+  "redFlags": ["flag1", "flag2"],
+  "reputationTrend": "short trend explanation",
+  "recommendedAction": "short advice for the user",
+  "confidence": "High" | "Medium" | "Low"
+}
+
+Prompt rules:
+- Keep language simple and useful for consumers.
+- Do not claim the business is definitely good or bad.
+- Use words like “appears”, “suggests”, “may”, “based on available review data”.
+- Mention if data is limited.
+- If rating gap is high, warn the user to read recent reviews.
+- If review count is low, mention low confidence.
+- Do not invent facts that are not in the input.
+- Return JSON only. No markdown.
+
+Create this backend in Node.js/Express.
+
+Install dependency:
+npm install openai express cors dotenv
+
+Create server.js with:
+- express
+- cors
+- dotenv
+- OpenAI client
+- POST /api/analyze-reviews route
+- validation for missing businessName or ratings
+- try/catch error handling
+- return 500 error if OpenAI fails
+
+Use this model:
+gpt-4.1-mini
+
+Use OpenAI Responses API.
+
+Example server.js:
+
+const express = require("express");
+const cors = require("cors");
+const dotenv = require("dotenv");
+const OpenAI = require("openai");
+
+dotenv.config();
+
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: "1mb" }));
+
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY
+});
+
+app.post("/api/analyze-reviews", async (req, res) => {
+  try {
+    const { businessName, address, ratings } = req.body;
+
+    if (!businessName || !ratings) {
+      return res.status(400).json({
+        error: "Missing businessName or ratings"
+      });
+    }
+
+    const prompt = `
+You are the AI review analyst for Compare Reviews.
+
+Analyse this business review data and return JSON only.
+
+Business name:
+${businessName}
+
+Address:
+${address || "Not provided"}
+
+Review data:
+${JSON.stringify(ratings, null, 2)}
+
+Return this exact JSON structure:
+{
+  "trustScore": 0,
+  "trustLabel": "",
+  "ratingGapAlert": "",
+  "reviewSummary": "",
+  "bestFor": [],
+  "redFlags": [],
+  "reputationTrend": "",
+  "recommendedAction": "",
+  "confidence": ""
+}
+
+Rules:
+- trustScore must be a number between 0 and 100.
+- trustLabel must be one of: Strong Reputation, Stable, Mixed, Check Carefully.
+- bestFor must contain 2 to 5 short tags.
+- redFlags must contain 0 to 4 short warnings.
+- confidence must be High, Medium, or Low.
+- Be careful and balanced.
+- Do not invent facts.
+- Return JSON only.
+`;
+
+    const response = await openai.responses.create({
+      model: "gpt-4.1-mini",
+      input: prompt
+    });
+
+    const rawText = response.output_text;
+
+    let aiResult;
+
+    try {
+      aiResult = JSON.parse(rawText);
+    } catch (parseError) {
+      return res.status(500).json({
+        error: "OpenAI returned invalid JSON",
+        raw: rawText
+      });
+    }
+
+    return res.json(aiResult);
+  } catch (error) {
+    console.error("OpenAI analysis error:", error);
+
+    return res.status(500).json({
+      error: "Failed to analyse reviews"
+    });
+  }
+});
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+  console.log(`Compare Reviews server running on port ${PORT}`);
+});
+
+Create a .env file:
+OPENAI_API_KEY=your_openai_api_key_here
+
+Update the frontend:
+After fetchBusinessReviews(query) returns demo or real review data, call:
+POST /api/analyze-reviews
+
+Example frontend function:
+
+async function analyzeReviewsWithAI(data) {
+  try {
+    const response = await fetch("/api/analyze-reviews", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        businessName: data.name,
+        address: data.address,
+        ratings: {
+          google: {
+            rating: data.google.rating,
+            reviewCount: data.google.reviews,
+            sampleReviews: data.google.sampleReviews || []
+          },
+          tripadvisor: {
+            rating: data.tripadvisor.rating,
+            reviewCount: data.tripadvisor.reviews,
+            sampleReviews: data.tripadvisor.sampleReviews || []
+          },
+          yelp: {
+            rating: data.yelp.rating,
+            reviewCount: data.yelp.reviews,
+            sampleReviews: data.yelp.sampleReviews || []
+          },
+          facebook: {
+            rating: data.facebook.rating,
+            reviewCount: data.facebook.reviews,
+            sampleReviews: data.facebook.sampleReviews || []
+          }
+        }
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error("AI analysis failed");
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(error);
+
+    return {
+      trustScore: calculateTrustScoreFromLocalData(data),
+      trustLabel: "Stable",
+      ratingGapAlert: "AI analysis is unavailable. Showing local trust calculation.",
+      reviewSummary: "Review summary is temporarily unavailable.",
+      bestFor: ["Worth Comparing"],
+      redFlags: [],
+      reputationTrend: "Trend analysis is temporarily unavailable.",
+      recommendedAction: "Check recent reviews before deciding.",
+      confidence: "Low"
+    };
+  }
+}
+
+Then update renderBusiness(data):
+1. First render the normal ratings.
+2. Then call analyzeReviewsWithAI(data).
+3. Use the AI response to populate:
+   - Trust Score
+   - Rating Gap Alert
+   - Review Summary
+   - Best For tags
+   - Red Flags
+   - Reputation Trend
+   - Summary panel
+
+Add a loading message inside the AI cards while the AI is analysing:
+“Analysing review patterns...”
+
+If OpenAI fails, the app should still work using the local trust score logic.
+
+Keep all existing buttons working:
+- Visit Website
+- Call
+- Directions
+- Save Comparison
+- New Search
+
+Make sure the app runs in Replit with:
+node server.js
+
+Also make sure index.html is served by Express if needed:
+app.use(express.static("public"));
+
+Recommended file structure:
+- server.js
+- .env
+- package.json
+- public/index.html
