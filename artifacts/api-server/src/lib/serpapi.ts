@@ -7,6 +7,7 @@ import type { Logger } from "pino";
  *   - google_maps  : real Google rating + review count (+ profile data)
  *   - yelp         : Yelp business search (to resolve a place_id by name)
  *   - yelp_reviews : Yelp reviews for that place_id
+ *   - tripadvisor  : TripAdvisor place search (returns aggregate rating + count)
  *
  * The Yelp business-search engine no longer exposes an aggregate rating, so
  * we resolve the matching Yelp listing by name, then derive the rating from
@@ -15,12 +16,16 @@ import type { Logger } from "pino";
  * approximation of the live Yelp aggregate, accurate for businesses with few
  * reviews and a close estimate for high-volume ones.
  *
- * SerpApi has no TripAdvisor or Facebook engine, and Facebook no longer
- * exposes public ratings, so those two are always returned as null and
- * listed in `unavailable` with a "Not available yet" note.
+ * The TripAdvisor search engine returns the aggregate rating + review count
+ * directly on each place result, so a single call (matched by name) suffices.
+ *
+ * Facebook has no usable SerpApi rating source, so it is always returned as
+ * null with a "Not available yet" note. Review Pay is an internal platform
+ * with no public API yet, so it is returned as deterministic demo data
+ * (flagged in `demo`) and excluded from real-data metrics/analysis.
  *
  * Docs: https://serpapi.com/google-maps-api , https://serpapi.com/yelp-api ,
- *       https://serpapi.com/yelp-reviews-api
+ *       https://serpapi.com/yelp-reviews-api , https://serpapi.com/tripadvisor
  */
 
 const SERPAPI_BASE = "https://serpapi.com/search.json";
@@ -42,7 +47,11 @@ export interface BusinessReviews {
   tripadvisor: PlatformRating | null;
   yelp: PlatformRating | null;
   facebook: PlatformRating | null;
+  /** Internal platform; demo placeholder data until a real API exists. */
+  reviewpay: PlatformRating | null;
   unavailable: string[];
+  /** Platform keys whose data is demo/placeholder (excluded from metrics). */
+  demo: string[];
   /** Per-platform status note shown when a platform has no rating. */
   notes: Record<string, string>;
   source: "serpapi";
@@ -175,10 +184,7 @@ export async function fetchBusinessReviews(
     )}`;
   }
 
-  const notes: Record<string, string> = {
-    tripadvisor: "Not available yet",
-    facebook: "Not available yet",
-  };
+  const notes: Record<string, string> = {};
 
   // ---- Yelp: resolve the listing by name, then derive rating from reviews ----
   // Step 1 (yelp search) only resolves a place_id; step 2 (yelp_reviews) is
@@ -191,23 +197,44 @@ export async function fetchBusinessReviews(
     try {
       const placeId = await findYelpPlaceId(name, loc, nameTokens, apiKey);
       if (!placeId) {
-        notes["yelp"] = "No Yelp match found";
+        notes["yelp"] = "No match found";
       } else {
         yelp = await fetchYelpRating(placeId, apiKey);
-        if (!yelp) notes["yelp"] = "No Yelp reviews yet";
+        if (!yelp) notes["yelp"] = "No match found";
       }
     } catch (err) {
       log?.warn({ err }, "Yelp lookup failed; continuing without Yelp data");
-      notes["yelp"] = "Yelp lookup unavailable";
+      notes["yelp"] = "Lookup unavailable";
     }
   } else {
-    notes["yelp"] = "No Yelp match found";
+    notes["yelp"] = "No match found";
   }
+
+  // ---- TripAdvisor: search returns the aggregate rating directly ----
+  let tripadvisor: PlatformRating | null = null;
+  if (nameTokens.length > 0) {
+    try {
+      tripadvisor = await findTripadvisorRating(name, address, nameTokens, apiKey);
+      if (!tripadvisor) notes["tripadvisor"] = "No match found";
+    } catch (err) {
+      log?.warn({ err }, "TripAdvisor lookup failed; continuing without it");
+      notes["tripadvisor"] = "Lookup unavailable";
+    }
+  } else {
+    notes["tripadvisor"] = "No match found";
+  }
+
+  // ---- Facebook: no usable public rating source ----
+  notes["facebook"] = "Not available yet";
+
+  // ---- Review Pay: internal platform, demo data until a real API exists ----
+  const reviewpay = demoReviewPay(name);
 
   const unavailable: string[] = [];
   if (!google) unavailable.push("google");
   if (!yelp) unavailable.push("yelp");
-  unavailable.push("tripadvisor", "facebook");
+  if (!tripadvisor) unavailable.push("tripadvisor");
+  unavailable.push("facebook");
 
   return {
     name,
@@ -218,13 +245,30 @@ export async function fetchBusinessReviews(
     phone,
     directionsUrl,
     google,
-    tripadvisor: null,
+    tripadvisor,
     yelp,
     facebook: null,
+    reviewpay,
     unavailable,
+    demo: ["reviewpay"],
     notes,
     source: "serpapi",
   };
+}
+
+/**
+ * Deterministic demo rating for the internal "Review Pay" platform so the card
+ * stays stable per business. Clearly flagged as demo via `demo` and excluded
+ * from real-data metrics and AI analysis on the client.
+ */
+function demoReviewPay(name: string): PlatformRating {
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) {
+    hash = (hash * 31 + name.charCodeAt(i)) >>> 0;
+  }
+  const rating = Math.round((4.1 + (hash % 9) / 10) * 10) / 10; // 4.1–4.9
+  const reviews = 80 + (hash % 420); // 80–499
+  return { rating, reviews };
 }
 
 /**
@@ -274,6 +318,60 @@ async function findYelpPlaceId(
   }
 
   return best ? best.placeId : null;
+}
+
+/**
+ * Resolve a TripAdvisor rating by searching the `tripadvisor` engine and
+ * matching the place whose title shares the most distinctive tokens with the
+ * name. Unlike Yelp, the search result carries the aggregate `rating` and
+ * `reviews` count directly, so a single call suffices. Ties are broken by the
+ * highest review count. Returns null when no confident match has a rating.
+ */
+async function findTripadvisorRating(
+  name: string,
+  address: string,
+  nameTokens: string[],
+  apiKey: string,
+): Promise<PlatformRating | null> {
+  const loc = deriveLocation(address);
+  const q = loc ? `${name} ${loc}` : name;
+  const res = await serpapiGet({
+    engine: "tripadvisor",
+    q,
+    api_key: apiKey,
+  });
+
+  const places = res["places"];
+  if (!Array.isArray(places)) return null;
+
+  const wanted = new Set(nameTokens);
+  const needed = Math.max(1, Math.ceil(nameTokens.length / 2));
+  let best: { rating: PlatformRating; score: number } | null = null;
+  for (const raw of places) {
+    if (!raw || typeof raw !== "object") continue;
+    const r = raw as Record<string, unknown>;
+    const title = typeof r["title"] === "string" ? r["title"] : "";
+    const rating = typeof r["rating"] === "number" ? r["rating"] : null;
+    if (!title || rating === null) continue;
+
+    let score = 0;
+    for (const tok of distinctiveTokens(title)) {
+      if (wanted.has(tok)) score++;
+    }
+    if (score < needed) continue;
+
+    const reviews = typeof r["reviews"] === "number" ? r["reviews"] : 0;
+    const candidate: PlatformRating = { rating, reviews };
+    if (
+      !best ||
+      score > best.score ||
+      (score === best.score && reviews > best.rating.reviews)
+    ) {
+      best = { rating: candidate, score };
+    }
+  }
+
+  return best ? best.rating : null;
 }
 
 /**

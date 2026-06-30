@@ -4,8 +4,8 @@ A single-page web app where someone enters a business name and compares its publ
 
 ## Where things live
 
-- Frontend: self-contained single file `artifacts/compare-reviews/index.html` (inline CSS + JS, no React/build deps). `fetchBusinessReviews(query)` calls the live backend at `GET /api/reviews?q=<name>` and throws a user-friendly Error on failure.
-- Backend: `artifacts/api-server/src/routes/reviews.ts` (route + zod/v4 validation) and `artifacts/api-server/src/lib/serpapi.ts` (SerpApi client). The route returns the `BusinessReviews` shape defined in `serpapi.ts`.
+- Frontend: self-contained single file `artifacts/compare-reviews/index.html` (inline CSS + JS, no React/build deps). `fetchBusinessReviews(query)` calls the live backend at `GET /api/reviews?q=<name>`; `loadAISummary(data)` POSTs real (non-demo) ratings to `/api/summary` and fills the Review Summary card (rule-based fallback on failure). Both throw/handle user-friendly errors.
+- Backend: `artifacts/api-server/src/routes/reviews.ts` (reviews route + zod/v4) and `artifacts/api-server/src/lib/serpapi.ts` (SerpApi client, returns the `BusinessReviews` shape). `artifacts/api-server/src/routes/summary.ts` is the OpenAI-backed AI summary endpoint.
 
 ## Run & Operate
 
@@ -30,12 +30,15 @@ A single-page web app where someone enters a business name and compares its publ
 - Reviews come from SerpApi (server-side; `SERPAPI_API_KEY` never reaches the browser). Google rating/review-count is read directly from the `google_maps` engine.
 - Yelp has no aggregate-rating engine in SerpApi. We resolve the Yelp listing via the `yelp` search engine (best distinctive-token name match), then derive the rating by averaging the first page (up to 49) of `yelp_reviews` and use `search_information.total_results` as the review count. This is exact for low-review businesses and a close estimate for high-volume ones.
 - To protect quota, `yelp_reviews` is only called after a confident name match; non-matches short-circuit with no extra call.
-- TripAdvisor and Facebook have no usable SerpApi source, so they always return `null` with a per-platform `notes` entry ("Not available yet"). Yelp non-matches return `null` with note "No Yelp match found".
-- Frontend metrics (avg, total reviews, gap, Trust Score) are computed over available (non-null) platforms only; the "nearby" cards remain illustrative placeholder data.
+- TripAdvisor uses the `tripadvisor` search engine, which returns the aggregate `rating` + `reviews` count directly on each place — one call, matched by distinctive-token name (ties broken by review count). No `tripadvisor_reviews` call needed. Non-matches return `null` with note "No match found".
+- Facebook has no usable SerpApi rating source, so it always returns `null` with note "Not available yet".
+- Review Pay is an internal platform: the backend returns deterministic demo data (hash of the name) and flags it in the `demo` array. It renders as a 5th card with a "Demo data" badge but is excluded from Trust Score, metrics, and the AI summary.
+- AI review summary: `POST /api/summary` uses OpenAI (`gpt-5-mini` via the Replit AI Integrations proxy — `@workspace/integrations-openai-ai-server`, key never reaches the browser) to summarize ONLY the real non-demo platform ratings sent by the client. The OpenAI client is imported lazily inside the handler so a missing integration returns a clean 503 instead of crashing server boot.
+- Frontend metrics (avg, total reviews, gap, Trust Score) are computed over available (non-null, non-demo) platforms only, so missing platforms don't heavily penalize the score; the "nearby" cards remain illustrative placeholder data.
 
 ## Product
 
-Enter a business name to see its public ratings side by side: real Google and Yelp ratings (with review counts and stars), a 0–100 Trust Score, a rating-gap alert, a plain-language review summary, and platform cards that clearly mark sources with no data yet (TripAdvisor, Facebook, or unmatched Yelp).
+Enter a business name to see its public ratings side by side: real Google, Yelp and TripAdvisor ratings (with review counts and stars), a 0–100 Trust Score, a rating-gap alert, an AI-written review summary, a demo "Review Pay" card, and platform cards that clearly mark sources with no data yet (Facebook, or unmatched Yelp/TripAdvisor).
 
 ## User preferences
 
