@@ -1,0 +1,462 @@
+Fix the report buttons and report generation flow in Compare Reviews.
+
+Current issue:
+On mobile, I can only see the VIEW REPORT button. The app is missing:
+1. AI Review Sentiment button
+2. Business Reputation Report button
+3. Full report generation modal/page
+
+Required buttons:
+Every top business result must show these buttons clearly:
+
+1. View AI Review Sentiment
+Label: View AI Review Sentiment
+Sub-label or badge: Free
+
+2. Business Reputation Report
+Label: Business Report
+Sub-label or badge: $10
+
+3. View Report
+This should open the customer full report / AI Review Sentiment report.
+
+Button placement:
+On desktop:
+- Keep VIEW REPORT button inside the Trust Score panel.
+- Also add two smaller report action buttons under the main business action buttons:
+  - View AI Review Sentiment
+  - Business Report — $10
+
+On mobile:
+The buttons must appear directly under the Trust Score button area.
+They must be visible and full width.
+
+Mobile order should be:
+1. VIEW REPORT
+2. View AI Review Sentiment — Free
+3. Business Report — $10
+
+Do not hide these buttons on mobile.
+
+Add this HTML inside the featured result card, close to the Trust Score panel or directly under it:
+
+<div class="report-action-stack">
+  <button class="report-button" onclick="openCustomerReport()">
+    VIEW REPORT →
+  </button>
+
+  <button class="free-report-button" onclick="openCustomerReport()">
+    View AI Review Sentiment
+    <span>FREE</span>
+  </button>
+
+  <button class="business-report-button" onclick="openBusinessReport()">
+    Business Report
+    <span>$10</span>
+  </button>
+</div>
+
+Use this CSS:
+
+.report-action-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.free-report-button,
+.business-report-button,
+.report-button {
+  width: 100%;
+  min-height: 44px;
+  border-radius: 8px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.report-button {
+  background: #000000;
+  color: #ffffff;
+  border: none;
+}
+
+.free-report-button {
+  background: #ffffff;
+  color: #050505;
+  border: 1px solid #d8d8d8;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 14px;
+}
+
+.business-report-button {
+  background: #071A3D;
+  color: #ffffff;
+  border: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 14px;
+}
+
+.free-report-button span {
+  background: #EEF3FF;
+  color: #071A3D;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+.business-report-button span {
+  background: #ffffff;
+  color: #071A3D;
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 950;
+}
+
+@media (max-width: 700px) {
+  .report-action-stack {
+    width: 100%;
+  }
+
+  .free-report-button,
+  .business-report-button,
+  .report-button {
+    width: 100%;
+  }
+}
+
+Report behaviour:
+When the user clicks VIEW REPORT or View AI Review Sentiment:
+- Open a modal or full report panel.
+- Generate/show the free AI Review Sentiment report.
+
+When the user clicks Business Report — $10:
+- Open a business owner report modal.
+- Show a preview only.
+- Show locked full report sections.
+- Show button: Unlock full report — $10
+- For now, clicking unlock should show:
+  “Stripe payment connection coming soon.”
+
+Customer report:
+Name:
+AI Review Sentiment
+
+This is free and short.
+
+It should include:
+- Trust Score
+- Average rating
+- Platforms checked
+- Short sentiment summary
+- Rating gap warning
+- Simple recommendation
+
+Customer report example:
+AI Review Sentiment
+
+This free summary helps customers quickly understand the public review sentiment for this business before they buy, book or visit.
+
+Trust Score: 81/100
+Average Rating: 4.1/5
+Platforms Checked: Google, TripAdvisor and Review Pay where available.
+
+Based on available review data, this business appears to have generally positive feedback. Google and TripAdvisor show useful public review signals, while unavailable platforms are not included in the score.
+
+Recommendation: Worth checking recent reviews before deciding.
+
+Business report:
+Name:
+AI Business Reputation Report
+
+This is for business owners and should cost $10.
+
+Business report preview should include:
+- Trust Score
+- Public review snapshot
+- 2 strengths
+- 1 possible risk
+- Locked sections list
+
+Locked sections:
+- Platform comparison
+- Customer sentiment analysis
+- Main strengths
+- Main complaints
+- Competitor comparison
+- Lost customer risk
+- Offer recommendation
+- Review Pay verification opportunity
+- 7-day action plan
+
+Business report preview example:
+AI Business Reputation Report
+
+This report shows how customers see your business online and what actions may improve trust, visibility and conversions.
+
+Preview:
+Trust Score: 81/100
+
+Strengths:
+- Good visible Google rating
+- Review Pay verified/demo data is available
+
+Possible risk:
+- Some review platforms are unavailable or have limited data.
+
+Unlock the full business report to see:
+- Competitor comparison
+- Lost customer risk
+- Review improvement plan
+- Offer recommendation
+- 7-day action plan
+
+Button:
+Unlock full report — $10
+
+Add modal functions if missing:
+
+function openCustomerReport() {
+  const business = currentData.business;
+  const report = currentReports?.customerReport;
+
+  if (!report) {
+    showModal(`
+      <h2>AI Review Sentiment</h2>
+      <p>Generating report...</p>
+    `);
+    return;
+  }
+
+  showModal(`
+    <h2>AI Review Sentiment</h2>
+    <p class="modal-intro">This free summary helps customers quickly understand the public review sentiment before they buy, book or visit.</p>
+
+    <div class="report-stat-grid">
+      <div><strong>${report.trustScore}/100</strong><span>Trust Score</span></div>
+      <div><strong>${report.averageRating}/5</strong><span>Average Rating</span></div>
+      <div><strong>${report.platformsChecked}</strong><span>Platforms Checked</span></div>
+    </div>
+
+    <h3>Summary</h3>
+    <p>${report.summary}</p>
+
+    <h3>Rating Gap</h3>
+    <p>${report.ratingGapWarning}</p>
+
+    <h3>Recommendation</h3>
+    <p>${report.recommendation}</p>
+  `);
+}
+
+function openBusinessReport() {
+  const business = currentData.business;
+  const report = currentReports?.businessReport;
+
+  if (!report) {
+    showModal(`
+      <h2>AI Business Reputation Report</h2>
+      <p>Generating report preview...</p>
+    `);
+    return;
+  }
+
+  showModal(`
+    <h2>AI Business Reputation Report</h2>
+    <p class="modal-intro">This report shows how customers see your business online and what actions may improve trust, visibility and conversions.</p>
+
+    <div class="paid-report-banner">
+      <strong>$10 one-time report</strong>
+      <span>Built for business owners</span>
+    </div>
+
+    <h3>Preview</h3>
+    <p><strong>Trust Score:</strong> ${report.trustScore}/100</p>
+
+    <h3>Strengths</h3>
+    <ul>
+      ${(report.mainStrengths || []).slice(0, 2).map(item => `<li>${item}</li>`).join("")}
+    </ul>
+
+    <h3>Possible Risk</h3>
+    <p>${report.lostCustomerRisk || "Some platforms may have limited data, which can affect how customers compare your business."}</p>
+
+    <h3>Unlock full report to see</h3>
+    <ul>
+      <li>Platform comparison</li>
+      <li>Customer sentiment analysis</li>
+      <li>Main complaints</li>
+      <li>Competitor comparison</li>
+      <li>Lost customer risk</li>
+      <li>Offer recommendation</li>
+      <li>Review Pay verification opportunity</li>
+      <li>7-day action plan</li>
+    </ul>
+
+    <button class="unlock-report-button" onclick="startBusinessReportPayment()">
+      Unlock full report — $10
+    </button>
+  `);
+}
+
+function startBusinessReportPayment() {
+  alert("Stripe payment connection coming soon.");
+}
+
+If showModal() does not exist, create it:
+
+function showModal(html) {
+  const modal = document.getElementById("reportModal");
+  const modalBody = document.getElementById("reportModalBody");
+
+  modalBody.innerHTML = html;
+  modal.classList.add("active");
+}
+
+function closeReportModal() {
+  document.getElementById("reportModal").classList.remove("active");
+}
+
+Add this modal HTML before </body>:
+
+<div id="reportModal" class="report-modal">
+  <div class="report-modal-card">
+    <button class="modal-close" onclick="closeReportModal()">×</button>
+    <div id="reportModalBody"></div>
+  </div>
+</div>
+
+Add this CSS:
+
+.report-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 18px;
+  z-index: 999;
+}
+
+.report-modal.active {
+  display: flex;
+}
+
+.report-modal-card {
+  width: min(720px, 100%);
+  max-height: 90vh;
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 26px;
+  position: relative;
+  box-shadow: 0 20px 70px rgba(0,0,0,0.25);
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 50%;
+  background: #f1f1f1;
+  cursor: pointer;
+  font-size: 22px;
+}
+
+.report-modal-card h2 {
+  font-size: 28px;
+  margin-bottom: 10px;
+}
+
+.report-modal-card h3 {
+  margin-top: 18px;
+  margin-bottom: 8px;
+}
+
+.report-modal-card p,
+.report-modal-card li {
+  color: #5F6368;
+  line-height: 1.55;
+}
+
+.modal-intro {
+  margin-bottom: 16px;
+}
+
+.report-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  margin: 18px 0;
+}
+
+.report-stat-grid div {
+  background: #F7F7F4;
+  border: 1px solid #E5E5E5;
+  border-radius: 12px;
+  padding: 14px;
+}
+
+.report-stat-grid strong {
+  display: block;
+  font-size: 24px;
+  color: #050505;
+}
+
+.report-stat-grid span {
+  color: #5F6368;
+  font-size: 13px;
+}
+
+.paid-report-banner {
+  background: #071A3D;
+  color: #ffffff;
+  border-radius: 14px;
+  padding: 16px;
+  margin: 18px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.paid-report-banner span {
+  opacity: 0.85;
+}
+
+.unlock-report-button {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 10px;
+  background: #000000;
+  color: #ffffff;
+  font-weight: 950;
+  margin-top: 20px;
+  cursor: pointer;
+}
+
+@media (max-width: 700px) {
+  .report-stat-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .paid-report-banner {
+    flex-direction: column;
+  }
+}
+
+Important:
+The business report button must be visible on mobile.
+The free AI Review Sentiment button must be visible on mobile.
+The VIEW REPORT button should open the free AI Review Sentiment report.
+Do not hide report buttons behind the ratings list.

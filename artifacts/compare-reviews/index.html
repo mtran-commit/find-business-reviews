@@ -396,6 +396,60 @@
       .report-score .n { font-size: 34px; font-weight: 900; letter-spacing: -1px; }
       .report-score .n span { font-size: 15px; color: var(--text-2); font-weight: 700; }
       .report-score .l { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--text-2); }
+
+      /* ===== Report action buttons (in Trust Score panel) ===== */
+      .report-action-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+      .report-action-stack button {
+        width: 100%; min-height: 44px; border-radius: 8px; font-weight: 900;
+        font-size: 12.5px; letter-spacing: .4px; cursor: pointer; font-family: inherit;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        transition: box-shadow .15s, opacity .15s;
+      }
+      .report-action-stack button:hover { box-shadow: var(--shadow-soft); }
+      .report-action-stack .report-button { background: var(--black); color: #fff; border: none; text-transform: uppercase; }
+      .report-action-stack .free-report-button {
+        background: #fff; color: var(--text); border: 1px solid var(--border);
+        justify-content: space-between; padding: 0 14px; text-align: left;
+      }
+      .report-action-stack .business-report-button {
+        background: var(--navy); color: #fff; border: none;
+        justify-content: space-between; padding: 0 14px; text-align: left;
+      }
+      .report-action-stack .pill {
+        border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 900; letter-spacing: .3px; flex-shrink: 0;
+      }
+      .report-action-stack .free-report-button .pill { background: #EEF3FF; color: var(--navy); }
+      .report-action-stack .business-report-button .pill { background: #fff; color: var(--navy); }
+
+      /* ===== Business / customer report modal content ===== */
+      .report-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0; }
+      .report-stat-grid div { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
+      .report-stat-grid strong { display: block; font-size: 24px; color: var(--text); font-weight: 900; letter-spacing: -.5px; }
+      .report-stat-grid span { color: var(--text-2); font-size: 12.5px; }
+      .paid-report-banner {
+        background: var(--navy); color: #fff; border-radius: 14px; padding: 16px;
+        margin: 18px 0; display: flex; justify-content: space-between; gap: 12px; align-items: center;
+      }
+      .paid-report-banner strong { font-weight: 900; font-size: 15px; }
+      .paid-report-banner span { opacity: .85; font-size: 13px; }
+      .report-section + .report-section { margin-top: 18px; }
+      .report-section h4 { font-size: 13.5px; font-weight: 800; margin-bottom: 8px; }
+      .report-section p { font-size: 13.5px; color: var(--text-2); line-height: 1.6; }
+      .strength-list, .locked-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+      .strength-list li { display: flex; align-items: flex-start; gap: 9px; font-size: 13.5px; color: var(--text); }
+      .strength-list li::before { content: '\2713'; color: var(--tripadvisor); font-weight: 900; }
+      .locked-list li { display: flex; align-items: center; gap: 9px; font-size: 13.5px; color: var(--text-2); }
+      .locked-list li::before { content: '\1F512'; font-size: 12px; opacity: .7; }
+      .unlock-report-button {
+        width: 100%; height: 48px; border: none; border-radius: 10px;
+        background: var(--black); color: #fff; font-weight: 900; font-size: 14px;
+        margin-top: 22px; cursor: pointer; font-family: inherit;
+      }
+      .unlock-report-button:hover { opacity: .92; }
+      @media (max-width: 640px) {
+        .report-stat-grid { grid-template-columns: 1fr; }
+        .paid-report-banner { flex-direction: column; align-items: flex-start; }
+      }
     </style>
   </head>
   <body>
@@ -810,7 +864,11 @@
               '<div class="score-number">' + m.score + '<span>/100</span></div>' +
               '<div class="score-label">Trust Score ' + ICO.info + '</div>' +
               '<div class="score-sub">' + escapeHtml(scoreSub) + '</div>' +
-              '<button class="btn btn-black" data-act="report">View report ' + ICO.arrow + '</button>' +
+              '<div class="report-action-stack">' +
+                '<button class="report-button" data-act="report">View report ' + ICO.arrow + '</button>' +
+                '<button class="free-report-button" data-act="sentiment">View AI Review Sentiment <span class="pill">FREE</span></button>' +
+                '<button class="business-report-button" data-act="business-report">Business Report <span class="pill">$10</span></button>' +
+              '</div>' +
             '</div>' +
           '</div>' +
 
@@ -834,6 +892,8 @@
             else if (act === 'call') { if (data.phone) window.location.href = 'tel:' + data.phone; else alert('No phone number on file for this business.'); }
             else if (act === 'directions') { safeOpen(data.directionsUrl); }
             else if (act === 'report') openReport(data, m);
+            else if (act === 'sentiment') openReport(data, m);
+            else if (act === 'business-report') openBusinessReport(data, m);
             else if (act === 'offer') { if (!safeOpen(data.offer && data.offer.url)) alert('This is demo offer data — no live link yet.'); }
             else if (act === 'learn-more') { e.preventDefault(); alert('Review Pay is an internal platform. Demo data is shown until it is connected.'); }
           });
@@ -854,7 +914,7 @@
 
       // ---- Report modal: full AI insights live here (not on main page) ----
       function openReport(data, m) {
-        els.reportTitle.textContent = 'Trust report — ' + data.name;
+        els.reportTitle.textContent = 'AI Review Sentiment — ' + data.name;
         els.reportSub.textContent = 'Based on ' + m.count + ' real review platform' + (m.count === 1 ? '' : 's') + (m.labels.length ? ' (' + listToText(m.labels) + ')' : '');
 
         const fbSummary = fbReviewSummary(m.score, m.gap);
@@ -900,6 +960,74 @@
       function closeReport() {
         els.modal.classList.add('hidden');
         document.body.style.overflow = '';
+      }
+
+      // ---- Business-owner report (paid preview, reuses the report modal) ----
+      function openBusinessReport(data, m) {
+        els.reportTitle.textContent = 'AI Business Reputation Report — ' + data.name;
+        els.reportSub.textContent = 'For business owners · $10 one-time report';
+
+        const strengths = businessStrengths(data, m);
+        const risk = businessRisk(data, m);
+        const locked = [
+          'Full platform-by-platform comparison',
+          'Customer sentiment & complaint themes',
+          'Top strengths customers mention',
+          'Main risks losing you customers',
+          'How you compare to nearby competitors',
+          'Recommended offer to win more bookings',
+          'Review Pay verification opportunity',
+          '7-day reputation action plan'
+        ];
+
+        els.reportBody.innerHTML = '' +
+          '<p class="ab-body">See how customers view your business online and what actions can improve trust, visibility and bookings.</p>' +
+          '<div class="paid-report-banner"><strong>$10 one-time report</strong><span>Built for business owners</span></div>' +
+          '<div class="report-stat-grid">' +
+            '<div><strong>' + m.score + '/100</strong><span>Trust Score</span></div>' +
+            '<div><strong>' + m.avg.toFixed(1) + '/5</strong><span>Average rating</span></div>' +
+            '<div><strong>' + m.count + '</strong><span>Platforms checked</span></div>' +
+          '</div>' +
+          '<div class="report-section"><h4>What\u2019s working</h4><ul class="strength-list">' +
+            strengths.map(function (s) { return '<li>' + escapeHtml(s) + '</li>'; }).join('') +
+          '</ul></div>' +
+          '<div class="report-section"><h4>Possible risk</h4><p>' + escapeHtml(risk) + '</p></div>' +
+          '<div class="report-section"><h4>Unlock the full report to see</h4><ul class="locked-list">' +
+            locked.map(function (s) { return '<li>' + escapeHtml(s) + '</li>'; }).join('') +
+          '</ul></div>' +
+          '<button class="unlock-report-button" data-act="unlock">Unlock full report — $10</button>';
+
+        const unlockBtn = els.reportBody.querySelector('[data-act="unlock"]');
+        if (unlockBtn) unlockBtn.addEventListener('click', startBusinessReportPayment);
+
+        els.modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+      }
+
+      function startBusinessReportPayment() {
+        alert('Stripe payment connection coming soon.');
+      }
+
+      // Honest, data-derived highlights for the business report (max 2).
+      function businessStrengths(data, m) {
+        const out = [];
+        const g = data.google;
+        if (g && typeof g.rating === 'number' && g.rating >= 4.0) {
+          out.push('Strong public Google rating (' + g.rating.toFixed(1) + ' from ' + (g.reviews || 0).toLocaleString() + ' reviews)');
+        }
+        if (m.count >= 2 && m.gap < 0.5) out.push('Consistent ratings across the platforms checked');
+        if (m.totalReviews >= 500) out.push('High review volume builds customer trust (' + m.totalReviews.toLocaleString() + ' total)');
+        if (hasRating(data.reviewpay)) out.push('Review Pay verified data is available (demo)');
+        if (!out.length) out.push('Has a visible public review presence to build on');
+        return out.slice(0, 2);
+      }
+
+      function businessRisk(data, m) {
+        const keys = ['google', 'yelp', 'tripadvisor', 'facebook'];
+        const missing = keys.filter(function (k) { return !hasRating(data[k]); }).length;
+        if (missing >= 1) return 'Some review platforms are unavailable or have limited data, which can affect how customers compare your business.';
+        if (m.gap >= 0.8) return 'Ratings vary by ' + m.gap.toFixed(1) + ' between platforms, which can confuse potential customers comparing you.';
+        return 'No major reputation risks detected across the platforms checked — the priority is maintaining review volume and responding to new feedback.';
       }
 
       function renderFlagList(flags) {
