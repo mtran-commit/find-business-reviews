@@ -207,10 +207,17 @@
       .platform-name { font-weight: 600; font-size: 14px; }
       .rating-value { font-size: 30px; font-weight: 800; letter-spacing: -1px; margin-top: 14px; }
       .rating-value span { font-size: 15px; color: var(--text-2); font-weight: 600; }
-      .stars { display: flex; gap: 2px; margin-top: 6px; }
-      .star { width: 15px; height: 15px; color: var(--black); }
-      .star.empty { color: var(--border); }
-      .star.half { position: relative; }
+      .stars { margin-top: 6px; line-height: 1; }
+      .star-rating {
+        display: inline-block; position: relative; font-size: 15px; line-height: 1;
+        letter-spacing: 2px; font-family: Arial, "Helvetica Neue", sans-serif;
+      }
+      .star-rating::before { content: '\2605\2605\2605\2605\2605'; color: var(--border); }
+      .star-rating::after {
+        content: '\2605\2605\2605\2605\2605'; color: var(--black);
+        position: absolute; left: 0; top: 0; overflow: hidden; white-space: nowrap;
+        width: var(--fill, 0%);
+      }
       .reviews-count { font-size: 12.5px; color: var(--text-2); margin-top: 8px; }
       .bar { height: 6px; border-radius: 999px; background: var(--grey-btn); margin-top: 12px; overflow: hidden; }
       .bar-fill { height: 100%; background: var(--navy); border-radius: 999px; width: 0; transition: width .7s cubic-bezier(.2,.8,.2,1); }
@@ -389,18 +396,11 @@
         return Array.isArray(data.demo) && data.demo.indexOf(key) !== -1;
       }
 
-      // ---- Star rendering (black stars, supports partial fills via clip) ----
+      // ---- Star rendering (black stars over grey, partial fill via width %) ----
       function starsHtml2(rating) {
-        let html = '<div class="stars">';
-        for (let i = 1; i <= 5; i++) {
-          const fillPct = Math.max(0, Math.min(1, rating - (i - 1))) * 100;
-          html += '<span style="position:relative;display:inline-block;width:15px;height:15px;">' +
-            '<svg class="star empty" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="position:absolute;inset:0;"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>' +
-            '<span style="position:absolute;inset:0;overflow:hidden;width:' + fillPct + '%;">' +
-            '<svg class="star" viewBox="0 0 24 24" fill="currentColor" stroke="none" style="width:15px;height:15px;"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>' +
-            '</span></span>';
-        }
-        return html + '</div>';
+        const r = Number.isFinite(rating) ? rating : 0;
+        const pct = Math.max(0, Math.min(5, r)) / 5 * 100;
+        return '<div class="stars"><span class="star-rating" style="--fill:' + pct + '%"></span></div>';
       }
 
       // ---- Helpers for available (non-null) platforms ----
