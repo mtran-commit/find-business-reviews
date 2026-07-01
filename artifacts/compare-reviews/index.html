@@ -457,6 +457,11 @@
         margin-top: 22px; cursor: pointer; font-family: inherit;
       }
       .unlock-report-button:hover { opacity: .92; }
+      .pre-payment-note {
+        margin-top: 20px; padding: 12px 14px; border-radius: 10px;
+        background: rgba(56, 197, 187, .1); border: 1px solid rgba(56, 197, 187, .35);
+        color: var(--text-2); font-size: 13px; line-height: 1.45;
+      }
       @media (max-width: 640px) {
         .report-stat-grid { grid-template-columns: 1fr; }
         .paid-report-banner { flex-direction: column; align-items: flex-start; }
@@ -1091,6 +1096,7 @@
           '<div class="report-section"><h4>Unlock the full report to see</h4><ul class="locked-list">' +
             locked.map(function (s) { return '<li>' + escapeHtml(s) + '</li>'; }).join('') +
           '</ul></div>' +
+          '<p class="pre-payment-note">After payment, we will use the email entered at checkout to send your Business Reputation Report.</p>' +
           '<button class="unlock-report-button" data-act="unlock">Unlock full report — $10</button>';
 
         const unlockBtn = els.reportBody.querySelector('[data-act="unlock"]');
