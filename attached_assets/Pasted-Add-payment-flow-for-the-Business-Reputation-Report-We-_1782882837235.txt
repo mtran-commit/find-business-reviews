@@ -1,0 +1,132 @@
+Add payment flow for the Business Reputation Report.
+
+We want the user to click:
+Business Reputation Report — $10
+
+Then the app should take the user to a secure payment page to enter credit card details.
+
+Use Stripe Checkout for the payment page, not a custom credit card form.
+
+Important:
+Do not collect or store credit card details in our app.
+Stripe must handle the card payment securely.
+
+Payment flow:
+1. User clicks “Business Reputation Report — $10”
+2. Open payment modal:
+   Title: Business Reputation Report
+   Price: $10
+   Text: “Unlock the full business report showing how customers see this business online and what actions may improve trust, visibility and conversions.”
+   Button: Continue to secure payment
+3. When clicked, call backend:
+   POST /api/create-checkout-session
+4. Backend creates a Stripe Checkout session for $10 AUD
+5. Redirect user to Stripe Checkout URL
+6. After successful payment, redirect to:
+   /success?session_id={CHECKOUT_SESSION_ID}
+7. On success page or modal, unlock/generate the full Business Reputation Report.
+
+Use environment variable:
+STRIPE_SECRET_KEY
+
+Also add:
+STRIPE_WEBHOOK_SECRET later for webhooks.
+
+Product:
+Name: AI Business Reputation Report
+Price: $10 AUD
+Currency: aud
+
+Add backend endpoint:
+
+POST /api/create-checkout-session
+
+Request body:
+{
+  businessName,
+  trustScore,
+  reportType: "business-reputation-report"
+}
+
+Response:
+{
+  url: checkoutSession.url
+}
+
+Frontend:
+function startBusinessReportPayment() {
+  fetch("/api/create-checkout-session", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      businessName: currentData.business.name,
+      trustScore: currentData.business.trustScore,
+      reportType: "business-reputation-report"
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert("Payment could not be started.");
+    }
+  })
+  .catch(() => alert("Payment could not be started."));
+}
+
+Backend:
+Install Stripe:
+npm install stripe
+
+In server.js:
+const Stripe = require("stripe");
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
+Create checkout endpoint:
+
+app.post("/api/create-checkout-session", async (req, res) => {
+  try {
+    const { businessName } = req.body;
+
+    const session = await stripe.checkout.sessions.create({
+      mode: "payment",
+      payment_method_types: ["card"],
+      line_items: [
+        {
+          price_data: {
+            currency: "aud",
+            product_data: {
+              name: "AI Business Reputation Report",
+              description: businessName
+                ? `Business reputation report for ${businessName}`
+                : "Business reputation report"
+            },
+            unit_amount: 1000
+          },
+          quantity: 1
+        }
+      ],
+      success_url: `${req.protocol}://${req.get("host")}/success.html?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${req.protocol}://${req.get("host")}/`
+    });
+
+    res.json({ url: session.url });
+  } catch (error) {
+    console.error("Stripe checkout error:", error);
+    res.status(500).json({ error: "Unable to create checkout session" });
+  }
+});
+
+Create public/success.html:
+- Show: “Payment successful”
+- Show: “Your Business Reputation Report is being generated.”
+- Add button: “Return to Compare Reviews”
+
+Xero:
+For now, do not send the customer to Xero to enter card details.
+Use Stripe Checkout first.
+
+Later:
+Connect Stripe to Xero or use Xero invoices for accounting/reconciliation.
+Once payment is successful, create a Xero invoice or let Stripe/Xero integration reconcile the payment.
