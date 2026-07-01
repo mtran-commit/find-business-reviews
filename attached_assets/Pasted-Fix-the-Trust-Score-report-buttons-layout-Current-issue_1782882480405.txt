@@ -1,0 +1,169 @@
+Fix the Trust Score report buttons layout.
+
+Current issue:
+On the right Trust Score panel, the buttons are too cramped:
+- “View AI Review Sentiment” wraps badly into multiple short lines.
+- “Business Report” is too small.
+- The FREE and $10 badges are squeezed.
+- The buttons do not look premium.
+
+Required design:
+Under the black VIEW REPORT button, show two clean full-width buttons:
+
+1. AI Review Sentiment
+   Badge: FREE
+
+2. Business Reputation Report
+   Badge: $10
+
+Do not use the text “View AI Review Sentiment” inside the small button.
+Use the shorter label:
+AI Review Sentiment
+
+Do not use the text “Business Report”.
+Use:
+Business Reputation Report
+
+Button order:
+1. VIEW REPORT →
+2. AI Review Sentiment    FREE
+3. Business Reputation Report    $10
+
+The black VIEW REPORT button opens the free AI Review Sentiment report.
+The AI Review Sentiment button also opens the free AI Review Sentiment report.
+The Business Reputation Report button opens the paid business report preview.
+
+Update the Trust Score panel HTML to:
+
+<div class="report-action-stack">
+  <button class="report-button" onclick="openCustomerReport()">
+    VIEW REPORT →
+  </button>
+
+  <button class="free-report-button" onclick="openCustomerReport()">
+    <span class="report-label">AI Review Sentiment</span>
+    <span class="report-badge free">FREE</span>
+  </button>
+
+  <button class="business-report-button" onclick="openBusinessReport()">
+    <span class="report-label">Business Reputation Report</span>
+    <span class="report-badge paid">$10</span>
+  </button>
+</div>
+
+Use this CSS:
+
+.report-action-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+  width: 100%;
+}
+
+.report-button,
+.free-report-button,
+.business-report-button {
+  width: 100%;
+  min-height: 46px;
+  border-radius: 9px;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+.report-button {
+  background: #000000;
+  color: #ffffff;
+  border: none;
+  font-size: 14px;
+}
+
+.free-report-button,
+.business-report-button {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.free-report-button {
+  background: #ffffff;
+  color: #050505;
+  border: 1px solid #D8D8D8;
+}
+
+.business-report-button {
+  background: #071A3D;
+  color: #ffffff;
+  border: none;
+}
+
+.report-label {
+  font-size: 13px;
+  line-height: 1.15;
+  font-weight: 950;
+}
+
+.report-badge {
+  flex-shrink: 0;
+  border-radius: 999px;
+  padding: 5px 9px;
+  font-size: 11px;
+  font-weight: 950;
+  line-height: 1;
+}
+
+.report-badge.free {
+  background: #EEF3FF;
+  color: #071A3D;
+}
+
+.report-badge.paid {
+  background: #FFFFFF;
+  color: #071A3D;
+}
+
+Important:
+The label text must not break into one word per line.
+The badge must stay on the right side.
+The buttons must fit inside the Trust Score panel.
+If the Trust Score panel is too narrow, increase its width.
+
+Desktop fix:
+Change featured-card grid columns from:
+
+grid-template-columns: 330px 1fr 330px 230px;
+
+to:
+
+grid-template-columns: 330px minmax(280px, 1fr) 330px 260px;
+
+This gives the report buttons more room.
+
+Mobile:
+On mobile, these buttons should become full width and easy to tap.
+
+@media (max-width: 700px) {
+  .report-label {
+    font-size: 14px;
+  }
+
+  .report-button,
+  .free-report-button,
+  .business-report-button {
+    min-height: 50px;
+  }
+}
+
+Final check:
+The Trust Score panel should show:
+- 61/100
+- TRUST SCORE
+- explanation text
+- VIEW REPORT →
+- AI Review Sentiment FREE
+- Business Reputation Report $10
+
+No cramped or broken text.

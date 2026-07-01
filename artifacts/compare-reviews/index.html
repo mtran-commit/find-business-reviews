@@ -156,7 +156,7 @@
         border: 1.5px solid var(--aqua); border-radius: 12px;
         padding: 34px 24px 22px;
         display: grid;
-        grid-template-columns: 270px minmax(0, 1fr) 260px 180px;
+        grid-template-columns: 270px minmax(240px, 1fr) 260px 230px;
         grid-template-areas: "img info rate score";
         gap: 18px 22px; align-items: start;
       }
@@ -396,28 +396,41 @@
       .report-score .l { font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: .6px; color: var(--text-2); }
 
       /* ===== Report action buttons (in Trust Score panel) ===== */
-      .report-action-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+      .report-action-stack { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; width: 100%; }
       .report-action-stack button {
-        width: 100%; min-height: 44px; border-radius: 8px; font-weight: 900;
-        font-size: 12.5px; letter-spacing: .4px; cursor: pointer; font-family: inherit;
-        display: flex; align-items: center; justify-content: center; gap: 8px;
+        width: 100%; min-height: 46px; border-radius: 9px; font-weight: 900;
+        letter-spacing: .3px; cursor: pointer; font-family: inherit;
         transition: box-shadow .15s, opacity .15s;
       }
       .report-action-stack button:hover { box-shadow: var(--shadow-soft); }
-      .report-action-stack .report-button { background: var(--black); color: #fff; border: none; text-transform: uppercase; }
+      .report-action-stack .report-button {
+        background: var(--black); color: #fff; border: none; text-transform: uppercase;
+        font-size: 14px; display: flex; align-items: center; justify-content: center; gap: 8px;
+      }
+      .report-action-stack .free-report-button,
+      .report-action-stack .business-report-button {
+        display: flex; justify-content: space-between; align-items: center; gap: 10px;
+        padding: 10px 12px; text-align: left;
+      }
       .report-action-stack .free-report-button {
         background: #fff; color: var(--text); border: 1px solid var(--border);
-        justify-content: space-between; padding: 0 14px; text-align: left;
       }
       .report-action-stack .business-report-button {
         background: var(--navy); color: #fff; border: none;
-        justify-content: space-between; padding: 0 14px; text-align: left;
+      }
+      .report-action-stack .report-label {
+        font-size: 13px; line-height: 1.15; font-weight: 900; flex: 1 1 auto;
       }
       .report-action-stack .pill {
-        border-radius: 999px; padding: 4px 9px; font-size: 11px; font-weight: 900; letter-spacing: .3px; flex-shrink: 0;
+        flex: 0 0 auto; border-radius: 999px; padding: 5px 9px;
+        font-size: 11px; font-weight: 900; line-height: 1; white-space: nowrap;
       }
-      .report-action-stack .free-report-button .pill { background: #EEF3FF; color: var(--navy); }
-      .report-action-stack .business-report-button .pill { background: #fff; color: var(--navy); }
+      .report-action-stack .pill.free { background: #EEF3FF; color: var(--navy); }
+      .report-action-stack .pill.paid { background: #fff; color: var(--navy); }
+      @media (max-width: 700px) {
+        .report-action-stack .report-label { font-size: 14px; }
+        .report-action-stack button { min-height: 50px; }
+      }
 
       /* ===== Business / customer report modal content ===== */
       .report-stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 18px 0; }
@@ -888,9 +901,9 @@
               '<div class="score-label">Trust Score ' + ICO.info + '</div>' +
               '<div class="score-sub">' + escapeHtml(scoreSub) + '</div>' +
               '<div class="report-action-stack">' +
-                '<button class="report-button" data-act="report">View report ' + ICO.arrow + '</button>' +
-                '<button class="free-report-button" data-act="sentiment">View AI Review Sentiment <span class="pill">FREE</span></button>' +
-                '<button class="business-report-button" data-act="business-report">Business Report <span class="pill">$10</span></button>' +
+                '<button class="report-button" data-act="report">VIEW REPORT ' + ICO.arrow + '</button>' +
+                '<button class="free-report-button" data-act="sentiment"><span class="report-label">AI Review Sentiment</span><span class="pill free">FREE</span></button>' +
+                '<button class="business-report-button" data-act="business-report"><span class="report-label">Business Reputation Report</span><span class="pill paid">$10</span></button>' +
               '</div>' +
             '</div>' +
           '</div>' +
