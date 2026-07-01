@@ -1,0 +1,102 @@
+Remove Facebook from Compare Reviews for now.
+
+Delete or hide Facebook everywhere in the app.
+
+Remove Facebook from:
+1. Ratings by platform section
+2. Trust Score calculation
+3. Similar business rows
+4. AI Review Sentiment report
+5. Business Reputation Report
+6. Any Facebook icon/card/row
+7. Any Facebook demo data
+8. Any Facebook API placeholder
+9. Any Facebook “Not available yet” text
+
+The platform list should now only show:
+- Google
+- Yelp
+- TripAdvisor
+
+Do not show Facebook at all, even as “Not available yet”.
+
+Trust Score calculation:
+Use only available ratings from:
+- Google
+- Yelp
+- TripAdvisor
+
+Do not include Facebook in the average.
+
+Update Trust Score explanation text to:
+
+“Average across available Google, Yelp and TripAdvisor ratings”
+
+If only Google and TripAdvisor are available, show:
+
+“Average across Google and TripAdvisor where available”
+
+Update the platform ratings section:
+Remove this row completely:
+
+Facebook — Not available yet
+
+Update similar business rows:
+Only show:
+- Google rating
+- Yelp rating
+- TripAdvisor rating
+
+Remove any Facebook chip or placeholder.
+
+Update AI reports:
+Remove any mention of Facebook.
+
+AI Review Sentiment should only analyse:
+- Google
+- Yelp
+- TripAdvisor
+
+Business Reputation Report should only analyse:
+- Google
+- Yelp
+- TripAdvisor
+
+Update OpenAI prompt:
+Do not mention Facebook.
+Do not ask OpenAI to analyse Facebook.
+Only analyse available public review platforms:
+Google, Yelp and TripAdvisor.
+
+Update backend demo data:
+Remove this object from all business data:
+
+facebook: {
+  rating,
+  reviews,
+  available
+}
+
+Update frontend functions:
+Remove or stop calling:
+
+platformRow("facebook", "Facebook", ...)
+smallRatingChip("facebook", ...)
+any Facebook renderer
+any Facebook status logic
+
+Final platform display:
+The top result should show only:
+
+Google
+Yelp
+TripAdvisor
+
+No Facebook.
+
+Final check:
+Search any business and confirm:
+- Facebook does not appear in the platform list
+- Facebook does not appear in similar business rows
+- Facebook does not appear in the reports
+- Trust Score only uses Google, Yelp and TripAdvisor

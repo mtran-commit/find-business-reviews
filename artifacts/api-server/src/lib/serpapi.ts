@@ -19,9 +19,6 @@ import type { Logger } from "pino";
  * The TripAdvisor search engine returns the aggregate rating + review count
  * directly on each place result, so a single call (matched by name) suffices.
  *
- * Facebook has no usable SerpApi rating source, so it is always returned as
- * null with a "Not available yet" note.
- *
  * Docs: https://serpapi.com/google-maps-api , https://serpapi.com/yelp-api ,
  *       https://serpapi.com/yelp-reviews-api , https://serpapi.com/tripadvisor
  */
@@ -93,7 +90,6 @@ export interface BusinessReviews {
   google: PlatformRating | null;
   tripadvisor: PlatformRating | null;
   yelp: PlatformRating | null;
-  facebook: PlatformRating | null;
   /** Public offer (demo data for now; flagged via `offer.demo`). */
   offer: Offer;
   /** Detected industry/category of this business. */
@@ -308,14 +304,10 @@ export async function fetchBusinessReviews(
     notes["tripadvisor"] = "No match found";
   }
 
-  // ---- Facebook: no usable public rating source ----
-  notes["facebook"] = "Not available yet";
-
   const unavailable: string[] = [];
   if (!google) unavailable.push("google");
   if (!yelp) unavailable.push("yelp");
   if (!tripadvisor) unavailable.push("tripadvisor");
-  unavailable.push("facebook");
 
   // ---- Similar businesses: same category + suburb (real lookup, demo fallback) ----
   const category = detectBusinessCategory(name, query, placeTypes);
@@ -334,7 +326,6 @@ export async function fetchBusinessReviews(
     google,
     tripadvisor,
     yelp,
-    facebook: null,
     offer: buildDemoOffer(name, website),
     category,
     locality,
