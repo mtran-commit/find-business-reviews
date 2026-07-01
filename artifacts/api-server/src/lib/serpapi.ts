@@ -49,8 +49,10 @@ export interface NearbyBusiness {
   name: string;
   category: string;
   location: string;
-  /** Brand logo (website favicon) when available; "" → frontend uses initials. */
+  /** Brand logo URL; only trust it when `logoConfidence === "high"`. */
   logoUrl: string;
+  /** "high" only when the logo is confidently the business's own brand mark. */
+  logoConfidence: "high" | "low";
   /** Colour business photo when available (optional for rows). */
   imageUrl: string;
   google: PlatformRating | null;
@@ -81,7 +83,10 @@ export interface BusinessReviews {
   name: string;
   address: string;
   logoText: string;
+  /** Brand logo URL; only trust it when `logoConfidence === "high"`. */
   logoUrl: string;
+  /** "high" only when the logo is confidently the business's own brand mark. */
+  logoConfidence: "high" | "low";
   /** Colour business photo when available (Google Maps thumbnail). */
   imageUrl: string;
   website: string;
@@ -134,22 +139,6 @@ function initials(name: string): string {
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
-}
-
-/**
- * Derive a brand logo URL from a business website using Google's public favicon
- * service. Returns "" when no usable website is present so the frontend can fall
- * back to initials. No API key required.
- */
-function faviconLogo(website: string): string {
-  if (!website) return "";
-  try {
-    const host = new URL(website).hostname;
-    if (!host) return "";
-    return `https://www.google.com/s2/favicons?domain=${host}&sz=128`;
-  } catch {
-    return "";
-  }
 }
 
 /** Derive a Yelp `find_loc` (city/region) from a Google-style address. */
@@ -229,11 +218,15 @@ export async function fetchBusinessReviews(
   const address = typeof place["address"] === "string" ? place["address"] : "";
   const phone = typeof place["phone"] === "string" ? place["phone"] : "";
   const website = typeof place["website"] === "string" ? place["website"] : "";
-  // Google Maps thumbnail is a colour business photo; derive a separate brand
-  // logo from the website favicon so the featured card can show both.
+  // Google Maps thumbnail is a colour business photo. We deliberately do NOT
+  // derive a logo from the website favicon: favicons frequently return platform
+  // icons (WordPress/Wix/Shopify/etc.) rather than the real brand mark, so they
+  // cannot be confidently matched to the business. Until a confident logo source
+  // exists we leave the logo empty and let the frontend show initials.
   const imageUrl =
     typeof place["thumbnail"] === "string" ? place["thumbnail"] : "";
-  const logoUrl = faviconLogo(website);
+  const logoUrl = "";
+  const logoConfidence: "high" | "low" = "low";
 
   const google = toRating(place);
 
@@ -319,6 +312,7 @@ export async function fetchBusinessReviews(
     address,
     logoText: initials(name),
     logoUrl,
+    logoConfidence,
     imageUrl,
     website,
     phone,
@@ -618,6 +612,7 @@ export function buildCategoryDemoNearby(
       category: `${category.rowLabel} · ${place}`,
       location: place,
       logoUrl: "",
+      logoConfidence: "low",
       imageUrl: "",
       google: demoRating(seed + "g", 60, 360),
       yelp: yelp ? demoRating(seed + "y", 20, 180) : null,
@@ -694,7 +689,6 @@ export async function fetchSimilarBusinesses(
         seen.add(key);
 
         const rowSuburb = extractLocality(addr).suburb || suburb;
-        const rowSite = typeof r["website"] === "string" ? r["website"] : "";
         const rowThumb =
           typeof r["thumbnail"] === "string" ? r["thumbnail"] : "";
 
@@ -702,7 +696,8 @@ export async function fetchSimilarBusinesses(
           name: title,
           category: `${category.rowLabel} · ${rowSuburb}`,
           location: rowSuburb,
-          logoUrl: faviconLogo(rowSite),
+          logoUrl: "",
+          logoConfidence: "low",
           imageUrl: rowThumb,
           google: toRating(r),
           yelp: null,

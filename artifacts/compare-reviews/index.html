@@ -581,6 +581,38 @@
         return { avg: avg, totalReviews: totalReviews, score: Math.round((avg / 5) * 100) };
       }
 
+      // ---- Logo trust gate ----------------------------------------------
+      // NEVER show a wrong or generic logo. A logo is only shown when the
+      // backend flags it high-confidence AND it passes a local validator that
+      // rejects platform/CMS icons, favicon services and placeholders.
+      var LOGO_BANNED = [
+        'wordpress', 'wix', 'squarespace', 'shopify', 'weebly', 'godaddy',
+        'wp-content', 'wp-includes', 'google', 'gstatic', 'facebook', 'fbcdn',
+        'instagram', 'cdninstagram', 'tripadvisor', 'yelp', 'favicon',
+        'apple-touch-icon', 's2/favicons', 'placeholder', 'default', 'logo-default',
+        'sprite', 'gravatar'
+      ];
+      function isValidBusinessLogo(logoUrl, name) {
+        if (!logoUrl || typeof logoUrl !== 'string') return false;
+        var url = logoUrl.toLowerCase();
+        if (url.indexOf('http') !== 0) return false;
+        for (var i = 0; i < LOGO_BANNED.length; i++) {
+          if (url.indexOf(LOGO_BANNED[i]) !== -1) return false;
+        }
+        // Require a distinctive word from the business name (>2 chars) to appear
+        // somewhere in the URL, so the logo is plausibly this business's own.
+        var words = String(name || '').toLowerCase().split(/[^a-z0-9]+/).filter(function (w) { return w.length > 2; });
+        for (var j = 0; j < words.length; j++) {
+          if (url.indexOf(words[j]) !== -1) return true;
+        }
+        return false;
+      }
+      // Resolve a trustworthy logo URL for a business object, or "" for initials.
+      function safeLogoUrl(biz) {
+        if (!biz || biz.logoConfidence !== 'high') return '';
+        return isValidBusinessLogo(biz.logoUrl, biz.name) ? biz.logoUrl : '';
+      }
+
       // ---- Logo rendering: real logo if present, else initials fallback ----
       function renderLogo(logoUrl, name, cls) {
         cls = cls || 'result-logo';
@@ -723,8 +755,9 @@
           ? '<img class="featured-image" src="' + escapeAttr(data.imageUrl) + '" alt="' + escapeAttr(data.name) + '" onerror="window.__photoFail(this)" />'
           : '';
         let logoOverlay = '';
-        if (data.logoUrl) {
-          logoOverlay = '<div class="logo-overlay"><img src="' + escapeAttr(data.logoUrl) + '" alt="' + escapeAttr(data.name) + ' logo" onerror="window.__logoFail(this, \'' + escapeAttr(initials(data.name)) + '\')" /></div>';
+        const trustedLogo = safeLogoUrl(data);
+        if (trustedLogo) {
+          logoOverlay = '<div class="logo-overlay"><img src="' + escapeAttr(trustedLogo) + '" alt="' + escapeAttr(data.name) + ' logo" onerror="window.__logoFail(this, \'' + escapeAttr(initials(data.name)) + '\')" /></div>';
         } else if (data.imageUrl) {
           logoOverlay = '<div class="logo-overlay fallback">' + photoInit + '</div>';
         }
@@ -796,7 +829,7 @@
           return '' +
             '<div class="result-row" data-name="' + escapeAttr(n.name) + '">' +
               '<div class="result-top">' +
-                renderLogo(n.logoUrl, n.name, 'result-logo') +
+                renderLogo(safeLogoUrl(n), n.name, 'result-logo') +
                 '<div class="result-info">' +
                   '<div class="result-name">' + escapeHtml(n.name) + '</div>' +
                   '<div class="result-cat">' + escapeHtml(n.category || '') + '</div>' +

@@ -1,0 +1,130 @@
+Fix incorrect business logo fetching.
+
+Current issue:
+The app fetched the wrong logo for D.O.C Pizza and Deli Mornington. It showed a WordPress logo, which is not the business logo.
+
+This is unacceptable. Do not show random logos, website platform icons, WordPress icons, favicons, hosting icons, or unrelated images as the business logo.
+
+Logo rules:
+1. Only display a business logo if it is confidently matched to the business.
+2. If the logo is uncertain, hide it and show initials fallback.
+3. Never show WordPress, Wix, Squarespace, Shopify, Google, Facebook, Instagram, TripAdvisor, Yelp or other platform logos as the business logo.
+4. Do not use generic website favicons unless they clearly match the business name.
+5. Business photo can still be shown separately.
+
+Add logo validation before rendering:
+
+function isValidBusinessLogo(logoUrl, businessName) {
+  if (!logoUrl) return false;
+
+  const url = logoUrl.toLowerCase();
+  const nameWords = businessName
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ")
+    .split(/\s+/)
+    .filter(word => word.length > 2);
+
+  const bannedLogoSignals = [
+    "wordpress",
+    "wp-content",
+    "wp-includes",
+    "w.org",
+    "wix",
+    "squarespace",
+    "shopify",
+    "google",
+    "facebook",
+    "instagram",
+    "tripadvisor",
+    "yelp",
+    "favicon",
+    "apple-touch-icon",
+    "default",
+    "placeholder",
+    "logo512",
+    "logo192"
+  ];
+
+  if (bannedLogoSignals.some(signal => url.includes(signal))) {
+    return false;
+  }
+
+  const hasBusinessNameSignal = nameWords.some(word => url.includes(word));
+
+  return hasBusinessNameSignal;
+}
+
+When rendering the featured result logo overlay:
+- If isValidBusinessLogo(logoUrl, businessName) is true, show the logo image.
+- Otherwise show initials fallback.
+- Do not show the wrong logo.
+
+Update logo rendering:
+
+function renderBusinessLogo(logoUrl, businessName, className = "logo-overlay") {
+  if (isValidBusinessLogo(logoUrl, businessName)) {
+    return `
+      <div class="${className}">
+        <img src="${logoUrl}" alt="${businessName} logo" />
+      </div>
+    `;
+  }
+
+  return `
+    <div class="${className} fallback-logo">
+      ${getInitials(businessName)}
+    </div>
+  `;
+}
+
+CSS:
+
+.fallback-logo {
+  background: #071A3D;
+  color: #FFFFFF;
+  font-weight: 950;
+  font-size: 18px;
+}
+
+For the top featured result:
+- Always show the business photo if available.
+- Show the logo overlay only if valid.
+- If logo is invalid, show initials fallback.
+- Do not use WordPress or favicon logos.
+
+For similar businesses:
+- Use real logo only if valid.
+- Otherwise show initials fallback.
+
+Backend improvement:
+When fetching logos, use safer search terms:
+"[Business Name] [Suburb] official logo Australia"
+"[Business Name] [Suburb] logo"
+
+Do not use:
+- generic favicon only
+- website technology icons
+- WordPress favicon
+- theme icons
+- social media icons
+
+If the image result title or URL does not clearly contain the business name or brand name, do not use it as a logo.
+
+Add a field:
+logoConfidence: "high" | "low"
+
+Only render logoUrl if:
+logoConfidence === "high"
+
+If logoConfidence is low:
+logoUrl should be ignored by frontend.
+
+Expected result:
+For D.O.C Pizza and Deli Mornington:
+- Do not show WordPress logo.
+- Show business photo.
+- Show initials fallback, for example "DP" or "DOC", until a correct logo is found.
+
+Final check:
+Search D.O.C Pizza and Deli Mornington.
+The WordPress logo must not appear anywhere.
