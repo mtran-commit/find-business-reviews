@@ -1,0 +1,220 @@
+Add a loading spinner and “Report Generating” message while the AI report is being generated.
+
+Current issue:
+The AI summary/report takes a few seconds to generate, and the modal currently shows plain text like:
+“Generating AI summary...”
+
+Improve this with a proper loading state.
+
+Required behaviour:
+When the user clicks:
+- View Report
+- View AI Review Sentiment
+- Business Report
+
+If the AI report is not ready yet, show a clean loading modal with:
+- A spinning circle loader
+- Title: “Report Generating”
+- Message: “Our AI is analysing the available Google, Yelp and TripAdvisor review data. This may take a few seconds.”
+- Small note: “Please don’t close this window.”
+
+Once the AI report is ready:
+- Automatically replace the loading state with the actual report content.
+- Do not make the user click again.
+
+If AI fails:
+Show:
+“Report could not be generated right now. Please try again.”
+
+Add this modal loading HTML function:
+
+function showReportGenerating(type = "customer") {
+  const message = type === "business"
+    ? "Our AI is preparing your Business Reputation Report using available review data and competitor signals. This may take a few seconds."
+    : "Our AI is analysing the available Google, Yelp and TripAdvisor review data. This may take a few seconds.";
+
+  showModal(`
+    <div class="report-loading">
+      <div class="spinner"></div>
+      <h2>Report Generating</h2>
+      <p>${message}</p>
+      <span>Please don’t close this window.</span>
+    </div>
+  `);
+}
+
+Add this CSS:
+
+.report-loading {
+  text-align: center;
+  padding: 34px 18px;
+}
+
+.spinner {
+  width: 58px;
+  height: 58px;
+  border: 5px solid #E5E5E5;
+  border-top: 5px solid #071A3D;
+  border-radius: 50%;
+  margin: 0 auto 20px;
+  animation: spin 0.85s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.report-loading h2 {
+  font-size: 28px;
+  margin-bottom: 10px;
+  color: #050505;
+}
+
+.report-loading p {
+  max-width: 460px;
+  margin: 0 auto 12px;
+  color: #5F6368;
+  line-height: 1.5;
+}
+
+.report-loading span {
+  display: inline-block;
+  margin-top: 8px;
+  color: #071A3D;
+  font-weight: 800;
+  font-size: 13px;
+}
+
+Update openCustomerReport():
+
+async function openCustomerReport() {
+  if (!currentReports?.customerReport) {
+    showReportGenerating("customer");
+
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    const waitForReport = setInterval(() => {
+      attempts++;
+
+      if (currentReports?.customerReport) {
+        clearInterval(waitForReport);
+        renderCustomerReport();
+      }
+
+      if (attempts >= maxAttempts && !currentReports?.customerReport) {
+        clearInterval(waitForReport);
+        showModal(`
+          <h2>Report could not be generated</h2>
+          <p>Report could not be generated right now. Please try again.</p>
+        `);
+      }
+    }, 500);
+
+    return;
+  }
+
+  renderCustomerReport();
+}
+
+Create renderCustomerReport() and move the existing customer report modal HTML into it:
+
+function renderCustomerReport() {
+  const report = currentReports.customerReport;
+
+  showModal(`
+    <h2>AI Review Sentiment</h2>
+    <p class="modal-intro">This free summary helps customers quickly understand the public review sentiment before they buy, book or visit.</p>
+
+    <div class="report-stat-grid">
+      <div><strong>${report.trustScore}/100</strong><span>Trust Score</span></div>
+      <div><strong>${report.averageRating}/5</strong><span>Average Rating</span></div>
+      <div><strong>${report.platformsChecked}</strong><span>Platforms Checked</span></div>
+    </div>
+
+    <h3>Review Summary</h3>
+    <p>${report.summary}</p>
+
+    <h3>Rating Gap</h3>
+    <p>${report.ratingGapWarning}</p>
+
+    <h3>Recommendation</h3>
+    <p>${report.recommendation}</p>
+  `);
+}
+
+Update openBusinessReport():
+
+async function openBusinessReport() {
+  if (!currentReports?.businessReport) {
+    showReportGenerating("business");
+
+    let attempts = 0;
+    const maxAttempts = 20;
+
+    const waitForReport = setInterval(() => {
+      attempts++;
+
+      if (currentReports?.businessReport) {
+        clearInterval(waitForReport);
+        renderBusinessReportPreview();
+      }
+
+      if (attempts >= maxAttempts && !currentReports?.businessReport) {
+        clearInterval(waitForReport);
+        showModal(`
+          <h2>Report could not be generated</h2>
+          <p>Report could not be generated right now. Please try again.</p>
+        `);
+      }
+    }, 500);
+
+    return;
+  }
+
+  renderBusinessReportPreview();
+}
+
+Create renderBusinessReportPreview() and move the existing business report modal HTML into it.
+
+Also update the small AI summary area inside the page:
+While AI is loading, show:
+- spinner
+- “Report Generating”
+
+Replace:
+“Generating AI summary...”
+
+with:
+
+<div class="inline-ai-loading">
+  <span class="small-spinner"></span>
+  <span>Report Generating</span>
+</div>
+
+CSS:
+
+.inline-ai-loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #071A3D;
+  font-weight: 850;
+}
+
+.small-spinner {
+  width: 18px;
+  height: 18px;
+  border: 3px solid #E5E5E5;
+  border-top: 3px solid #071A3D;
+  border-radius: 50%;
+  animation: spin 0.85s linear infinite;
+}
+
+Important:
+- The spinner must be visible while waiting for OpenAI.
+- When OpenAI returns, replace the loading content with the final report.
+- The user should not need to click twice.
+- Keep the design black, white and dark navy.

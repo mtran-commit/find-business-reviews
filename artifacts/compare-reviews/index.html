@@ -127,6 +127,11 @@
         border-radius: 50%; animation: spin .8s linear infinite;
       }
       @keyframes spin { to { transform: rotate(360deg); } }
+      .report-loading { text-align: center; padding: 34px 18px; }
+      .report-loading .spinner { width: 56px; height: 56px; border-width: 5px; margin-bottom: 20px; }
+      .report-loading h2 { font-size: 26px; margin-bottom: 10px; color: var(--text); letter-spacing: -.4px; }
+      .report-loading p { max-width: 460px; margin: 0 auto 12px; color: var(--text-2); line-height: 1.5; }
+      .report-loading span { display: inline-block; margin-top: 8px; color: var(--navy); font-weight: 800; font-size: 13px; }
       .fade-in { animation: fade .35s ease both; }
       @keyframes fade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
 
@@ -896,14 +901,58 @@
       }
 
       // ---- Report modal: full AI insights live here (not on main page) ----
-      function openReport(data, m) {
+      // Bumped whenever a report is opened or closed, so a slow AI response can
+      // never render into a modal the user has since closed or replaced.
+      let reportToken = 0;
+
+      function reportLoadingHtml(type) {
+        const message = type === 'business'
+          ? 'Our AI is preparing your Business Reputation Report using the available Google, Yelp and TripAdvisor review data. This may take a few seconds.'
+          : 'Our AI is analysing the available Google, Yelp and TripAdvisor review data. This may take a few seconds.';
+        return '' +
+          '<div class="report-loading">' +
+            '<div class="spinner"></div>' +
+            '<h2>Report Generating</h2>' +
+            '<p>' + escapeHtml(message) + '</p>' +
+            '<span>Please don\u2019t close this window.</span>' +
+          '</div>';
+      }
+
+      function reportErrorHtml() {
+        return '' +
+          '<div class="report-loading">' +
+            '<h2>Report could not be generated</h2>' +
+            '<p>Report could not be generated right now. Please try again.</p>' +
+          '</div>';
+      }
+
+      async function openReport(data, m) {
+        const token = ++reportToken;
         els.reportTitle.textContent = 'AI Review Sentiment — ' + data.name;
         els.reportSub.textContent = 'Based on ' + m.count + ' real review platform' + (m.count === 1 ? '' : 's') + (m.labels.length ? ' (' + listToText(m.labels) + ')' : '');
+        els.reportBody.innerHTML = reportLoadingHtml('customer');
+        els.modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
 
-        const fbSummary = fbReviewSummary(m.score, m.gap);
-        const fbTags = fbBestFor(m.avg);
-        const fbFlags = fbRedFlags(m.totalReviews, m.gap, m.avg);
-        const fbReputation = fbTrend(m.score, m.gap);
+        let ai;
+        try {
+          ai = await ensureAIAnalysis(data);
+        } catch (e) {
+          if (token === reportToken) els.reportBody.innerHTML = reportErrorHtml();
+          return;
+        }
+        if (token !== reportToken) return; // modal closed or replaced meanwhile
+        renderCustomerReport(data, m, ai);
+      }
+
+      // Build the customer report body, using AI fields when present and
+      // rule-based fallbacks per field otherwise (ai is null only when there
+      // were no public platforms to analyse).
+      function renderCustomerReport(data, m, ai) {
+        const summary = (ai && ai.reviewSummary) ? ai.reviewSummary : fbReviewSummary(m.score, m.gap);
+        const tags = (ai && Array.isArray(ai.bestFor) && ai.bestFor.length) ? ai.bestFor : fbBestFor(m.avg);
+        const flags = (ai && Array.isArray(ai.redFlags)) ? ai.redFlags : fbRedFlags(m.totalReviews, m.gap, m.avg);
+        const reputation = (ai && ai.reputationTrend) ? ai.reputationTrend : fbTrend(m.score, m.gap);
 
         els.reportBody.innerHTML = '' +
           '<div class="report-scores">' +
@@ -916,40 +965,53 @@
             '<div>' +
               '<div class="analysis-block">' +
                 '<div class="ab-title">' + ICO.summary + 'Review summary</div>' +
-                '<div class="ab-body dark" id="aiSummary">' + escapeHtml(fbSummary) + '</div>' +
+                '<div class="ab-body dark">' + escapeHtml(summary) + '</div>' +
               '</div>' +
               '<div class="analysis-block">' +
                 '<div class="ab-title">' + ICO.best + 'Best for</div>' +
-                '<div class="tags" id="aiBestFor">' + fbTags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
+                '<div class="tags">' + tags.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('') + '</div>' +
               '</div>' +
             '</div>' +
             '<div>' +
               '<div class="analysis-block">' +
                 '<div class="ab-title">' + ICO.flag + 'Red flags</div>' +
-                '<ul class="flag-list" id="aiRedFlags">' + renderFlagList(fbFlags) + '</ul>' +
+                '<ul class="flag-list">' + renderFlagList(flags) + '</ul>' +
               '</div>' +
               '<div class="analysis-block">' +
                 '<div class="ab-title">' + ICO.trend + 'Reputation trend</div>' +
-                '<div class="ab-body" id="aiTrend">' + escapeHtml(fbReputation) + '</div>' +
+                '<div class="ab-body">' + escapeHtml(reputation) + '</div>' +
               '</div>' +
             '</div>' +
           '</div>';
-
-        els.modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
-        loadAIAnalysis(data);
       }
 
       function closeReport() {
+        reportToken++; // invalidate any in-flight report render
         els.modal.classList.add('hidden');
         document.body.style.overflow = '';
       }
 
       // ---- Business-owner report (paid preview, reuses the report modal) ----
-      function openBusinessReport(data, m) {
+      async function openBusinessReport(data, m) {
+        const token = ++reportToken;
         els.reportTitle.textContent = 'AI Business Reputation Report — ' + data.name;
         els.reportSub.textContent = 'For business owners · $10 one-time report';
+        els.reportBody.innerHTML = reportLoadingHtml('business');
+        els.modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
 
+        let ai;
+        try {
+          ai = await ensureAIAnalysis(data);
+        } catch (e) {
+          if (token === reportToken) els.reportBody.innerHTML = reportErrorHtml();
+          return;
+        }
+        if (token !== reportToken) return; // modal closed or replaced meanwhile
+        renderBusinessReportPreview(data, m, ai);
+      }
+
+      function renderBusinessReportPreview(data, m, ai) {
         const strengths = businessStrengths(data, m);
         const risk = businessRisk(data, m);
         const locked = [
@@ -963,6 +1025,10 @@
           '7-day reputation action plan'
         ];
 
+        const aiOverview = (ai && ai.reviewSummary)
+          ? '<div class="report-section"><h4>AI sentiment overview</h4><p>' + escapeHtml(ai.reviewSummary) + '</p></div>'
+          : '';
+
         els.reportBody.innerHTML = '' +
           '<p class="ab-body">See how customers view your business online and what actions can improve trust, visibility and bookings.</p>' +
           '<div class="paid-report-banner"><strong>$10 one-time report</strong><span>Built for business owners</span></div>' +
@@ -971,6 +1037,7 @@
             '<div><strong>' + m.avg.toFixed(1) + '/5</strong><span>Average rating</span></div>' +
             '<div><strong>' + m.count + '</strong><span>Platforms checked</span></div>' +
           '</div>' +
+          aiOverview +
           '<div class="report-section"><h4>What\u2019s working</h4><ul class="strength-list">' +
             strengths.map(function (s) { return '<li>' + escapeHtml(s) + '</li>'; }).join('') +
           '</ul></div>' +
@@ -982,9 +1049,6 @@
 
         const unlockBtn = els.reportBody.querySelector('[data-act="unlock"]');
         if (unlockBtn) unlockBtn.addEventListener('click', startBusinessReportPayment);
-
-        els.modal.classList.remove('hidden');
-        document.body.style.overflow = 'hidden';
       }
 
       function startBusinessReportPayment() {
@@ -1018,55 +1082,43 @@
       }
 
       /**
-       * Fetch structured AI analysis (real non-demo platforms only) and inject
-       * it into the open report modal. Restores the rule-based fallback on any
-       * failure so the report never gets stuck.
+       * Fetch structured AI analysis for the real (non-demo) platforms and cache
+       * the in-flight promise on the business object, so the two report buttons
+       * share a single request. Rejects on any failure (the caller decides how
+       * to surface it) and clears the cache so a later open can retry. Resolves
+       * to null when there are no public platforms to analyse.
        */
-      async function loadAIAnalysis(data) {
-        const sumEl = document.getElementById('aiSummary');
-        if (!sumEl) return;
+      function ensureAIAnalysis(data) {
+        if (data.__aiPromise) return data.__aiPromise;
         const platforms = availablePlatforms(data).map(function (p) {
           const r = data[p.key];
           return { label: p.label, rating: r.rating, reviews: r.reviews || 0 };
         });
-        if (!platforms.length) return;
-
-        const fallbackSummary = sumEl.textContent;
-        sumEl.textContent = 'Generating AI summary…';
-        try {
-          const res = await fetch(API_BASE + '/analyze-reviews', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              name: data.name,
-              platforms: platforms,
-              // Demo offers must not influence the AI narrative.
-              offerAvailable: !!(data.offer && data.offer.available && !data.offer.demo),
-              category: (data.category && data.category.label) ? data.category.label : '',
-              suburb: (data.locality && data.locality.suburb) ? data.locality.suburb : ''
-            })
-          });
-          const body = await res.json().catch(function () { return null; });
-          // Guard: the user may have closed/changed the report meanwhile.
-          if (document.getElementById('aiSummary') !== sumEl) return;
-          if (!res.ok || !body || !body.reviewSummary) { sumEl.textContent = fallbackSummary; return; }
-
-          sumEl.textContent = body.reviewSummary;
-          if (Array.isArray(body.bestFor) && body.bestFor.length) {
-            const bf = document.getElementById('aiBestFor');
-            if (bf) bf.innerHTML = body.bestFor.map(function (t) { return '<span class="tag">' + escapeHtml(t) + '</span>'; }).join('');
-          }
-          if (Array.isArray(body.redFlags)) {
-            const rf = document.getElementById('aiRedFlags');
-            if (rf) rf.innerHTML = renderFlagList(body.redFlags);
-          }
-          if (body.reputationTrend) {
-            const tr = document.getElementById('aiTrend');
-            if (tr) tr.textContent = body.reputationTrend;
-          }
-        } catch (e) {
-          if (document.getElementById('aiSummary') === sumEl) sumEl.textContent = fallbackSummary;
+        if (!platforms.length) {
+          data.__aiPromise = Promise.resolve(null);
+          return data.__aiPromise;
         }
+        data.__aiPromise = fetch(API_BASE + '/analyze-reviews', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: data.name,
+            platforms: platforms,
+            // Demo offers must not influence the AI narrative.
+            offerAvailable: !!(data.offer && data.offer.available && !data.offer.demo),
+            category: (data.category && data.category.label) ? data.category.label : '',
+            suburb: (data.locality && data.locality.suburb) ? data.locality.suburb : ''
+          })
+        }).then(function (res) {
+          return res.json().catch(function () { return null; }).then(function (body) {
+            if (!res.ok || !body || !body.reviewSummary) throw new Error('AI analysis unavailable');
+            return body;
+          });
+        }).catch(function (err) {
+          data.__aiPromise = null; // allow a retry the next time a report opens
+          throw err;
+        });
+        return data.__aiPromise;
       }
 
       function resetApp() {
