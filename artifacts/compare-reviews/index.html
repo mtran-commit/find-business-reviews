@@ -649,7 +649,16 @@
       }
       .badge-pending { background: rgba(95,99,104,.12); color: var(--text-2); }
       .badge-paid { background: rgba(82,210,115,.16); color: #1a7f3c; }
-      .badge-sent { background: rgba(11,85,217,.12); color: var(--rp-blue); }
+      .badge-sent { background: rgba(82,210,115,.16); color: #1a7f3c; }
+      .badge-generating { background: rgba(123,60,255,.14); color: var(--purple); }
+      .badge-generated { background: rgba(11,85,217,.12); color: var(--rp-blue); }
+      .badge-failed { background: rgba(217,45,45,.12); color: #c62828; }
+      .admin-hint { font-size: 11.5px; color: var(--text-2); margin-top: 4px; line-height: 1.4; }
+      .admin-hint.err { color: #c62828; }
+      .admin-btn.gen { background: var(--purple); color: #fff; border-color: var(--purple); }
+      .admin-btn.gen:hover { opacity: .92; }
+      .admin-btn.dl { background: var(--navy); color: #fff; border-color: var(--navy); }
+      .admin-btn.dl:hover { opacity: .92; }
       .admin-row-actions { display: flex; flex-direction: column; gap: 6px; min-width: 150px; }
       .admin-row-actions .admin-btn { padding: 6px 10px; font-size: 12px; text-align: center; }
       .admin-state {
@@ -1691,14 +1700,25 @@
       }
 
       function paymentBadge(status) {
-        const paid = status === 'paid';
-        return '<span class="admin-badge ' + (paid ? 'badge-paid' : 'badge-pending') + '">' +
-          (paid ? 'Paid' : 'Pending payment') + '</span>';
+        const map = {
+          paid: ['badge-paid', 'Paid'],
+          refunded: ['badge-pending', 'Refunded'],
+          cancelled: ['badge-pending', 'Cancelled'],
+          pending_payment: ['badge-pending', 'Pending payment']
+        };
+        const b = map[status] || map.pending_payment;
+        return '<span class="admin-badge ' + b[0] + '">' + b[1] + '</span>';
       }
       function reportBadge(status) {
-        const sent = status === 'sent';
-        return '<span class="admin-badge ' + (sent ? 'badge-sent' : 'badge-pending') + '">' +
-          (sent ? 'Report sent' : 'Not sent') + '</span>';
+        const map = {
+          generating: ['badge-generating', 'Generating'],
+          generated: ['badge-generated', 'Generated'],
+          sent: ['badge-sent', 'Sent'],
+          failed: ['badge-failed', 'Failed'],
+          pending: ['badge-pending', 'Not started']
+        };
+        const b = map[status] || map.pending;
+        return '<span class="admin-badge ' + b[0] + '">' + b[1] + '</span>';
       }
 
       function renderAdminGate(denied) {
@@ -1825,8 +1845,32 @@
           : (r.businessLink
               ? '<span class="admin-cell-sub">' + escapeHtml(r.businessLink) + '</span>'
               : '<span class="admin-cell-sub">—</span>');
+        const id = escapeAttr(r.id);
         const paid = r.status === 'paid';
-        const sent = r.reportStatus === 'sent';
+        const rs = r.reportStatus;
+        const btn = function (act, label, extraCls) {
+          return '<button class="admin-btn' + (extraCls ? ' ' + extraCls : '') +
+            '" data-admin-act="' + act + '" data-id="' + id + '">' + label + '</button>';
+        };
+        // Actions vary by state per the fulfilment workflow.
+        let actions = btn('copy-email', 'Copy email') + btn('copy-details', 'Copy business details');
+        if (!paid) {
+          actions += btn('mark-paid', 'Mark as paid');
+        } else if (rs === 'generating') {
+          actions += '<div class="admin-hint">Generating report. This may take up to 60 seconds.</div>';
+        } else if (rs === 'generated') {
+          actions += btn('download', 'Download report', 'dl');
+          actions += btn('mark-sent', 'Mark report as sent');
+        } else if (rs === 'sent') {
+          actions += btn('download', 'Download report', 'dl');
+          actions += '<span class="admin-badge badge-sent">Sent ✓</span>';
+        } else if (rs === 'failed') {
+          actions += '<div class="admin-hint err">Generation failed. Try again.</div>';
+          actions += btn('generate', 'Generate report', 'gen');
+        } else {
+          // paid + pending
+          actions += btn('generate', 'Generate report', 'gen');
+        }
         return '' +
           '<tr>' +
             '<td class="admin-cell-sub">' + escapeHtml(fmtDate(r.createdAt)) + '</td>' +
@@ -1839,12 +1883,7 @@
             '<td>' + paymentBadge(r.status) + '</td>' +
             '<td>' + reportBadge(r.reportStatus) + '</td>' +
             '<td class="admin-id">' + escapeHtml(r.id || '') + '</td>' +
-            '<td><div class="admin-row-actions">' +
-              '<button class="admin-btn" data-admin-act="copy-email" data-id="' + escapeAttr(r.id) + '">Copy email</button>' +
-              '<button class="admin-btn" data-admin-act="copy-details" data-id="' + escapeAttr(r.id) + '">Copy business details</button>' +
-              '<button class="admin-btn" data-admin-act="mark-paid" data-id="' + escapeAttr(r.id) + '"' + (paid ? ' disabled' : '') + '>' + (paid ? 'Paid ✓' : 'Mark as paid') + '</button>' +
-              '<button class="admin-btn" data-admin-act="mark-sent" data-id="' + escapeAttr(r.id) + '"' + (sent ? ' disabled' : '') + '>' + (sent ? 'Report sent ✓' : 'Mark report as sent') + '</button>' +
-            '</div></td>' +
+            '<td><div class="admin-row-actions">' + actions + '</div></td>' +
           '</tr>';
       }
 
@@ -1868,38 +1907,110 @@
               ].join('\n');
               copyText(details, 'Business details copied');
             } else if (act === 'mark-paid') {
-              adminUpdate(id, { status: 'paid' }, btn);
+              adminAction(id, 'mark-paid', btn, 'Marked as paid');
             } else if (act === 'mark-sent') {
-              adminUpdate(id, { reportStatus: 'sent' }, btn);
+              adminAction(id, 'mark-sent', btn, 'Report marked as sent');
+            } else if (act === 'generate') {
+              adminGenerate(id, btn);
+            } else if (act === 'download') {
+              adminDownload(id, req, btn);
             }
           });
         });
       }
 
-      async function adminUpdate(id, patch, btn) {
+      // POST a state-changing admin action; refresh the row from the response.
+      async function adminAction(id, action, btn, okMsg) {
         const token = localStorage.getItem(ADMIN_TOKEN_KEY);
         if (!token) { renderAdminGate(false); return; }
         if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
         try {
-          const res = await fetch(API_BASE + '/report-requests/' + encodeURIComponent(id), {
-            method: 'PATCH',
-            headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
-            body: JSON.stringify(patch)
-          });
+          const res = await fetch(
+            API_BASE + '/admin/report-requests/' + encodeURIComponent(id) + '/' + action,
+            { method: 'POST', headers: { 'x-admin-token': token } }
+          );
           if (res.status === 401 || res.status === 403) {
             localStorage.removeItem(ADMIN_TOKEN_KEY);
             renderAdminGate(true);
             return;
           }
-          if (!res.ok) throw new Error('update failed');
-          const updated = await res.json();
+          const body = await res.json().catch(function () { return {}; });
+          if (!res.ok) throw new Error((body && body.error) || 'Action failed');
           const idx = adminRequests.findIndex(function (r) { return r.id === id; });
-          if (idx !== -1) adminRequests[idx] = updated;
-          adminToast(patch.status === 'paid' ? 'Marked as paid' : 'Report marked as sent');
+          if (idx !== -1) adminRequests[idx] = body;
+          adminToast(okMsg);
           renderAdminTable();
         } catch (err) {
-          adminToast('Could not update. Please try again.');
+          adminToast((err && err.message) || 'Could not update. Please try again.');
           renderAdminTable();
+        }
+      }
+
+      // Generate the paid report. Optimistically shows the "generating" state,
+      // then re-renders from the server response (generated / failed).
+      async function adminGenerate(id, btn) {
+        const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+        if (!token) { renderAdminGate(false); return; }
+        const idx = adminRequests.findIndex(function (r) { return r.id === id; });
+        if (idx !== -1) adminRequests[idx].reportStatus = 'generating';
+        renderAdminTable();
+        adminToast('Generating report. This may take up to 60 seconds.');
+        try {
+          const res = await fetch(
+            API_BASE + '/admin/report-requests/' + encodeURIComponent(id) + '/generate-report',
+            { method: 'POST', headers: { 'x-admin-token': token } }
+          );
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem(ADMIN_TOKEN_KEY);
+            renderAdminGate(true);
+            return;
+          }
+          const body = await res.json().catch(function () { return {}; });
+          if (!res.ok) throw new Error((body && body.error) || 'Report generation failed');
+          const j = adminRequests.findIndex(function (r) { return r.id === id; });
+          if (j !== -1) adminRequests[j] = body;
+          adminToast('Report generated');
+          renderAdminTable();
+        } catch (err) {
+          const j = adminRequests.findIndex(function (r) { return r.id === id; });
+          if (j !== -1) adminRequests[j].reportStatus = 'failed';
+          adminToast((err && err.message) || 'Report generation failed');
+          renderAdminTable();
+        }
+      }
+
+      // Download the PDF. The endpoint needs the admin header, so fetch as a
+      // blob and trigger a client-side download rather than a plain link.
+      async function adminDownload(id, req, btn) {
+        const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+        if (!token) { renderAdminGate(false); return; }
+        if (btn) { btn.disabled = true; btn.textContent = 'Preparing…'; }
+        try {
+          const res = await fetch(
+            API_BASE + '/admin/report-requests/' + encodeURIComponent(id) + '/download',
+            { headers: { 'x-admin-token': token } }
+          );
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem(ADMIN_TOKEN_KEY);
+            renderAdminGate(true);
+            return;
+          }
+          if (!res.ok) throw new Error('Download failed');
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          const slug = (req.businessName || 'business').replace(/[^a-z0-9]+/gi, '-').toLowerCase();
+          a.href = url;
+          a.download = 'reputation-report-' + slug + '.pdf';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          setTimeout(function () { URL.revokeObjectURL(url); }, 4000);
+          adminToast('Report downloaded');
+        } catch (err) {
+          adminToast('Could not download the report.');
+        } finally {
+          if (btn) { btn.disabled = false; btn.textContent = 'Download report'; }
         }
       }
 

@@ -6,9 +6,41 @@ import {
   reportRequestsTable,
   createReportRequestSchema,
   updateReportRequestSchema,
+  type ReportRequest,
 } from "@workspace/db";
+import { fetchBusinessReviews, type BusinessReviews } from "../lib/serpapi";
+import {
+  computeMetrics,
+  generateAiSections,
+  REPORT_DISCLAIMER,
+  type BusinessReport,
+} from "../lib/reportContent";
+import { buildReportPdf } from "../lib/reportPdf";
 
 const router: IRouter = Router();
+
+const idSchema = z.string().uuid();
+
+/** Load one request by validated id, or write the error response and return null. */
+async function loadRequest(
+  req: Request,
+  res: Response,
+): Promise<ReportRequest | null> {
+  const idParsed = idSchema.safeParse(req.params.id);
+  if (!idParsed.success) {
+    res.status(400).json({ error: "Invalid report request id." });
+    return null;
+  }
+  const [row] = await db
+    .select()
+    .from(reportRequestsTable)
+    .where(eq(reportRequestsTable.id, idParsed.data));
+  if (!row) {
+    res.status(404).json({ error: "Report request not found." });
+    return null;
+  }
+  return row;
+}
 
 /**
  * Shared admin gate for endpoints that expose customer PII. Returns true when
@@ -126,5 +158,198 @@ router.patch("/report-requests/:id", async (req, res): Promise<void> => {
     res.status(500).json({ error: "Could not update report request." });
   }
 });
+
+/**
+ * Admin: mark a request as paid. Manual reconciliation step — the admin checks
+ * Stripe, then flips payment status so a report can be generated.
+ */
+router.post(
+  "/admin/report-requests/:id/mark-paid",
+  async (req, res): Promise<void> => {
+    if (!requireAdmin(req, res)) return;
+    const row = await loadRequest(req, res);
+    if (!row) return;
+    try {
+      const [updated] = await db
+        .update(reportRequestsTable)
+        .set({ status: "paid" })
+        .where(eq(reportRequestsTable.id, row.id))
+        .returning();
+      res.json(updated);
+    } catch (err) {
+      req.log.error({ err }, "Failed to mark request as paid");
+      res.status(500).json({ error: "Could not mark as paid." });
+    }
+  },
+);
+
+/**
+ * Admin: mark the report as sent (after emailing the PDF to the customer).
+ */
+router.post(
+  "/admin/report-requests/:id/mark-sent",
+  async (req, res): Promise<void> => {
+    if (!requireAdmin(req, res)) return;
+    const row = await loadRequest(req, res);
+    if (!row) return;
+    if (row.reportStatus !== "generated" && row.reportStatus !== "sent") {
+      res
+        .status(400)
+        .json({ error: "Generate the report before marking it as sent." });
+      return;
+    }
+    try {
+      const [updated] = await db
+        .update(reportRequestsTable)
+        .set({ reportStatus: "sent", reportSentAt: new Date() })
+        .where(eq(reportRequestsTable.id, row.id))
+        .returning();
+      res.json(updated);
+    } catch (err) {
+      req.log.error({ err }, "Failed to mark report as sent");
+      res.status(500).json({ error: "Could not mark report as sent." });
+    }
+  },
+);
+
+/**
+ * Admin only: generate the full paid AI Business Reputation Report. Requires the
+ * request to be paid first. Re-fetches current review data, calls OpenAI for the
+ * qualitative sections, persists the structured report JSON, and flips the report
+ * status to `generated`. On any failure the status is set to `failed` so the
+ * admin can retry. Public users can never reach this (admin-token gated).
+ */
+router.post(
+  "/admin/report-requests/:id/generate-report",
+  async (req, res): Promise<void> => {
+    if (!requireAdmin(req, res)) return;
+    const row = await loadRequest(req, res);
+    if (!row) return;
+
+    if (row.status !== "paid") {
+      res.status(400).json({
+        error: "Payment must be marked as paid before generating report.",
+      });
+      return;
+    }
+
+    // Mark as generating so concurrent clicks and the UI reflect progress.
+    try {
+      await db
+        .update(reportRequestsTable)
+        .set({ reportStatus: "generating" })
+        .where(eq(reportRequestsTable.id, row.id));
+    } catch (err) {
+      req.log.error({ err }, "Failed to set report status to generating");
+      res.status(500).json({ error: "Could not start report generation." });
+      return;
+    }
+
+    try {
+      // Re-fetch current review data. Prefer a live SerpApi lookup; fall back to
+      // the snapshot captured when the customer submitted the request.
+      let data: BusinessReviews | null = null;
+      const apiKey = process.env["SERPAPI_API_KEY"];
+      const query = [row.businessName, row.businessAddress]
+        .filter(Boolean)
+        .join(" ");
+      if (apiKey) {
+        try {
+          data = await fetchBusinessReviews(query, apiKey, req.log);
+        } catch (err) {
+          req.log.warn({ err }, "Live review fetch failed; using saved snapshot");
+        }
+      }
+      if (!data && row.searchedBusiness) {
+        data = row.searchedBusiness as BusinessReviews;
+      }
+      if (!data) {
+        throw new Error("No review data available for this business.");
+      }
+
+      const metrics = computeMetrics(data);
+      const category = data.category?.label ?? "";
+      const suburb = data.locality?.suburb ?? "";
+      const sections = await generateAiSections(
+        row.businessName,
+        metrics,
+        category,
+        suburb,
+      );
+
+      const report: BusinessReport = {
+        businessName: row.businessName,
+        businessAddress: row.businessAddress,
+        generatedAt: new Date().toISOString(),
+        metrics,
+        sections,
+        disclaimer: REPORT_DISCLAIMER,
+      };
+
+      const pdfPath = `/api/admin/report-requests/${row.id}/download`;
+      const [updated] = await db
+        .update(reportRequestsTable)
+        .set({
+          reportStatus: "generated",
+          reportJson: report,
+          reportPdfUrl: pdfPath,
+          reportGeneratedAt: new Date(),
+        })
+        .where(eq(reportRequestsTable.id, row.id))
+        .returning();
+
+      res.json(updated);
+    } catch (err) {
+      req.log.error({ err }, "Report generation failed");
+      try {
+        await db
+          .update(reportRequestsTable)
+          .set({ reportStatus: "failed" })
+          .where(eq(reportRequestsTable.id, row.id));
+      } catch (setErr) {
+        req.log.error({ err: setErr }, "Failed to set report status to failed");
+      }
+      res.status(502).json({
+        error: "Report could not be generated right now. Please try again.",
+      });
+    }
+  },
+);
+
+/**
+ * Admin: download the generated report as a PDF. The PDF is rebuilt on demand
+ * from the persisted report JSON so no binary blob needs storing.
+ */
+router.get(
+  "/admin/report-requests/:id/download",
+  async (req, res): Promise<void> => {
+    if (!requireAdmin(req, res)) return;
+    const row = await loadRequest(req, res);
+    if (!row) return;
+
+    if (!row.reportJson) {
+      res.status(404).json({ error: "No generated report to download yet." });
+      return;
+    }
+
+    try {
+      const pdf = await buildReportPdf(row.reportJson as BusinessReport);
+      const safeName = (row.businessName || "business")
+        .replace(/[^a-z0-9]+/gi, "-")
+        .replace(/^-+|-+$/g, "")
+        .toLowerCase()
+        .slice(0, 60);
+      res.setHeader("Content-Type", "application/pdf");
+      res.setHeader(
+        "Content-Disposition",
+        `attachment; filename="reputation-report-${safeName || "business"}.pdf"`,
+      );
+      res.send(Buffer.from(pdf));
+    } catch (err) {
+      req.log.error({ err }, "Failed to build report PDF");
+      res.status(500).json({ error: "Could not build the report PDF." });
+    }
+  },
+);
 
 export default router;

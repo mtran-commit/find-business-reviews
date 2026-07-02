@@ -17,12 +17,37 @@ export const reportRequestsTable = pgTable("report_requests", {
   businessLink: text("business_link"),
   authorised: boolean("authorised").notNull(),
   searchedBusiness: jsonb("searched_business"),
-  /** Payment state: "pending_payment" until confirmed, then "paid". */
+  /** Payment state: pending_payment | paid | refunded | cancelled. */
   status: text("status").notNull().default("pending_payment"),
-  /** Report delivery state: "pending" until the report is sent, then "sent". */
+  /** Report state: pending | generating | generated | sent | failed. */
   reportStatus: text("report_status").notNull().default("pending"),
+  /** Stable download path for the generated PDF (set once generated). */
+  reportPdfUrl: text("report_pdf_url"),
+  /** Structured AI report content, regenerated into the PDF on download. */
+  reportJson: jsonb("report_json"),
+  reportGeneratedAt: timestamp("report_generated_at", { withTimezone: true }),
+  reportSentAt: timestamp("report_sent_at", { withTimezone: true }),
+  /** Optional Stripe payment reference for manual reconciliation. */
+  stripePaymentReference: text("stripe_payment_reference"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+/** Payment states. */
+export const PAYMENT_STATUSES = [
+  "pending_payment",
+  "paid",
+  "refunded",
+  "cancelled",
+] as const;
+
+/** Report lifecycle states. */
+export const REPORT_STATUSES = [
+  "pending",
+  "generating",
+  "generated",
+  "sent",
+  "failed",
+] as const;
 
 /** Validated shape for the public POST /api/report-requests body. */
 export const createReportRequestSchema = z.object({
@@ -48,8 +73,8 @@ export const createReportRequestSchema = z.object({
 /** Validated shape for the admin PATCH /api/report-requests/:id body. */
 export const updateReportRequestSchema = z
   .object({
-    status: z.enum(["pending_payment", "paid"]).optional(),
-    reportStatus: z.enum(["pending", "sent"]).optional(),
+    status: z.enum(PAYMENT_STATUSES).optional(),
+    reportStatus: z.enum(REPORT_STATUSES).optional(),
   })
   .refine((v) => v.status !== undefined || v.reportStatus !== undefined, {
     message: "Provide at least one field to update.",

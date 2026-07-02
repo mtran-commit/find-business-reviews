@@ -1,0 +1,178 @@
+Update the admin-report-requests page so it becomes the fulfilment centre for paid Business Reputation Reports.
+
+Current flow:
+1. Business owner clicks Unlock Full Report
+2. They enter details in the request form
+3. Request is saved in the report_requests database table as pending_payment
+4. They go to Stripe and pay
+
+New admin workflow required:
+In /admin-report-requests, each request row should show:
+- customer name
+- email
+- phone
+- business name
+- business address
+- business website / Google profile link
+- payment status
+- report status
+- request ID
+- date created
+
+Add these buttons per request:
+1. Copy email
+2. Copy business details
+3. Mark as paid
+4. Generate report
+5. Download report
+6. Mark report as sent
+
+Button rules:
+- If payment status is pending_payment, show:
+  “Mark as paid”
+  “Generate report” should be disabled or hidden.
+
+- If payment status is paid and report status is not generated, show:
+  “Generate report”
+
+- If report status is generated, show:
+  “Download report”
+  “Mark report as sent”
+
+- If report status is sent, show badge:
+  “Sent”
+
+Status values:
+payment_status:
+- pending_payment
+- paid
+- refunded
+- cancelled
+
+report_status:
+- pending
+- generating
+- generated
+- sent
+- failed
+
+Database update:
+Add columns if missing:
+- payment_status
+- report_status
+- report_pdf_url
+- report_generated_at
+- report_sent_at
+- report_json
+- stripe_payment_reference optional
+
+Generate report flow:
+When admin clicks “Generate report”:
+1. Change report_status to generating
+2. Use the saved request details:
+   - business name
+   - business address
+   - business link
+3. Fetch current review data again for that business.
+4. Fetch available review text/snippets from Google, Yelp and TripAdvisor where available.
+5. Send the data to OpenAI.
+6. Generate the full AI Business Reputation Report.
+7. Save the report JSON in report_json.
+8. Generate a PDF file.
+9. Save the PDF URL in report_pdf_url.
+10. Change report_status to generated.
+11. Show “Download report”.
+
+Backend routes:
+Add:
+
+POST /api/admin/report-requests/:id/mark-paid
+Requires x-admin-token
+
+POST /api/admin/report-requests/:id/generate-report
+Requires x-admin-token
+
+POST /api/admin/report-requests/:id/mark-sent
+Requires x-admin-token
+
+GET /api/admin/report-requests/:id/download
+Requires x-admin-token
+
+Generate report endpoint:
+POST /api/admin/report-requests/:id/generate-report
+
+This endpoint should:
+- Load the request from Postgres
+- Confirm payment_status is paid
+- If not paid, return error:
+  “Payment must be marked as paid before generating report.”
+- Fetch business review data using existing search/review functions
+- Generate detailed AI business report
+- Create PDF
+- Save report_pdf_url and report_json
+- Update report_status to generated
+
+PDF content:
+Title:
+AI Business Reputation Report
+
+Subtitle:
+Prepared for [Business Name]
+
+Include:
+1. Executive Summary
+2. Trust Score and Rating Overview
+3. Platform-by-Platform Comparison
+4. AI Customer Sentiment Analysis
+5. Top Strengths Customers Mention
+6. Main Complaints and Risk Level
+7. What May Be Costing You Customers
+8. Customer Language Insights
+9. Competitor Snapshot
+10. Recommended Offer to Win More Bookings
+11. Review Improvement Opportunity
+12. 7-Day Action Plan
+13. 30-Day Reputation Plan
+14. Suggested Review Response Templates
+15. Final Recommendation
+16. Disclaimer
+
+Disclaimer:
+“This report is generated using available public review data and AI analysis. It is intended for business insight purposes only and should not be treated as legal, financial or professional advice.”
+
+Admin page UI:
+Make the admin table easy to manage.
+
+Each request should have status badges:
+- Pending payment
+- Paid
+- Generating
+- Generated
+- Sent
+- Failed
+
+Add a loading state when Generate Report is clicked:
+“Generating report. This may take up to 60 seconds.”
+
+If report generation fails:
+- set report_status to failed
+- show error message
+- allow admin to click “Generate report” again
+
+Important:
+Do not let public users generate the paid report.
+Only admin can generate the full paid report.
+All admin routes must require x-admin-token.
+
+Manual payment matching:
+For now, I will check Stripe manually and click “Mark as paid” in admin.
+Later we will connect Stripe webhooks to automatically mark payment as paid.
+
+Final workflow:
+1. Business request appears in admin as pending_payment.
+2. I check Stripe payment.
+3. I click Mark as paid.
+4. I click Generate report.
+5. I download the PDF.
+6. I email the report to the customer.
+7. I click Mark report as sent.
