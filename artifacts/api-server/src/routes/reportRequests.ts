@@ -1,8 +1,36 @@
-import { Router, type IRouter } from "express";
-import { desc } from "drizzle-orm";
-import { db, reportRequestsTable, createReportRequestSchema } from "@workspace/db";
+import { Router, type IRouter, type Request, type Response } from "express";
+import { desc, eq } from "drizzle-orm";
+import { z } from "zod/v4";
+import {
+  db,
+  reportRequestsTable,
+  createReportRequestSchema,
+  updateReportRequestSchema,
+} from "@workspace/db";
 
 const router: IRouter = Router();
+
+/**
+ * Shared admin gate for endpoints that expose customer PII. Returns true when
+ * the request is authorised; otherwise it writes the appropriate error response
+ * and returns false. When REPORT_ADMIN_TOKEN is unset the endpoint refuses to
+ * serve (safe default), so PII is never exposed publicly.
+ */
+function requireAdmin(req: Request, res: Response): boolean {
+  const adminToken = process.env["REPORT_ADMIN_TOKEN"];
+  if (!adminToken) {
+    res.status(503).json({
+      error:
+        "Admin access is not configured. Set REPORT_ADMIN_TOKEN to enable this endpoint.",
+    });
+    return false;
+  }
+  if (req.get("x-admin-token") !== adminToken) {
+    res.status(401).json({ error: "Access denied." });
+    return false;
+  }
+  return true;
+}
 
 /**
  * Save a Business Reputation Report request before sending the customer to
@@ -47,18 +75,7 @@ router.post("/report-requests", async (req, res): Promise<void> => {
  * never exposed publicly. Provide the token via the `x-admin-token` header.
  */
 router.get("/report-requests", async (req, res): Promise<void> => {
-  const adminToken = process.env["REPORT_ADMIN_TOKEN"];
-  if (!adminToken) {
-    res.status(503).json({
-      error:
-        "Admin access is not configured. Set REPORT_ADMIN_TOKEN to enable this endpoint.",
-    });
-    return;
-  }
-  if (req.get("x-admin-token") !== adminToken) {
-    res.status(401).json({ error: "Unauthorized." });
-    return;
-  }
+  if (!requireAdmin(req, res)) return;
 
   try {
     const rows = await db
@@ -69,6 +86,44 @@ router.get("/report-requests", async (req, res): Promise<void> => {
   } catch (err) {
     req.log.error({ err }, "Failed to list report requests");
     res.status(500).json({ error: "Could not fetch report requests." });
+  }
+});
+
+/**
+ * Admin update of a report request's payment/report status (e.g. "Mark as paid"
+ * or "Mark report as sent"). Gated behind the same admin token as the listing.
+ */
+router.patch("/report-requests/:id", async (req, res): Promise<void> => {
+  if (!requireAdmin(req, res)) return;
+
+  const idParsed = z.string().uuid().safeParse(req.params.id);
+  if (!idParsed.success) {
+    res.status(400).json({ error: "Invalid report request id." });
+    return;
+  }
+
+  const parsed = updateReportRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Missing or invalid update fields." });
+    return;
+  }
+
+  try {
+    const [row] = await db
+      .update(reportRequestsTable)
+      .set(parsed.data)
+      .where(eq(reportRequestsTable.id, idParsed.data))
+      .returning();
+
+    if (!row) {
+      res.status(404).json({ error: "Report request not found." });
+      return;
+    }
+
+    res.json(row);
+  } catch (err) {
+    req.log.error({ err }, "Failed to update report request");
+    res.status(500).json({ error: "Could not update report request." });
   }
 });
 

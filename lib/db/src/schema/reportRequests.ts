@@ -17,7 +17,10 @@ export const reportRequestsTable = pgTable("report_requests", {
   businessLink: text("business_link"),
   authorised: boolean("authorised").notNull(),
   searchedBusiness: jsonb("searched_business"),
+  /** Payment state: "pending_payment" until confirmed, then "paid". */
   status: text("status").notNull().default("pending_payment"),
+  /** Report delivery state: "pending" until the report is sent, then "sent". */
+  reportStatus: text("report_status").notNull().default("pending"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
@@ -33,6 +36,17 @@ export const createReportRequestSchema = z.object({
   searchedBusiness: z.unknown().optional(),
 });
 
+/** Validated shape for the admin PATCH /api/report-requests/:id body. */
+export const updateReportRequestSchema = z
+  .object({
+    status: z.enum(["pending_payment", "paid"]).optional(),
+    reportStatus: z.enum(["pending", "sent"]).optional(),
+  })
+  .refine((v) => v.status !== undefined || v.reportStatus !== undefined, {
+    message: "Provide at least one field to update.",
+  });
+
 export type CreateReportRequest = z.infer<typeof createReportRequestSchema>;
+export type UpdateReportRequest = z.infer<typeof updateReportRequestSchema>;
 export type ReportRequest = typeof reportRequestsTable.$inferSelect;
 export type InsertReportRequest = typeof reportRequestsTable.$inferInsert;

@@ -487,6 +487,84 @@
       }
       .report-request-form .unlock-report-button { margin-top: 4px; }
       .unlock-report-button:disabled { opacity: .6; cursor: default; }
+
+      /* ===== Private admin page (/admin-report-requests) ===== */
+      .admin-root { min-height: 100vh; background: var(--bg); }
+      body.admin-mode { background: var(--bg); }
+      .admin-shell { max-width: 1240px; margin: 0 auto; padding: 28px 22px 60px; }
+      .admin-topbar {
+        display: flex; align-items: center; justify-content: space-between; gap: 16px;
+        padding-bottom: 18px; border-bottom: 1px solid var(--border); margin-bottom: 24px;
+      }
+      .admin-title { font-size: 22px; font-weight: 900; color: var(--text); margin: 0; }
+      .admin-title span { color: var(--text-2); font-weight: 700; font-size: 14px; display: block; margin-top: 2px; }
+      .admin-actions { display: flex; gap: 10px; align-items: center; }
+      .admin-btn {
+        border: 1px solid var(--divider); background: #fff; color: var(--text);
+        border-radius: 9px; padding: 8px 14px; font-size: 13px; font-weight: 800;
+        cursor: pointer; font-family: inherit;
+      }
+      .admin-btn:hover { border-color: var(--text-2); }
+      .admin-btn.primary { background: var(--black); color: #fff; border-color: var(--black); }
+      .admin-btn.primary:hover { opacity: .9; }
+      .admin-btn:disabled { opacity: .5; cursor: default; }
+
+      /* Gate (token prompt) */
+      .admin-gate {
+        max-width: 400px; margin: 12vh auto 0; background: #fff; border: 1px solid var(--border);
+        border-radius: 16px; padding: 30px 28px; box-shadow: 0 14px 40px rgba(0,0,0,.06);
+      }
+      .admin-gate h1 { font-size: 20px; font-weight: 900; margin: 0 0 6px; color: var(--text); }
+      .admin-gate p { font-size: 13.5px; color: var(--text-2); margin: 0 0 18px; line-height: 1.5; }
+      .admin-gate label { display: block; font-weight: 800; font-size: 13px; margin-bottom: 6px; color: var(--text); }
+      .admin-gate input {
+        width: 100%; height: 44px; border: 1px solid var(--divider); border-radius: 10px;
+        padding: 0 12px; font-size: 15px; font-family: inherit; box-sizing: border-box; background: #fff; color: var(--text);
+      }
+      .admin-gate input:focus { outline: none; border-color: var(--aqua); box-shadow: 0 0 0 3px rgba(56,197,187,.18); }
+      .admin-gate .admin-btn { width: 100%; margin-top: 16px; text-align: center; }
+      .admin-denied {
+        margin: 14px 0 0; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
+        background: rgba(220,38,38,.08); border: 1px solid rgba(220,38,38,.3); color: #b91c1c;
+      }
+
+      /* Table */
+      .admin-count { font-size: 13px; color: var(--text-2); font-weight: 700; margin: 0 0 14px; }
+      .admin-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; background: #fff; }
+      table.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1100px; }
+      .admin-table th {
+        text-align: left; font-weight: 800; color: var(--text-2); font-size: 11.5px; text-transform: uppercase;
+        letter-spacing: .03em; padding: 12px 14px; border-bottom: 1px solid var(--border); white-space: nowrap;
+        background: #FBFBFA; position: sticky; top: 0;
+      }
+      .admin-table td { padding: 12px 14px; border-bottom: 1px solid var(--border); vertical-align: top; color: var(--text); }
+      .admin-table tr:last-child td { border-bottom: none; }
+      .admin-table tr:hover td { background: #FCFCFB; }
+      .admin-cell-strong { font-weight: 800; }
+      .admin-cell-sub { color: var(--text-2); font-size: 12px; }
+      .admin-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--text-2); }
+      .admin-link { color: var(--rp-blue); text-decoration: none; word-break: break-all; }
+      .admin-link:hover { text-decoration: underline; }
+      .admin-badge {
+        display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 800;
+        white-space: nowrap;
+      }
+      .badge-pending { background: rgba(95,99,104,.12); color: var(--text-2); }
+      .badge-paid { background: rgba(82,210,115,.16); color: #1a7f3c; }
+      .badge-sent { background: rgba(11,85,217,.12); color: var(--rp-blue); }
+      .admin-row-actions { display: flex; flex-direction: column; gap: 6px; min-width: 150px; }
+      .admin-row-actions .admin-btn { padding: 6px 10px; font-size: 12px; text-align: center; }
+      .admin-state {
+        text-align: center; padding: 60px 20px; color: var(--text-2);
+      }
+      .admin-state h3 { color: var(--text); font-size: 17px; margin: 12px 0 6px; }
+      .admin-toast {
+        position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+        background: var(--black); color: #fff; padding: 11px 18px; border-radius: 10px;
+        font-size: 13px; font-weight: 700; box-shadow: 0 10px 30px rgba(0,0,0,.2);
+        opacity: 0; pointer-events: none; transition: opacity .18s ease; z-index: 100;
+      }
+      .admin-toast.show { opacity: 1; }
       @media (max-width: 640px) {
         .report-stat-grid { grid-template-columns: 1fr; }
         .paid-report-banner { flex-direction: column; align-items: flex-start; }
@@ -559,6 +637,9 @@
         <div class="modal-body" id="reportBody"></div>
       </div>
     </div>
+
+    <!-- Private admin page (report requests). Rendered only at /admin-report-requests. -->
+    <div id="adminRoot" class="admin-root hidden"></div>
 
     <script>
       /* =====================================================================
@@ -1337,12 +1418,277 @@
       els.modal.addEventListener('click', function (e) { if (e.target === els.modal) closeReport(); });
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeReport(); });
 
-      // Deep-link: ?q=<business> auto-runs a search on load.
-      (function () {
-        const q = new URLSearchParams(window.location.search).get('q');
-        if (q) { els.input.value = q; runSearch(q); }
-        else show('empty');
-      })();
+      // ---------------------------------------------------------------------
+      // Private admin page — /admin-report-requests
+      // Token-gated (x-admin-token). Never linked from the public site.
+      // ---------------------------------------------------------------------
+      const ADMIN_TOKEN_KEY = 'cr_admin_token';
+      const adminRoot = document.getElementById('adminRoot');
+      let adminRequests = [];
+
+      function isAdminPath() {
+        return /\/admin-report-requests\/?$/.test(window.location.pathname);
+      }
+
+      function adminToast(msg) {
+        let t = document.querySelector('.admin-toast');
+        if (!t) {
+          t = document.createElement('div');
+          t.className = 'admin-toast';
+          document.body.appendChild(t);
+        }
+        t.textContent = msg;
+        t.classList.add('show');
+        clearTimeout(t.__timer);
+        t.__timer = setTimeout(function () { t.classList.remove('show'); }, 1900);
+      }
+
+      function copyText(text, okMsg) {
+        const done = function () { adminToast(okMsg || 'Copied'); };
+        const fail = function () { adminToast('Could not copy'); };
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(text).then(done).catch(fail);
+        } else {
+          try {
+            const ta = document.createElement('textarea');
+            ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+            document.body.appendChild(ta); ta.select();
+            document.execCommand('copy'); document.body.removeChild(ta);
+            done();
+          } catch (e) { fail(); }
+        }
+      }
+
+      function fmtDate(iso) {
+        if (!iso) return '—';
+        const d = new Date(iso);
+        if (isNaN(d.getTime())) return '—';
+        return d.toLocaleString('en-AU', {
+          day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+        });
+      }
+
+      function paymentBadge(status) {
+        const paid = status === 'paid';
+        return '<span class="admin-badge ' + (paid ? 'badge-paid' : 'badge-pending') + '">' +
+          (paid ? 'Paid' : 'Pending payment') + '</span>';
+      }
+      function reportBadge(status) {
+        const sent = status === 'sent';
+        return '<span class="admin-badge ' + (sent ? 'badge-sent' : 'badge-pending') + '">' +
+          (sent ? 'Report sent' : 'Not sent') + '</span>';
+      }
+
+      function renderAdminGate(denied) {
+        adminRoot.innerHTML = '' +
+          '<div class="admin-gate">' +
+            '<h1>Admin access</h1>' +
+            '<p>Enter the admin token to view Business Reputation Report requests.</p>' +
+            '<label for="adminTokenInput">Admin token</label>' +
+            '<input id="adminTokenInput" type="password" autocomplete="off" placeholder="Enter admin token" />' +
+            (denied ? '<div class="admin-denied">Access denied.</div>' : '') +
+            '<button class="admin-btn primary" id="adminUnlockBtn">Unlock</button>' +
+          '</div>';
+        const input = document.getElementById('adminTokenInput');
+        const btn = document.getElementById('adminUnlockBtn');
+        const submit = function () {
+          const val = (input.value || '').trim();
+          if (!val) { input.focus(); return; }
+          localStorage.setItem(ADMIN_TOKEN_KEY, val);
+          loadAdminRequests();
+        };
+        btn.addEventListener('click', submit);
+        input.addEventListener('keydown', function (e) { if (e.key === 'Enter') submit(); });
+        input.focus();
+      }
+
+      function renderAdminLoading() {
+        adminRoot.innerHTML = '<div class="admin-shell"><div class="admin-state">' +
+          '<div class="spinner"></div><h3>Loading report requests…</h3></div></div>';
+      }
+
+      async function loadAdminRequests() {
+        const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+        if (!token) { renderAdminGate(false); return; }
+        renderAdminLoading();
+        try {
+          const res = await fetch(API_BASE + '/report-requests', {
+            headers: { 'x-admin-token': token }
+          });
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem(ADMIN_TOKEN_KEY);
+            renderAdminGate(true);
+            return;
+          }
+          if (!res.ok) {
+            const body = await res.json().catch(function () { return {}; });
+            renderAdminError(body && body.error ? body.error : 'Could not load report requests.');
+            return;
+          }
+          adminRequests = await res.json();
+          renderAdminTable();
+        } catch (err) {
+          renderAdminError('Could not reach the server. Please try again.');
+        }
+      }
+
+      function renderAdminError(msg) {
+        adminRoot.innerHTML = '' +
+          '<div class="admin-shell">' +
+            adminHeaderHtml() +
+            '<div class="admin-state"><h3>Something went wrong</h3><p>' + escapeHtml(msg) + '</p>' +
+            '<button class="admin-btn" id="adminRetryBtn">Try again</button></div>' +
+          '</div>';
+        wireAdminHeader();
+        const retry = document.getElementById('adminRetryBtn');
+        if (retry) retry.addEventListener('click', loadAdminRequests);
+      }
+
+      function adminHeaderHtml() {
+        return '' +
+          '<div class="admin-topbar">' +
+            '<h1 class="admin-title">Report requests<span>Business Reputation Report — admin</span></h1>' +
+            '<div class="admin-actions">' +
+              '<button class="admin-btn" id="adminRefreshBtn">Refresh</button>' +
+              '<button class="admin-btn" id="adminLogoutBtn">Log out</button>' +
+            '</div>' +
+          '</div>';
+      }
+
+      function wireAdminHeader() {
+        const refresh = document.getElementById('adminRefreshBtn');
+        const logout = document.getElementById('adminLogoutBtn');
+        if (refresh) refresh.addEventListener('click', loadAdminRequests);
+        if (logout) logout.addEventListener('click', function () {
+          localStorage.removeItem(ADMIN_TOKEN_KEY);
+          renderAdminGate(false);
+        });
+      }
+
+      function renderAdminTable() {
+        const rows = adminRequests;
+        let body;
+        if (!rows.length) {
+          body = '<div class="admin-state"><h3>No requests yet</h3><p>Report requests will appear here once customers submit them.</p></div>';
+        } else {
+          body = '' +
+            '<p class="admin-count">' + rows.length + ' request' + (rows.length === 1 ? '' : 's') + '</p>' +
+            '<div class="admin-table-wrap"><table class="admin-table"><thead><tr>' +
+              '<th>Request date</th><th>Name</th><th>Email</th><th>Phone</th>' +
+              '<th>Business</th><th>Address</th><th>Website / link</th>' +
+              '<th>Payment</th><th>Report</th><th>Request ID</th><th>Actions</th>' +
+            '</tr></thead><tbody>' +
+            rows.map(adminRowHtml).join('') +
+            '</tbody></table></div>';
+        }
+        adminRoot.innerHTML = '<div class="admin-shell">' + adminHeaderHtml() + body + '</div>';
+        wireAdminHeader();
+        wireAdminRows();
+      }
+
+      function adminRowHtml(r) {
+        const link = r.businessLink
+          ? '<a class="admin-link" href="' + escapeAttr(r.businessLink) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(r.businessLink) + '</a>'
+          : '<span class="admin-cell-sub">—</span>';
+        const paid = r.status === 'paid';
+        const sent = r.reportStatus === 'sent';
+        return '' +
+          '<tr>' +
+            '<td class="admin-cell-sub">' + escapeHtml(fmtDate(r.createdAt)) + '</td>' +
+            '<td class="admin-cell-strong">' + escapeHtml(r.fullName || '—') + '</td>' +
+            '<td>' + escapeHtml(r.email || '—') + '</td>' +
+            '<td>' + escapeHtml(r.phone || '—') + '</td>' +
+            '<td class="admin-cell-strong">' + escapeHtml(r.businessName || '—') + '</td>' +
+            '<td class="admin-cell-sub">' + escapeHtml(r.businessAddress || '—') + '</td>' +
+            '<td>' + link + '</td>' +
+            '<td>' + paymentBadge(r.status) + '</td>' +
+            '<td>' + reportBadge(r.reportStatus) + '</td>' +
+            '<td class="admin-id">' + escapeHtml(r.id || '') + '</td>' +
+            '<td><div class="admin-row-actions">' +
+              '<button class="admin-btn" data-admin-act="copy-email" data-id="' + escapeAttr(r.id) + '">Copy email</button>' +
+              '<button class="admin-btn" data-admin-act="copy-details" data-id="' + escapeAttr(r.id) + '">Copy business details</button>' +
+              '<button class="admin-btn" data-admin-act="mark-paid" data-id="' + escapeAttr(r.id) + '"' + (paid ? ' disabled' : '') + '>' + (paid ? 'Paid ✓' : 'Mark as paid') + '</button>' +
+              '<button class="admin-btn" data-admin-act="mark-sent" data-id="' + escapeAttr(r.id) + '"' + (sent ? ' disabled' : '') + '>' + (sent ? 'Report sent ✓' : 'Mark report as sent') + '</button>' +
+            '</div></td>' +
+          '</tr>';
+      }
+
+      function wireAdminRows() {
+        adminRoot.querySelectorAll('[data-admin-act]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            const id = btn.getAttribute('data-id');
+            const act = btn.getAttribute('data-admin-act');
+            const req = adminRequests.find(function (r) { return r.id === id; });
+            if (!req) return;
+            if (act === 'copy-email') {
+              copyText(req.email || '', 'Email copied');
+            } else if (act === 'copy-details') {
+              const details = [
+                'Business: ' + (req.businessName || ''),
+                'Address: ' + (req.businessAddress || ''),
+                'Website/Link: ' + (req.businessLink || ''),
+                'Contact: ' + (req.fullName || ''),
+                'Email: ' + (req.email || ''),
+                'Phone: ' + (req.phone || '')
+              ].join('\n');
+              copyText(details, 'Business details copied');
+            } else if (act === 'mark-paid') {
+              adminUpdate(id, { status: 'paid' }, btn);
+            } else if (act === 'mark-sent') {
+              adminUpdate(id, { reportStatus: 'sent' }, btn);
+            }
+          });
+        });
+      }
+
+      async function adminUpdate(id, patch, btn) {
+        const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+        if (!token) { renderAdminGate(false); return; }
+        if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+        try {
+          const res = await fetch(API_BASE + '/report-requests/' + encodeURIComponent(id), {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'x-admin-token': token },
+            body: JSON.stringify(patch)
+          });
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem(ADMIN_TOKEN_KEY);
+            renderAdminGate(true);
+            return;
+          }
+          if (!res.ok) throw new Error('update failed');
+          const updated = await res.json();
+          const idx = adminRequests.findIndex(function (r) { return r.id === id; });
+          if (idx !== -1) adminRequests[idx] = updated;
+          adminToast(patch.status === 'paid' ? 'Marked as paid' : 'Report marked as sent');
+          renderAdminTable();
+        } catch (err) {
+          adminToast('Could not update. Please try again.');
+          renderAdminTable();
+        }
+      }
+
+      function initAdminPage() {
+        document.body.classList.add('admin-mode');
+        // Hide the public app entirely.
+        document.querySelectorAll('body > header, body > main, body > footer, #reportModal')
+          .forEach(function (el) { el.classList.add('hidden'); });
+        adminRoot.classList.remove('hidden');
+        document.title = 'Report requests — Admin';
+        loadAdminRequests();
+      }
+
+      // Route: render the admin page OR the public app, never both.
+      if (isAdminPath()) {
+        initAdminPage();
+      } else {
+        // Deep-link: ?q=<business> auto-runs a search on load.
+        (function () {
+          const q = new URLSearchParams(window.location.search).get('q');
+          if (q) { els.input.value = q; runSearch(q); }
+          else show('empty');
+        })();
+      }
     </script>
   </body>
 </html>
