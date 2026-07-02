@@ -1,0 +1,262 @@
+Before sending the user to Stripe for the Business Reputation Report, collect report request details in our app.
+
+Current problem:
+The button goes straight to Stripe, but we need to collect:
+- customer full name
+- email address
+- phone number
+- business name
+- business address
+- business website or Google profile link
+
+New flow:
+1. User clicks “Unlock full report — $10”
+2. Open a modal called:
+   Business Reputation Report Request
+3. Show text:
+   “Enter your details so we can prepare and send your AI Business Reputation Report after payment.”
+4. Display form fields:
+   - Full name
+   - Email address
+   - Phone number
+   - Business name
+   - Business address
+   - Business website or Google profile link
+5. Add checkbox:
+   “I confirm I am the business owner, manager, or authorised representative.”
+6. Add button:
+   “Continue to secure payment”
+7. Validate the form before payment.
+8. Save the request to the backend/database as pending_payment.
+9. Then open the Stripe Payment Link:
+   https://buy.stripe.com/5kQ14oa2yfUh9JR1Tt2cg00
+
+Do not collect credit card details inside our app.
+Stripe handles payment securely.
+
+Frontend:
+Create a function:
+
+function openReportRequestForm() {
+  showModal(`
+    <h2>Business Reputation Report Request</h2>
+    <p>Enter your details so we can prepare and send your AI Business Reputation Report after payment.</p>
+
+    <form id="reportRequestForm" class="report-request-form">
+      <label>
+        Full name
+        <input name="fullName" required placeholder="Your full name" />
+      </label>
+
+      <label>
+        Email address
+        <input name="email" type="email" required placeholder="you@example.com" />
+      </label>
+
+      <label>
+        Phone number
+        <input name="phone" required placeholder="04xx xxx xxx" />
+      </label>
+
+      <label>
+        Business name
+        <input name="businessName" required value="${currentData?.business?.name || ""}" />
+      </label>
+
+      <label>
+        Business address
+        <input name="businessAddress" required value="${currentData?.business?.address || ""}" />
+      </label>
+
+      <label>
+        Business website or Google profile link
+        <input name="businessLink" placeholder="https://..." />
+      </label>
+
+      <label class="checkbox-row">
+        <input name="authorised" type="checkbox" required />
+        <span>I confirm I am the business owner, manager, or authorised representative.</span>
+      </label>
+
+      <button type="submit" class="unlock-report-button">
+        Continue to secure payment
+      </button>
+    </form>
+  `);
+
+  document.getElementById("reportRequestForm").addEventListener("submit", submitReportRequest);
+}
+
+Replace the current unlock button action:
+Instead of calling startBusinessReportPayment() directly, call:
+
+openReportRequestForm()
+
+Create:
+
+async function submitReportRequest(event) {
+  event.preventDefault();
+
+  const form = event.target;
+  const formData = new FormData(form);
+
+  const payload = {
+    fullName: formData.get("fullName"),
+    email: formData.get("email"),
+    phone: formData.get("phone"),
+    businessName: formData.get("businessName"),
+    businessAddress: formData.get("businessAddress"),
+    businessLink: formData.get("businessLink"),
+    authorised: formData.get("authorised") === "on",
+    searchedBusiness: currentData?.business || null,
+    status: "pending_payment",
+    createdAt: new Date().toISOString()
+  };
+
+  if (!payload.authorised) {
+    alert("Please confirm you are authorised to request this report.");
+    return;
+  }
+
+  try {
+    const response = await fetch("/api/report-requests", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || "Could not save request");
+    }
+
+    window.open("https://buy.stripe.com/5kQ14oa2yfUh9JR1Tt2cg00", "_blank");
+  } catch (error) {
+    alert("Could not save your report request. Please try again.");
+  }
+}
+
+Backend:
+Add this route:
+
+app.post("/api/report-requests", async (req, res) => {
+  try {
+    const {
+      fullName,
+      email,
+      phone,
+      businessName,
+      businessAddress,
+      businessLink,
+      authorised,
+      searchedBusiness,
+      status
+    } = req.body;
+
+    if (!fullName || !email || !phone || !businessName || !businessAddress || !authorised) {
+      return res.status(400).json({
+        error: "Missing required report request details"
+      });
+    }
+
+    const request = {
+      id: "rr_" + Date.now(),
+      fullName,
+      email,
+      phone,
+      businessName,
+      businessAddress,
+      businessLink,
+      authorised,
+      searchedBusiness,
+      status: status || "pending_payment",
+      createdAt: new Date().toISOString()
+    };
+
+    // For now, save to memory or a JSON file.
+    // Later, save this to the real database.
+
+    if (!global.reportRequests) {
+      global.reportRequests = [];
+    }
+
+    global.reportRequests.push(request);
+
+    return res.json({
+      success: true,
+      requestId: request.id
+    });
+  } catch (error) {
+    console.error("Report request error:", error);
+    return res.status(500).json({
+      error: "Could not create report request"
+    });
+  }
+});
+
+Add admin route to view requests:
+
+app.get("/api/report-requests", (req, res) => {
+  res.json(global.reportRequests || []);
+});
+
+Add CSS:
+
+.report-request-form {
+  display: grid;
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.report-request-form label {
+  display: grid;
+  gap: 6px;
+  font-weight: 850;
+  color: #050505;
+}
+
+.report-request-form input {
+  width: 100%;
+  height: 44px;
+  border: 1px solid #D8D8D8;
+  border-radius: 10px;
+  padding: 0 12px;
+  font-size: 15px;
+}
+
+.checkbox-row {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 10px;
+  font-weight: 600 !important;
+  color: #5F6368 !important;
+}
+
+.checkbox-row input {
+  width: auto;
+  height: auto;
+  margin-top: 4px;
+}
+
+.unlock-report-button {
+  width: 100%;
+  height: 48px;
+  border: none;
+  border-radius: 10px;
+  background: #000000;
+  color: #ffffff;
+  font-weight: 950;
+  cursor: pointer;
+}
+
+Important wording in the modal:
+“After payment, your report will be sent to the email address provided above.”
+
+Also add this text before the payment button:
+“Payment is processed securely by Stripe. We do not store credit card details.”
+
+Later:
+Replace Stripe Payment Link with Stripe Checkout API so we can pass requestId to Stripe metadata and automatically match payment to the report request.

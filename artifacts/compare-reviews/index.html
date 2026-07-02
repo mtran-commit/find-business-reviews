@@ -462,6 +462,31 @@
         background: rgba(56, 197, 187, .1); border: 1px solid rgba(56, 197, 187, .35);
         color: var(--text-2); font-size: 13px; line-height: 1.45;
       }
+      .report-request-form { display: grid; gap: 14px; margin-top: 18px; }
+      .report-request-form label {
+        display: grid; gap: 6px; font-weight: 800; font-size: 13.5px; color: var(--text);
+      }
+      .report-request-form input {
+        width: 100%; height: 44px; border: 1px solid #D8D8D8; border-radius: 10px;
+        padding: 0 12px; font-size: 15px; font-family: inherit; background: #fff; color: var(--text);
+        box-sizing: border-box;
+      }
+      .report-request-form input:focus {
+        outline: none; border-color: var(--aqua); box-shadow: 0 0 0 3px rgba(56, 197, 187, .18);
+      }
+      .checkbox-row {
+        display: flex; align-items: flex-start; gap: 10px;
+        font-weight: 600; color: var(--text-2); font-size: 13px;
+      }
+      .checkbox-row input { width: auto; height: auto; margin-top: 3px; }
+      .report-request-form .pre-payment-note { margin-top: 4px; }
+      .secure-note { font-size: 12px; color: var(--text-2); text-align: center; margin: 2px 0 0; }
+      .form-error {
+        margin: 0; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
+        background: rgba(220, 38, 38, .08); border: 1px solid rgba(220, 38, 38, .3); color: #b91c1c;
+      }
+      .report-request-form .unlock-report-button { margin-top: 4px; }
+      .unlock-report-button:disabled { opacity: .6; cursor: default; }
       @media (max-width: 640px) {
         .report-stat-grid { grid-template-columns: 1fr; }
         .paid-report-banner { flex-direction: column; align-items: flex-start; }
@@ -1096,11 +1121,102 @@
           '<div class="report-section"><h4>Unlock the full report to see</h4><ul class="locked-list">' +
             locked.map(function (s) { return '<li>' + escapeHtml(s) + '</li>'; }).join('') +
           '</ul></div>' +
-          '<p class="pre-payment-note">After payment, we will use the email entered at checkout to send your Business Reputation Report.</p>' +
+          '<p class="pre-payment-note">After payment, your report will be sent to the email address you provide on the next step.</p>' +
           '<button class="unlock-report-button" data-act="unlock">Unlock full report — $10</button>';
 
         const unlockBtn = els.reportBody.querySelector('[data-act="unlock"]');
-        if (unlockBtn) unlockBtn.addEventListener('click', startBusinessReportPayment);
+        if (unlockBtn) unlockBtn.addEventListener('click', function () { openReportRequestForm(); });
+      }
+
+      // ---- Report request form (collects details, saves, then opens Stripe) ----
+      function openReportRequestForm() {
+        const d = currentData || {};
+        els.reportTitle.textContent = 'Business Reputation Report Request';
+        els.reportSub.textContent = 'Step 2 of 2 · Your details';
+        els.reportBody.innerHTML = '' +
+          '<p class="ab-body">Enter your details so we can prepare and send your AI Business Reputation Report after payment.</p>' +
+          '<form id="reportRequestForm" class="report-request-form" novalidate>' +
+            '<label>Full name<input name="fullName" required placeholder="Your full name" /></label>' +
+            '<label>Email address<input name="email" type="email" required placeholder="you@example.com" /></label>' +
+            '<label>Phone number<input name="phone" required placeholder="04xx xxx xxx" /></label>' +
+            '<label>Business name<input name="businessName" required value="' + escapeAttr(d.name || '') + '" /></label>' +
+            '<label>Business address<input name="businessAddress" required value="' + escapeAttr(d.address || '') + '" /></label>' +
+            '<label>Business website or Google profile link<input name="businessLink" placeholder="https://..." value="' + escapeAttr(d.website || '') + '" /></label>' +
+            '<label class="checkbox-row"><input name="authorised" type="checkbox" required /><span>I confirm I am the business owner, manager, or authorised representative.</span></label>' +
+            '<p class="form-error" id="reportFormError" role="alert" hidden></p>' +
+            '<p class="pre-payment-note">After payment, your report will be sent to the email address provided above.</p>' +
+            '<p class="secure-note">Payment is processed securely by Stripe. We do not store credit card details.</p>' +
+            '<button type="submit" class="unlock-report-button">Continue to secure payment</button>' +
+          '</form>';
+
+        const form = document.getElementById('reportRequestForm');
+        if (form) form.addEventListener('submit', submitReportRequest);
+      }
+
+      async function submitReportRequest(event) {
+        event.preventDefault();
+        const form = event.target;
+        const errEl = document.getElementById('reportFormError');
+        const showErr = function (msg) {
+          if (errEl) { errEl.textContent = msg; errEl.hidden = false; }
+          else alert(msg);
+        };
+        if (errEl) errEl.hidden = true;
+
+        const fd = new FormData(form);
+        const payload = {
+          fullName: (fd.get('fullName') || '').toString().trim(),
+          email: (fd.get('email') || '').toString().trim(),
+          phone: (fd.get('phone') || '').toString().trim(),
+          businessName: (fd.get('businessName') || '').toString().trim(),
+          businessAddress: (fd.get('businessAddress') || '').toString().trim(),
+          businessLink: (fd.get('businessLink') || '').toString().trim(),
+          authorised: fd.get('authorised') === 'on',
+          searchedBusiness: currentData || null
+        };
+
+        if (!payload.fullName || !payload.email || !payload.phone || !payload.businessName || !payload.businessAddress) {
+          showErr('Please fill in all required fields.');
+          return;
+        }
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email)) {
+          showErr('Please enter a valid email address.');
+          return;
+        }
+        if (!payload.authorised) {
+          showErr('Please confirm you are authorised to request this report.');
+          return;
+        }
+
+        const submitBtn = form.querySelector('button[type="submit"]');
+        if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Saving…'; }
+
+        try {
+          const res = await fetch(API_BASE + '/report-requests', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+          const data = await res.json().catch(function () { return {}; });
+          if (!res.ok) throw new Error(data && data.error ? data.error : 'Could not save request');
+
+          const opened = safeOpen(BUSINESS_REPORT_PAYMENT_LINK);
+          els.reportTitle.textContent = 'Continue to payment';
+          els.reportSub.textContent = 'Secured by Stripe';
+          els.reportBody.innerHTML = '' +
+            '<p class="ab-body">Your request has been saved. ' +
+              (opened
+                ? 'A secure Stripe payment page has opened in a new tab — complete your $10 payment there.'
+                : 'Click the button below to open the secure Stripe payment page.') +
+            '</p>' +
+            '<p class="pre-payment-note">After payment, your report will be sent to <strong>' + escapeHtml(payload.email) + '</strong>.</p>' +
+            '<button class="unlock-report-button" data-act="open-stripe">Open secure payment</button>';
+          const openBtn = els.reportBody.querySelector('[data-act="open-stripe"]');
+          if (openBtn) openBtn.addEventListener('click', startBusinessReportPayment);
+        } catch (err) {
+          if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Continue to secure payment'; }
+          showErr('Could not save your report request. Please try again.');
+        }
       }
 
       // Business Reputation Report ($10) is paid via a hosted Stripe Payment
