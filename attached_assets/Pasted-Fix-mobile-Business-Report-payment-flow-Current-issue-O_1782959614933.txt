@@ -1,0 +1,98 @@
+Fix mobile Business Report payment flow.
+
+Current issue:
+On laptop, clicking Business Report opens the correct “Business Reputation Report Request” form first.
+
+On iPhone/mobile, clicking Business Report goes straight to the Stripe payment link.
+
+This is wrong.
+
+Required behaviour:
+On every device — desktop, tablet and mobile — the flow must be:
+
+Click Business Report / Unlock full report
+↓
+Open Business Reputation Report Request form
+↓
+Collect full name, email, phone, business name, business address, business website/Google profile link
+↓
+Require authorised representative checkbox
+↓
+Save request to database
+↓
+Then open Stripe Payment Link
+
+Stripe must never open before the form is completed and saved.
+
+Find all mobile buttons and click handlers that call:
+startBusinessReportPayment()
+window.open("https://buy.stripe.com/...")
+or any direct Stripe link
+
+Replace them with:
+openReportRequestForm()
+
+Search the whole project for:
+- startBusinessReportPayment
+- buy.stripe.com
+- Unlock full report
+- Business Report
+- Business Reputation Report
+- onclick
+- mobile
+- report button
+
+Every Business Report button must call only:
+openReportRequestForm()
+
+The only place that may open Stripe is inside submitReportRequest(), after successful validation and successful save to /api/report-requests.
+
+Correct logic:
+
+function openReportRequestForm() {
+  // opens the details form
+}
+
+async function submitReportRequest(event) {
+  event.preventDefault();
+
+  // validate required fields
+  // validate authorised checkbox
+  // save to /api/report-requests
+
+  // only after successful save:
+  window.open("https://buy.stripe.com/5kQ14oa2yfUh9JR1Tt2cg00", "_blank");
+}
+
+Do not let startBusinessReportPayment() be called directly from any visible button.
+
+If startBusinessReportPayment() still exists, change it to:
+
+function startBusinessReportPayment() {
+  openReportRequestForm();
+}
+
+This guarantees old mobile buttons still open the form instead of Stripe.
+
+Also check responsive/mobile HTML:
+If there is a separate mobile report button, update it:
+
+<button onclick="openReportRequestForm()">
+  Business Reputation Report
+</button>
+
+Do not use:
+onclick="startBusinessReportPayment()"
+
+Do not use:
+onclick="window.open('https://buy.stripe.com/...')"
+
+After updating, test:
+1. Desktop Business Report button opens form first.
+2. iPhone/mobile Business Report button opens form first.
+3. Continue to secure payment opens Stripe only after required details are entered.
+4. If the authorised checkbox is not ticked, Stripe must not open.
+5. If required fields are missing, Stripe must not open.
+
+Important:
+Republish the app after this fix.

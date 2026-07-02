@@ -1293,7 +1293,7 @@
             '<p class="pre-payment-note">After payment, your report will be sent to <strong>' + escapeHtml(payload.email) + '</strong>.</p>' +
             '<button class="unlock-report-button" data-act="open-stripe">Open secure payment</button>';
           const openBtn = els.reportBody.querySelector('[data-act="open-stripe"]');
-          if (openBtn) openBtn.addEventListener('click', startBusinessReportPayment);
+          if (openBtn) openBtn.addEventListener('click', openStripePayment);
         } catch (err) {
           if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = 'Continue to secure payment'; }
           showErr('Could not save your report request. Please try again.');
@@ -1304,10 +1304,24 @@
       // Link opened in a new tab — Stripe handles the card securely, we never
       // collect card details. The free AI Review Sentiment report is unaffected.
       var BUSINESS_REPORT_PAYMENT_LINK = 'https://buy.stripe.com/5kQ14oa2yfUh9JR1Tt2cg00';
-      function startBusinessReportPayment() {
+
+      // Opens the hosted Stripe payment page. Only ever called AFTER the report
+      // request form has been validated and SAVED — either automatically at the
+      // end of submitReportRequest(), or via the post-save "Open secure payment"
+      // fallback button. It is never wired to the Business Report entry button
+      // on ANY device (desktop, tablet or mobile).
+      function openStripePayment() {
         if (!safeOpen(BUSINESS_REPORT_PAYMENT_LINK)) {
           alert('Could not open the secure payment page. Please try again.');
         }
+      }
+
+      // Defensive alias: any old or cached button that still references
+      // startBusinessReportPayment must open the DETAILS FORM first, never Stripe.
+      // This guarantees Stripe can never open before the form is filled + saved,
+      // even if a stale mobile bundle is still running an older button handler.
+      function startBusinessReportPayment() {
+        openReportRequestForm();
       }
 
       // Honest, data-derived highlights for the business report (max 2).
