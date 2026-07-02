@@ -858,3 +858,107 @@ async function fetchYelpRating(
 
   return { rating, reviews: totalReviews };
 }
+
+/** Short review snippets per platform, for AI theme analysis (paraphrase only). */
+export interface ReviewSnippets {
+  google: string[];
+  yelp: string[];
+  tripadvisor: string[];
+}
+
+/** Pull a review's free-text from the various shapes SerpApi engines return. */
+function extractReviewText(raw: unknown): string {
+  if (!raw || typeof raw !== "object") return "";
+  const r = raw as Record<string, unknown>;
+  const candidates: unknown[] = [r["snippet"], r["text"], r["comment"]];
+  for (const c of candidates) {
+    if (typeof c === "string" && c.trim()) return c.trim();
+    if (c && typeof c === "object") {
+      const t = (c as Record<string, unknown>)["text"];
+      if (typeof t === "string" && t.trim()) return t.trim();
+    }
+  }
+  return "";
+}
+
+function collectSnippets(reviews: unknown, max: number): string[] {
+  if (!Array.isArray(reviews)) return [];
+  const out: string[] = [];
+  for (const rv of reviews) {
+    const text = extractReviewText(rv);
+    if (text) out.push(text.length > 240 ? text.slice(0, 237) + "..." : text);
+    if (out.length >= max) break;
+  }
+  return out;
+}
+
+/**
+ * Best-effort collection of short public review snippets for the paid report's
+ * AI theme analysis. Isolated from the public rating pipeline: every platform
+ * lookup is wrapped so a failure just yields fewer snippets (never throws), and
+ * the caller downgrades the report's data-quality score accordingly. Only run at
+ * paid-report generation time (admin, rare), so the extra SerpApi calls are fine.
+ */
+export async function fetchReviewSnippets(
+  data: BusinessReviews,
+  apiKey: string,
+  log?: Logger,
+): Promise<ReviewSnippets> {
+  const result: ReviewSnippets = { google: [], yelp: [], tripadvisor: [] };
+  const name = data.name;
+  const address = data.address;
+  const nameTokens = distinctiveTokens(name);
+
+  // ---- Google Maps reviews (resolve data_id, then pull snippets) ----
+  try {
+    const maps = await serpapiGet({
+      engine: "google_maps",
+      type: "search",
+      q: `${name} ${address}`.trim(),
+      api_key: apiKey,
+    });
+    const placeResults = maps["place_results"];
+    const localResults = maps["local_results"];
+    const place: Record<string, unknown> | undefined =
+      placeResults && typeof placeResults === "object"
+        ? (placeResults as Record<string, unknown>)
+        : Array.isArray(localResults) && localResults.length > 0
+          ? (localResults[0] as Record<string, unknown>)
+          : undefined;
+    const dataId =
+      place && typeof place["data_id"] === "string"
+        ? (place["data_id"] as string)
+        : "";
+    if (dataId) {
+      const rev = await serpapiGet({
+        engine: "google_maps_reviews",
+        data_id: dataId,
+        api_key: apiKey,
+      });
+      result.google = collectSnippets(rev["reviews"], 12);
+    }
+  } catch (err) {
+    log?.warn({ err }, "Google review snippet fetch failed");
+  }
+
+  // ---- Yelp reviews (resolve place_id by confident name match) ----
+  try {
+    const loc = deriveLocation(address);
+    if (loc && nameTokens.length > 0) {
+      const placeId = await findYelpPlaceId(name, loc, nameTokens, apiKey);
+      if (placeId) {
+        const rev = await serpapiGet({
+          engine: "yelp_reviews",
+          place_id: placeId,
+          num: "49",
+          api_key: apiKey,
+        });
+        result.yelp = collectSnippets(rev["reviews"], 12);
+      }
+    }
+  } catch (err) {
+    log?.warn({ err }, "Yelp review snippet fetch failed");
+  }
+
+  return result;
+}

@@ -1859,9 +1859,11 @@
         } else if (rs === 'generating') {
           actions += '<div class="admin-hint">Generating report. This may take up to 60 seconds.</div>';
         } else if (rs === 'generated') {
+          actions += btn('view', 'View report', 'view');
           actions += btn('download', 'Download report', 'dl');
           actions += btn('mark-sent', 'Mark report as sent');
         } else if (rs === 'sent') {
+          actions += btn('view', 'View report', 'view');
           actions += btn('download', 'Download report', 'dl');
           actions += '<span class="admin-badge badge-sent">Sent ✓</span>';
         } else if (rs === 'failed') {
@@ -1914,6 +1916,8 @@
               adminGenerate(id, btn);
             } else if (act === 'download') {
               adminDownload(id, req, btn);
+            } else if (act === 'view') {
+              adminView(id, btn);
             }
           });
         });
@@ -2011,6 +2015,36 @@
           adminToast('Could not download the report.');
         } finally {
           if (btn) { btn.disabled = false; btn.textContent = 'Download report'; }
+        }
+      }
+
+      // View the styled HTML report. The route needs the admin token in a header,
+      // which a plain link can't send, so fetch the HTML as a blob and open it.
+      async function adminView(id, btn) {
+        const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+        if (!token) { renderAdminGate(false); return; }
+        if (btn) { btn.disabled = true; btn.textContent = 'Opening…'; }
+        try {
+          const res = await fetch(
+            API_BASE + '/admin/report-requests/' + encodeURIComponent(id) + '/report',
+            { headers: { 'x-admin-token': token } }
+          );
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem(ADMIN_TOKEN_KEY);
+            renderAdminGate(true);
+            return;
+          }
+          if (!res.ok) throw new Error('View failed');
+          const html = await res.text();
+          const blob = new Blob([html], { type: 'text/html' });
+          const url = URL.createObjectURL(blob);
+          const win = window.open(url, '_blank', 'noopener,noreferrer');
+          if (!win) adminToast('Please allow pop-ups to view the report.');
+          setTimeout(function () { URL.revokeObjectURL(url); }, 60000);
+        } catch (err) {
+          adminToast('Could not open the report.');
+        } finally {
+          if (btn) { btn.disabled = false; btn.textContent = 'View report'; }
         }
       }
 

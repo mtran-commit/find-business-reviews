@@ -1,0 +1,497 @@
+Update the admin report generation flow so that when I click “Generate Report” inside the admin panel, the system creates a full detailed AI Business Reputation Report in the same style and structure as the mockup report.
+
+Goal:
+The paid report must look like a professional, detailed business dashboard/report, not a basic text summary.
+
+When admin clicks:
+Generate Report
+
+The system should:
+1. Load the saved report request from the database.
+2. Use the business name, address, suburb/location and business website/Google profile link.
+3. Fetch live/public review data using the available APIs.
+4. Fetch rating data and review text/snippets from:
+   - Google
+   - Yelp
+   - TripAdvisor
+5. Fetch similar nearby competitors from the same category and suburb/location.
+6. Send the collected data to OpenAI.
+7. Generate a full AI Business Reputation Report.
+8. Save the generated report JSON to the database.
+9. Generate a styled HTML report page and PDF report.
+10. Save the report PDF URL.
+11. Show “Download report” in the admin panel.
+
+Important:
+The report must match the style of the mockup:
+- white clean dashboard
+- dark navy header
+- purple accents
+- rounded cards
+- KPI cards
+- platform comparison table
+- sentiment breakdown
+- strengths
+- complaints
+- risk levels
+- competitor snapshot
+- action plan
+- disclaimer
+- professional business report feel
+
+Do not create a plain text report.
+
+REPORT DATA FETCHING
+
+When generating the report, fetch:
+
+Business profile:
+- business name
+- category
+- address
+- suburb/location
+- website
+- phone if available
+- business image/logo if available
+
+Review platform data:
+Google:
+- rating
+- review count
+- review snippets/text if available
+- recent reviews if available
+- review dates if available
+
+Yelp:
+- rating
+- review count
+- review snippets/text if available
+- recent reviews if available
+
+TripAdvisor:
+- rating
+- review count
+- review snippets/text if available
+- recent reviews if available
+
+Competitors:
+Fetch at least 3 similar businesses:
+- same category
+- same suburb/location or nearby
+- Google rating
+- Yelp rating if available
+- TripAdvisor rating if available
+- review count
+- calculated trust score
+
+If review text is limited:
+Still generate the report, but show:
+Data quality: Low or Medium
+and write:
+“Analysis is based on the available public review data and review samples returned by public sources.”
+
+Do not invent specific customer reviews.
+Do not quote long reviews.
+Use short snippets or paraphrased themes only.
+
+REPORT STRUCTURE
+
+The final report must include these sections:
+
+1. Report Header
+Title:
+AI Business Reputation Report
+
+Subtitle:
+Prepared for [Business Name]
+
+Show:
+- Date generated
+- Data quality: High / Medium / Low
+- Platforms checked: Google, Yelp, TripAdvisor
+- Paid Report — $10 badge
+
+2. KPI Cards
+Show 4 cards:
+- Trust Score
+- Average Rating
+- Total Reviews Analysed
+- Customer Sentiment
+
+Example:
+Trust Score: 84/100
+Average Rating: 4.3/5
+Total Reviews Analysed: 428
+Customer Sentiment: Mostly Positive
+
+3. Executive Summary
+Write a clear business summary:
+- overall reputation
+- main strengths
+- main weaknesses
+- what the business should focus on
+- whether the business is competitive in the local area
+
+4. Platform-by-Platform Comparison Table
+Columns:
+- Platform
+- Average Rating
+- Reviews Analysed
+- Summary
+- Business Meaning
+
+Rows:
+Google
+Yelp
+TripAdvisor
+
+Example business meaning:
+“Your strongest channel. Maintain momentum and keep generating fresh reviews.”
+
+5. AI Customer Sentiment Analysis
+Include:
+- overall sentiment breakdown:
+  positive %
+  neutral %
+  negative %
+- positive themes
+- negative themes
+- AI insight box
+
+If the AI cannot calculate percentages exactly, estimate carefully and label them as:
+“Estimated from available review samples.”
+
+6. Top Strengths Customers Mention
+Show 3 cards:
+- Strength theme
+- Explanation
+- Short example/evidence from review themes
+
+Example:
+Friendly and approachable staff
+Customers consistently highlight the team as helpful, welcoming and professional.
+
+7. Main Complaints and Risk Level
+Show 3 cards:
+- Complaint theme
+- Risk level: Low / Medium / High
+- Explanation
+- Recommended fix
+
+Example:
+Slow response time
+Risk level: Medium
+Some customers mention delayed replies or follow-up.
+Recommended fix: Set response SLA and monitor response times.
+
+8. What May Be Costing You Customers
+Show a list of potential conversion/reputation risks.
+
+Examples:
+- delayed first response after enquiry
+- low review volume on secondary platforms
+- competitors with stronger review consistency
+- not enough recent reviews
+- unclear offers or value proposition
+
+9. Customer Language Insights
+Show:
+Words customers use:
+- professional
+- helpful
+- knowledgeable
+- responsive
+
+Phrases to use in marketing:
+- trusted local experts
+- clear communication
+- friendly service
+
+Phrases/issues to avoid:
+- slow response
+- waiting for updates
+- unclear timing
+- poor communication
+
+10. Competitor Snapshot
+Show comparison table with 3 nearby competitors.
+
+Columns:
+- Competitor
+- Trust Score
+- Average Rating
+- Reviews Analysed
+- Comparison
+
+Include a conclusion:
+“You are competitive, but not the top-ranked business in your area.”
+or
+“You are currently ahead of most nearby competitors.”
+
+11. Recommended Offer to Win More Bookings
+Suggest one practical offer.
+
+Examples:
+For real estate:
+Free local property appraisal + 15-minute strategy consultation
+
+For restaurants:
+Weekday lunch special or first-time visitor offer
+
+For trades:
+Free quote + priority callback
+
+For beauty:
+First visit treatment package or consultation offer
+
+Include:
+- Recommended offer
+- Why it works
+- Example copy
+
+12. Review Improvement Opportunity
+Show:
+- priority: High / Medium / Low
+- why it matters
+- recommended action
+
+Example:
+Increasing recent reviews will significantly boost your trust score and visibility across platforms.
+
+13. 7-Day Reputation Action Plan
+Create 7 daily actions:
+Day 1: Audit negative review themes
+Day 2: Create faster follow-up template
+Day 3: Ask recent happy customers for reviews
+Day 4: Update website copy with customer language
+Day 5: Train team on response standards
+Day 6: Monitor competitor review gaps
+Day 7: Launch recommended offer
+
+14. 30-Day Reputation Plan
+Create 4 weeks:
+Week 1: Fix response process
+Week 2: Collect more recent reviews
+Week 3: Improve communication touchpoints
+Week 4: Re-run report and adjust strategy
+
+15. Suggested Response Templates
+Include:
+- positive review response template
+- negative review response template
+
+Make them professional and business-friendly.
+
+16. Final Recommendation
+Clear final recommendation:
+- what the business should do first
+- what could improve trust fastest
+- what to monitor next
+
+17. Disclaimer
+Add:
+“This report is generated using available public review data and AI analysis. It is intended for business insight purposes only and should not be treated as legal, financial or professional advice. Public review data may be incomplete or change over time.”
+
+STYLE REQUIREMENTS
+
+Create the report as a styled HTML page first, then convert/download as PDF.
+
+Use a report page template:
+
+public/report-template.html
+
+or generate the HTML dynamically.
+
+Design:
+- Page background: #F7F7F4
+- Card background: #FFFFFF
+- Dark navy: #071A3D
+- Purple: #7B3CFF
+- Light purple: #F1E8FF
+- Border: #E5E5E5
+- Text: #050505
+- Muted text: #5F6368
+- Positive green: #16A34A
+- Warning orange: #F97316
+- Risk red: #DC2626
+
+Report should use:
+- rounded cards
+- clean section titles
+- icons or small badges
+- visual KPI cards
+- tables
+- action plan cards
+- no turquoise
+
+BACKEND ROUTES
+
+Add or update these admin routes:
+
+POST /api/admin/report-requests/:id/generate-report
+
+This route should:
+- require x-admin-token
+- check request exists
+- check payment_status is paid
+- set report_status to generating
+- fetch business review data
+- fetch competitor data
+- generate AI report JSON
+- generate styled HTML report
+- generate PDF
+- save report_json
+- save report_html_url if available
+- save report_pdf_url
+- set report_status to generated
+- set report_generated_at
+- return success and download URL
+
+If payment_status is not paid:
+Return:
+“Payment must be marked as paid before generating report.”
+
+GET /api/admin/report-requests/:id/report
+
+This route should:
+- require x-admin-token
+- display the generated styled HTML report in the browser
+
+GET /api/admin/report-requests/:id/download
+
+This route should:
+- require x-admin-token
+- download the generated PDF
+
+ADMIN PANEL CHANGES
+
+In /admin-report-requests:
+
+For each request:
+If payment_status = pending_payment:
+- show button: Mark as paid
+- hide/disable Generate Report
+
+If payment_status = paid and report_status is pending:
+- show button: Generate Report
+
+If report_status = generating:
+- show spinner/message:
+  “Generating report. This may take up to 60 seconds.”
+
+If report_status = generated:
+- show:
+  View Report
+  Download PDF
+  Mark report as sent
+
+If report_status = sent:
+- show badge:
+  Sent
+
+Add button:
+View Report
+
+This opens:
+GET /api/admin/report-requests/:id/report
+
+Add button:
+Download PDF
+
+This opens:
+GET /api/admin/report-requests/:id/download
+
+AI PROMPT REQUIREMENTS
+
+When sending to OpenAI, use this instruction:
+
+“You are generating a paid AI Business Reputation Report for a business owner. Analyse available Google, Yelp and TripAdvisor ratings, review counts, review snippets, customer sentiment themes and competitor signals. Provide practical, specific, business-friendly recommendations. Do not invent facts. If review text is limited, state that clearly. Use careful wording such as appears, suggests, may indicate, based on available review data. Return structured JSON only.”
+
+AI output must match the full report structure.
+
+PDF GENERATION
+
+Use a PDF generation library such as:
+- Playwright HTML to PDF if available
+or
+- Puppeteer
+or
+- PDFKit
+
+Preferred:
+Generate styled HTML first, then convert to PDF so the design matches the mockup.
+
+Install if needed:
+npm install puppeteer
+
+If Puppeteer is too heavy for Replit, use PDFKit but keep clean styling.
+
+File storage:
+Save PDFs to:
+public/reports
+
+Filename:
+business-reputation-report-[requestId].pdf
+
+HTML report:
+Save to:
+public/reports/business-reputation-report-[requestId].html
+
+IMPORTANT DATA QUALITY RULE
+
+Add a data quality score:
+High:
+- at least 30 review texts/snippets across platforms
+
+Medium:
+- some review text/snippets available, but limited
+
+Low:
+- mostly ratings and review counts only
+
+Show this clearly in the report header.
+
+IMPORTANT LEGAL/SAFETY WORDING
+
+Do not write:
+“This business is losing customers because…”
+
+Instead write:
+“This may be costing the business potential customers…”
+
+Do not write:
+“Customers hate…”
+
+Instead write:
+“Some available review samples suggest…”
+
+Do not make allegations.
+Do not invent complaints.
+Do not expose private customer information.
+
+FINAL TEST
+
+Test admin workflow:
+
+1. Create a fake report request.
+2. Mark it as paid.
+3. Click Generate Report.
+4. Report status changes to generating.
+5. AI report is created.
+6. HTML report page is available.
+7. PDF download is available.
+8. Admin can mark report as sent.
+
+The generated report must visually look like the mockup detailed report dashboard:
+- top report title/header
+- KPI cards
+- platform comparison
+- sentiment analysis
+- strengths
+- complaints/risk level
+- competitor snapshot
+- recommended offer
+- 7-day action plan
+- 30-day plan
+- response templates
+- disclaimer

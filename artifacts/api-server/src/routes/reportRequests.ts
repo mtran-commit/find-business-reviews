@@ -8,14 +8,21 @@ import {
   updateReportRequestSchema,
   type ReportRequest,
 } from "@workspace/db";
-import { fetchBusinessReviews, type BusinessReviews } from "../lib/serpapi";
+import {
+  fetchBusinessReviews,
+  fetchReviewSnippets,
+  type BusinessReviews,
+  type ReviewSnippets,
+} from "../lib/serpapi";
 import {
   computeMetrics,
   generateAiSections,
+  normalizeReport,
   REPORT_DISCLAIMER,
   type BusinessReport,
 } from "../lib/reportContent";
 import { buildReportPdf } from "../lib/reportPdf";
+import { buildReportHtml } from "../lib/reportHtml";
 
 const router: IRouter = Router();
 
@@ -267,7 +274,20 @@ router.post(
         throw new Error("No review data available for this business.");
       }
 
-      const metrics = computeMetrics(data);
+      // Best-effort review snippets for richer AI theme analysis. A failure here
+      // just yields fewer snippets (and a lower data-quality score), never aborts.
+      let snippets: ReviewSnippets = { google: [], yelp: [], tripadvisor: [] };
+      if (apiKey) {
+        try {
+          snippets = await fetchReviewSnippets(data, apiKey, req.log);
+        } catch (err) {
+          req.log.warn({ err }, "Review snippet fetch failed; continuing");
+        }
+      }
+      const snippetCount =
+        snippets.google.length + snippets.yelp.length + snippets.tripadvisor.length;
+
+      const metrics = computeMetrics(data, snippetCount);
       const category = data.category?.label ?? "";
       const suburb = data.locality?.suburb ?? "";
       const sections = await generateAiSections(
@@ -275,11 +295,16 @@ router.post(
         metrics,
         category,
         suburb,
+        snippets,
       );
 
       const report: BusinessReport = {
         businessName: row.businessName,
         businessAddress: row.businessAddress,
+        category,
+        suburb,
+        website: data.website ?? "",
+        phone: data.phone ?? "",
         generatedAt: new Date().toISOString(),
         metrics,
         sections,
@@ -333,7 +358,7 @@ router.get(
     }
 
     try {
-      const pdf = await buildReportPdf(row.reportJson as BusinessReport);
+      const pdf = await buildReportPdf(normalizeReport(row.reportJson));
       const safeName = (row.businessName || "business")
         .replace(/[^a-z0-9]+/gi, "-")
         .replace(/^-+|-+$/g, "")
@@ -348,6 +373,33 @@ router.get(
     } catch (err) {
       req.log.error({ err }, "Failed to build report PDF");
       res.status(500).json({ error: "Could not build the report PDF." });
+    }
+  },
+);
+
+/**
+ * Admin: view the generated report as a styled HTML dashboard page. Rebuilt on
+ * demand from the persisted report JSON. Admin-token gated (never public).
+ */
+router.get(
+  "/admin/report-requests/:id/report",
+  async (req, res): Promise<void> => {
+    if (!requireAdmin(req, res)) return;
+    const row = await loadRequest(req, res);
+    if (!row) return;
+
+    if (!row.reportJson) {
+      res.status(404).json({ error: "No generated report to view yet." });
+      return;
+    }
+
+    try {
+      const html = buildReportHtml(normalizeReport(row.reportJson));
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(html);
+    } catch (err) {
+      req.log.error({ err }, "Failed to build report HTML");
+      res.status(500).json({ error: "Could not build the report page." });
     }
   },
 );
