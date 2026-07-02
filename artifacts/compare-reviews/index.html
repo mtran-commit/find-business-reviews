@@ -62,33 +62,36 @@
 
       /* ===== Search ===== */
       .search-wrap { display: flex; justify-content: center; padding: 28px 0 22px; }
-      .search-pill {
-        width: min(820px, 100%);
-        display: flex; align-items: center; gap: 12px;
+      .search-shell {
+        width: min(980px, 100%);
+        display: flex; align-items: center; gap: 10px;
         background: #fff; border: 1px solid var(--border);
-        border-radius: 999px; padding: 9px 9px 9px 20px; min-height: 74px;
+        border-radius: 999px; padding: 9px 9px 9px 18px; min-height: 76px;
         box-shadow: var(--shadow-pill);
         transition: box-shadow .15s, border-color .15s;
       }
-      .search-pill:focus-within { border-color: var(--purple); box-shadow: 0 14px 34px rgba(123,60,255,.22); }
-      .search-circle {
+      .search-shell:focus-within { border-color: var(--purple); box-shadow: 0 14px 34px rgba(123,60,255,.22); }
+      .search-field { display: flex; align-items: center; gap: 12px; flex: 1 1 0; min-width: 0; }
+      .search-field.location-field { flex: 0 1 300px; }
+      .search-icon-circle, .location-icon-circle {
         width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0;
         background: var(--purple); color: #fff;
         display: grid; place-items: center;
       }
-      .search-input {
+      .search-field input {
         flex: 1 1 auto; min-width: 0; border: none; outline: none; background: transparent;
         font-size: 17px; color: var(--text); font-family: inherit;
       }
-      .search-input::placeholder { color: var(--text-2); }
-      .search-check {
+      .search-field input::placeholder { color: var(--text-2); }
+      .search-divider { width: 1px; align-self: stretch; margin: 10px 4px; background: var(--border); flex-shrink: 0; }
+      .search-cta {
         flex-shrink: 0; height: 56px; font-family: inherit; font-weight: 800; font-size: 14.5px;
         letter-spacing: .3px; color: #fff; background: var(--navy); border: none; cursor: pointer;
-        border-radius: 999px; padding: 0 28px;
+        border-radius: 999px; padding: 0 28px; white-space: nowrap;
         transition: opacity .15s, transform .05s;
       }
-      .search-check:hover { opacity: .9; }
-      .search-check:active { transform: translateY(1px); }
+      .search-cta:hover { opacity: .9; }
+      .search-cta:active { transform: translateY(1px); }
 
       /* ===== Hero ===== */
       .hero { text-align: center; padding: 46px 0 4px; }
@@ -118,12 +121,15 @@
 
       /* ===== AI Trust Score preview ===== */
       .ai-preview {
-        max-width: 680px; margin: 28px auto 30px;
-        background: var(--navy); color: #fff; border-radius: 18px; padding: 26px 30px;
-        display: flex; gap: 28px; align-items: center; justify-content: space-between;
-        box-shadow: 0 22px 54px rgba(7,26,61,.28); flex-wrap: wrap;
+        max-width: 760px; margin: 28px auto 30px;
+        background: var(--navy); color: #fff; border-radius: 18px; padding: 32px;
+        display: flex; gap: 32px; align-items: stretch; justify-content: space-between;
+        box-shadow: 0 22px 54px rgba(7,26,61,.28);
       }
-      .ai-preview-left { flex: 1 1 190px; min-width: 170px; }
+      .ai-preview-left {
+        flex: 0 1 210px; min-width: 180px; align-self: center;
+        border-right: 1px solid rgba(255,255,255,.12); padding-right: 28px;
+      }
       .ai-preview-left .lbl { font-size: 12.5px; letter-spacing: .5px; text-transform: uppercase; color: #9FB0D4; font-weight: 800; }
       .ai-preview-left .score { font-size: 48px; font-weight: 900; line-height: 1; margin: 8px 0 4px; }
       .ai-preview-left .score span { font-size: 20px; color: #9FB0D4; font-weight: 700; }
@@ -132,8 +138,8 @@
       .ai-stars svg { width: 19px; height: 19px; }
       .star-p { color: var(--purple-2); }
       .star-e { color: #33456b; }
-      .ai-preview-right { flex: 1 1 250px; min-width: 230px; display: grid; gap: 13px; }
-      .ai-plat-row { display: flex; align-items: center; gap: 11px; }
+      .ai-preview-right { flex: 1 1 280px; min-width: 240px; display: grid; gap: 10px; }
+      .ai-plat-row { display: flex; align-items: center; gap: 11px; background: rgba(255,255,255,.06); border-radius: 12px; padding: 10px 14px; }
       .ai-plat-ico {
         width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
         display: grid; place-items: center; font-weight: 800; font-size: 14px; color: #fff;
@@ -148,12 +154,12 @@
 
       /* ===== Feature cards ===== */
       .feature-grid {
-        max-width: 980px; margin: 0 auto 8px;
-        display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+        max-width: 1180px; margin: 0 auto 8px;
+        display: grid; grid-template-columns: repeat(5, 1fr); gap: 18px;
       }
       .feature-card {
-        background: #fff; border: 1px solid var(--border); border-radius: 14px;
-        padding: 22px 20px; box-shadow: var(--shadow-soft);
+        background: #fff; border: 1px solid var(--border); border-radius: 18px;
+        padding: 22px 18px; box-shadow: var(--shadow-soft);
         transition: transform .15s, box-shadow .15s, border-color .15s;
       }
       .feature-card:hover { transform: translateY(-2px); border-color: #E0D4FF; box-shadow: 0 14px 34px rgba(123,60,255,.12); }
@@ -165,12 +171,21 @@
       .feature-ico svg { width: 22px; height: 22px; }
       .feature-card h4 { font-size: 17px; font-weight: 800; letter-spacing: -.2px; color: var(--text); }
       .feature-card p { font-size: 14px; color: var(--navy); margin-top: 7px; line-height: 1.5; opacity: .82; }
-      @media (max-width: 900px) { .feature-grid { grid-template-columns: repeat(2, 1fr); } }
-      @media (max-width: 620px) {
+      @media (max-width: 1100px) { .feature-grid { grid-template-columns: repeat(3, 1fr); } }
+      @media (max-width: 860px) {
+        .search-shell {
+          flex-direction: column; align-items: stretch; gap: 8px;
+          border-radius: 22px; padding: 12px;
+        }
+        .search-field { background: var(--purple-soft-2, #F7F5FF); border: 1px solid var(--border); border-radius: 14px; padding: 8px 12px; flex: 1 1 auto; }
+        .search-field.location-field { flex: 1 1 auto; }
+        .search-divider { display: none; }
+        .search-cta { width: 100%; }
+      }
+      @media (max-width: 700px) {
         .feature-grid { grid-template-columns: 1fr; }
         .ai-preview { flex-direction: column; align-items: stretch; gap: 22px; }
-        .search-pill { flex-wrap: wrap; }
-        .search-check { width: 100%; }
+        .ai-preview-left { border-right: none; border-bottom: 1px solid rgba(255,255,255,.12); padding-right: 0; padding-bottom: 22px; align-self: stretch; }
       }
 
       /* ===== Footer line ===== */
@@ -672,13 +687,23 @@
 
       <!-- Search (persistent) -->
       <div class="search-wrap">
-        <div class="search-pill">
-          <div class="search-circle">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <div class="search-shell">
+          <div class="search-field">
+            <div class="search-icon-circle">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            </div>
+            <input id="searchInput" type="search" autocomplete="off"
+                   placeholder="Search for a business, service or category..." />
           </div>
-          <input id="searchInput" class="search-input" type="search" autocomplete="off"
-                 placeholder="Search for a business, service or category..." />
-          <button id="searchBtn" class="search-check">CHECK TRUST SCORE — FREE</button>
+          <div class="search-divider"></div>
+          <div class="search-field location-field">
+            <div class="location-icon-circle">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <input id="locationInput" type="search" autocomplete="off"
+                   placeholder="Enter location or suburb..." />
+          </div>
+          <button id="searchBtn" class="search-cta">CHECK TRUST SCORE — FREE</button>
         </div>
       </div>
 
@@ -757,12 +782,12 @@
             <div class="feature-card">
               <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
               <h4>Nearby Comparison</h4>
-              <p>Find better rated businesses near you in seconds.</p>
+              <p>Compare similar businesses near you to find the best choice.</p>
             </div>
             <div class="feature-card">
               <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-8-8A2 2 0 0011.2 5H6a1 1 0 00-1 1v5.2a2 2 0 00.6 1.4l8 8a2 2 0 002.8 0l4.2-4.2a2 2 0 000-2.8z"/><path d="M8.5 8.5h.01"/></svg></div>
               <h4>Offers Found</h4>
-              <p>Discover verified deals and special offers before you go.</p>
+              <p>Discover deals, promotions and special offers nearby.</p>
             </div>
           </div>
         </div>
@@ -986,6 +1011,7 @@
       // ---- DOM refs ----
       const els = {
         input: document.getElementById('searchInput'),
+        location: document.getElementById('locationInput'),
         searchBtn: document.getElementById('searchBtn'),
         empty: document.getElementById('emptyState'),
         hero: document.getElementById('heroWrap'),
@@ -1593,9 +1619,23 @@
         return false;
       }
 
+      // Combine the business + location inputs into one query, then run the search.
+      function handleLandingSearch() {
+        const businessQuery = (els.input.value || '').trim();
+        const locationQuery = (els.location && els.location.value ? els.location.value : '').trim();
+        if (!businessQuery) {
+          alert('Please enter a business, service or category.');
+          els.input.focus();
+          return;
+        }
+        const finalQuery = locationQuery ? (businessQuery + ' ' + locationQuery) : businessQuery;
+        runSearch(finalQuery);
+      }
+
       // ---- Events ----
-      els.searchBtn.addEventListener('click', function () { runSearch(); });
-      els.input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); runSearch(); } });
+      els.searchBtn.addEventListener('click', function () { handleLandingSearch(); });
+      els.input.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); handleLandingSearch(); } });
+      if (els.location) els.location.addEventListener('keydown', function (e) { if (e.key === 'Enter') { e.preventDefault(); handleLandingSearch(); } });
       els.modalClose.addEventListener('click', closeReport);
       els.modal.addEventListener('click', function (e) { if (e.target === els.modal) closeReport(); });
       document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeReport(); });

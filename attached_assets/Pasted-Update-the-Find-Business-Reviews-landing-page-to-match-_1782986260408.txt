@@ -1,0 +1,351 @@
+Update the Find Business Reviews landing page to match the latest generated mockup.
+
+The current landing page does not match the mockup. It needs:
+- a cleaner premium layout
+- purple/dark navy brand colours
+- a second location/suburb input in the search bar
+- a dark AI Trust Score preview card
+- feature cards aligned in one clean row on desktop
+- no turquoise / aqua colours
+
+Use this design structure exactly.
+
+PAGE DESIGN
+
+1. Header
+
+Top header:
+- White background
+- Thin bottom border #E5E5E5
+- Height around 72px
+- Left side: small shield/star icon + text “Find Business Reviews”
+- Right side: “Trust before you buy”
+
+Header colours:
+- Text: #071A3D or #050505
+- Icon accent: purple #7B3CFF
+- No turquoise
+
+2. Hero section
+
+Hero must be centred and spacious.
+
+Headline:
+
+Don’t trust one rating.
+Compare them all.
+
+Style:
+- Very large bold text
+- Desktop font-size 70px to 82px
+- Mobile font-size 42px to 48px
+- Font weight 950
+- Line height 1.05
+- Black text for normal words
+- Purple gradient for “one rating” and “Compare”
+- Use gradient from #7B3CFF to #9A5CFF
+- No turquoise
+
+Subtitle:
+
+Search businesses and compare Google, Yelp and TripAdvisor ratings side by side. Get an AI Trust Score before you buy, book or visit.
+
+Style:
+- Black or dark navy
+- Font size around 20px desktop
+- Max width around 760px
+- Centered
+- Do not use light blue
+- Do not use the word Australian
+
+3. Search bar with location input
+
+Replace the current single search bar with a large horizontal search bar containing two inputs and one button.
+
+Desktop layout:
+
+[ purple search icon ] [ business input ] | [ purple location icon ] [ location input ] [ button ]
+
+Business input placeholder:
+Search for a business, service or category...
+
+Location input placeholder:
+Enter location or suburb...
+
+Button:
+CHECK TRUST SCORE — FREE
+
+Search bar style:
+- Max width 980px
+- Height around 76px
+- White background
+- Border #E5E5E5
+- Border radius 999px
+- Subtle shadow
+- Centered under subtitle
+- Purple icon circles
+- Button dark navy #071A3D
+- Button white text
+- Button rounded pill
+- Strong bold text
+
+Important functionality:
+When the user clicks CHECK TRUST SCORE — FREE:
+- combine business input and location input into the search query.
+Example:
+business input: “pizza”
+location input: “Mornington”
+search query should become:
+“pizza Mornington”
+
+If location input is empty:
+- search only the business input.
+
+If business input is empty:
+- show alert:
+“Please enter a business, service or category.”
+
+Add JavaScript:
+const businessQuery = document.getElementById("businessSearchInput").value.trim();
+const locationQuery = document.getElementById("locationSearchInput").value.trim();
+const finalQuery = locationQuery ? `${businessQuery} ${locationQuery}` : businessQuery;
+
+Then run existing search function using finalQuery.
+
+Pressing Enter in either input should trigger search.
+
+Mobile layout:
+- Search bar stacks cleanly
+- Business input full width
+- Location input full width
+- Button full width
+- No horizontal overflow
+- Inputs still look premium
+
+4. AI Trust Score preview card
+
+Add a dark navy card under the search bar.
+
+Layout:
+- Max width around 760px
+- Centered
+- Margin top around 28px
+- Dark navy background #071A3D
+- Rounded corners 18px
+- Padding 32px
+- Display two columns on desktop
+- Left column: Trust Score
+- Right column: platform ratings
+- Add vertical divider line between columns on desktop
+- Stack on mobile
+
+Left column content:
+AI TRUST SCORE
+82/100
+VERY TRUSTED
+★★★★★
+
+Style:
+- “AI TRUST SCORE” small uppercase
+- 82 large white text
+- /100 smaller
+- VERY TRUSTED purple
+- Stars purple
+
+Right column rows:
+Google    4.3    ★★★★☆
+Yelp      4.0    ★★★★☆
+TripAdvisor 4.5 ★★★★★
+
+Use platform icons:
+- Google icon as coloured G or simple G badge
+- Yelp red Y or Yelp-style red badge
+- TripAdvisor green T or owl-style green badge
+
+Rows:
+- dark slightly lighter card background rgba(255,255,255,0.06)
+- rounded 12px
+- white text
+- purple stars
+- rating aligned right
+
+5. Feature cards
+
+Use only these 5 feature cards:
+
+AI Trust Score
+Our AI analyzes reviews and signals to give you a clear, data-driven trust score.
+
+Compare Ratings
+See Google, Yelp and TripAdvisor ratings side by side.
+
+AI Review Sentiment
+Understand what people really think with AI powered insights.
+
+Nearby Comparison
+Compare similar businesses near you to find the best choice.
+
+Offers Found
+Discover deals, promotions and special offers nearby.
+
+Delete/hide these:
+- Business Report card
+- Own a business section
+- Launch price section
+- Any duplicated top logo pill
+
+Feature card layout desktop:
+- One row of 5 cards if screen is wide enough
+- Each card equal width
+- Max width around 1200px
+- Cards white
+- Border #E5E5E5
+- Border radius 18px
+- Soft shadow
+- Icon circle soft purple #F1E8FF
+- Icon stroke purple #7B3CFF
+- Text black/dark navy
+
+If 5 cards are too tight:
+- Use CSS grid-template-columns: repeat(5, 1fr)
+- At max-width 1100px use repeat(3, 1fr)
+- At max-width 700px use 1fr
+
+6. Footer trust line
+
+At bottom of landing section show:
+
+Independent. Unbiased. Built for smarter decisions.
+
+Style:
+- centered
+- dark navy text
+- small shield/star icon in purple
+- no turquoise
+
+7. Colour palette
+
+Use exactly:
+- Dark navy: #071A3D
+- Black: #050505
+- White: #FFFFFF
+- Page background: #FFFFFF or #F7F7F4
+- Purple: #7B3CFF
+- Purple light: #F1E8FF
+- Purple gradient: linear-gradient(90deg, #7B3CFF, #9A5CFF)
+- Border: #E5E5E5
+- Muted text: #3B4252
+
+Do not use:
+- turquoise
+- aqua
+- cyan
+- light blue subtitles
+
+8. CSS class guidance
+
+Use these classes or adapt existing ones:
+
+.landing-header
+.hero
+.hero-badge
+.hero-title
+.gradient-word
+.hero-subtitle
+.search-shell
+.search-field
+.search-divider
+.search-icon-circle
+.location-icon-circle
+.search-cta
+.trust-preview-card
+.trust-score-preview
+.platform-preview-list
+.platform-preview-row
+.feature-grid
+.feature-card
+.feature-icon
+.footer-trust-line
+
+9. Search bar HTML example
+
+Use this structure:
+
+<div class="search-shell">
+  <div class="search-field">
+    <div class="search-icon-circle">⌕</div>
+    <input id="businessSearchInput" placeholder="Search for a business, service or category..." />
+  </div>
+
+  <div class="search-divider"></div>
+
+  <div class="search-field location-field">
+    <div class="location-icon-circle">⌖</div>
+    <input id="locationSearchInput" placeholder="Enter location or suburb..." />
+  </div>
+
+  <button class="search-cta" onclick="handleLandingSearch()">
+    CHECK TRUST SCORE — FREE
+  </button>
+</div>
+
+10. JavaScript
+
+Add:
+
+function handleLandingSearch() {
+  const businessInput = document.getElementById("businessSearchInput");
+  const locationInput = document.getElementById("locationSearchInput");
+
+  const businessQuery = businessInput.value.trim();
+  const locationQuery = locationInput.value.trim();
+
+  if (!businessQuery) {
+    alert("Please enter a business, service or category.");
+    businessInput.focus();
+    return;
+  }
+
+  const finalQuery = locationQuery ? `${businessQuery} ${locationQuery}` : businessQuery;
+
+  // Use the existing search logic.
+  // If current app uses searchInput, set it and call searchBusiness().
+  const existingSearchInput = document.getElementById("searchInput");
+  if (existingSearchInput) {
+    existingSearchInput.value = finalQuery;
+  }
+
+  if (typeof searchBusiness === "function") {
+    searchBusiness(finalQuery);
+  } else {
+    window.location.href = `/?q=${encodeURIComponent(finalQuery)}`;
+  }
+}
+
+Add Enter key support:
+["businessSearchInput", "locationSearchInput"].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) {
+    el.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        handleLandingSearch();
+      }
+    });
+  }
+});
+
+11. Final check
+
+After updating, the landing page must match the latest mockup:
+- Header: Find Business Reviews left, Trust before you buy right
+- Hero headline centered
+- Purple highlights, no turquoise
+- Subtitle in black/dark navy
+- Search bar includes business input and location/suburb input
+- Button says CHECK TRUST SCORE — FREE
+- Dark navy AI Trust Score preview card appears under search bar
+- 5 feature cards appear in a clean row/grid
+- No Business Report card
+- No Own a business section
+- No duplicated top-left logo pill
+- Footer line remains
