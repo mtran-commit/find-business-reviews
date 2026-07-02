@@ -1586,10 +1586,23 @@
         wireAdminRows();
       }
 
+      // Only treat http(s) URLs as clickable — never javascript:/data: schemes.
+      function safeHttpUrl(url) {
+        if (!url) return null;
+        try {
+          const u = new URL(url, window.location.href);
+          if (u.protocol === 'http:' || u.protocol === 'https:') return u.href;
+        } catch (e) { /* invalid URL */ }
+        return null;
+      }
+
       function adminRowHtml(r) {
-        const link = r.businessLink
-          ? '<a class="admin-link" href="' + escapeAttr(r.businessLink) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(r.businessLink) + '</a>'
-          : '<span class="admin-cell-sub">—</span>';
+        const safeLink = safeHttpUrl(r.businessLink);
+        const link = safeLink
+          ? '<a class="admin-link" href="' + escapeAttr(safeLink) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(r.businessLink) + '</a>'
+          : (r.businessLink
+              ? '<span class="admin-cell-sub">' + escapeHtml(r.businessLink) + '</span>'
+              : '<span class="admin-cell-sub">—</span>');
         const paid = r.status === 'paid';
         const sent = r.reportStatus === 'sent';
         return '' +

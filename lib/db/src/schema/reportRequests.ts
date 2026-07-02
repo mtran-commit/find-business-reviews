@@ -31,7 +31,16 @@ export const createReportRequestSchema = z.object({
   phone: z.string().trim().min(1).max(50),
   businessName: z.string().trim().min(1).max(200),
   businessAddress: z.string().trim().min(1).max(400),
-  businessLink: z.string().trim().max(500).optional().default(""),
+  businessLink: z
+    .string()
+    .trim()
+    .max(500)
+    .refine(
+      (v) => v === "" || /^https?:\/\//i.test(v),
+      "Business link must be an http(s) URL.",
+    )
+    .optional()
+    .default(""),
   authorised: z.literal(true),
   searchedBusiness: z.unknown().optional(),
 });
