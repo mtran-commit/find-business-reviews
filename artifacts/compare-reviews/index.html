@@ -3,11 +3,11 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Compare Reviews — Compare ratings across Google, TripAdvisor & Yelp</title>
-    <meta name="description" content="Don't trust one rating. Compare Google, TripAdvisor and Yelp reviews before you buy, book or visit." />
+    <title>Find Business Reviews — Compare Google, TripAdvisor & Yelp ratings</title>
+    <meta name="description" content="Don't trust one rating. Compare Google, TripAdvisor and Yelp reviews and get an AI Trust Score before you buy, book or visit." />
     <meta name="robots" content="index, follow" />
-    <meta property="og:title" content="Compare Reviews" />
-    <meta property="og:description" content="Compare Google, TripAdvisor and Yelp reviews before you buy, book or visit." />
+    <meta property="og:title" content="Find Business Reviews" />
+    <meta property="og:description" content="Compare Google, TripAdvisor and Yelp reviews and get an AI Trust Score before you buy, book or visit." />
     <meta property="og:type" content="website" />
     <meta name="twitter:card" content="summary_large_image" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -24,7 +24,10 @@
         --divider: #D8D8D8;
         --black: #000000;
         --navy: #071A3D;
-        --aqua: #60F0EF;
+        --purple: #7B3CFF;
+        --purple-2: #8B4DFF;
+        --purple-soft: #F1E8FF;
+        --aqua: #7B3CFF; /* legacy alias -> purple (turquoise removed brand-wide) */
         --green-dot: #52D273;
         --rp-blue: #0B55D9;
         /* Brand colours for platform icons */
@@ -53,12 +56,6 @@
         background: #fff; border-bottom: 1px solid var(--border);
       }
       .topbar-inner { display: flex; align-items: center; gap: 12px; height: 64px; }
-      .brand-mark {
-        width: 36px; height: 36px; border-radius: 8px;
-        background: var(--navy); color: #fff;
-        display: grid; place-items: center;
-        font-weight: 800; font-size: 14px; letter-spacing: .5px; flex-shrink: 0;
-      }
       .brand-name { font-weight: 800; font-size: 18px; letter-spacing: -.3px; }
       .brand-tag { color: var(--text-2); font-size: 14px; margin-left: auto; }
       @media (max-width: 560px) { .brand-tag { display: none; } }
@@ -73,10 +70,10 @@
         box-shadow: var(--shadow-pill);
         transition: box-shadow .15s, border-color .15s;
       }
-      .search-pill:focus-within { border-color: var(--aqua); box-shadow: 0 12px 30px rgba(96,240,239,.25); }
+      .search-pill:focus-within { border-color: var(--purple); box-shadow: 0 14px 34px rgba(123,60,255,.22); }
       .search-circle {
-        width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
-        background: var(--aqua); color: #052b2b;
+        width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0;
+        background: var(--purple); color: #fff;
         display: grid; place-items: center;
       }
       .search-input {
@@ -85,13 +82,99 @@
       }
       .search-input::placeholder { color: var(--text-2); }
       .search-check {
-        flex-shrink: 0; font-family: inherit; font-weight: 700; font-size: 15px;
-        color: #fff; background: var(--black); border: none; cursor: pointer;
-        border-radius: 999px; padding: 11px 24px;
+        flex-shrink: 0; font-family: inherit; font-weight: 800; font-size: 14px;
+        letter-spacing: .3px; color: #fff; background: var(--navy); border: none; cursor: pointer;
+        border-radius: 999px; padding: 13px 24px;
         transition: opacity .15s, transform .05s;
       }
       .search-check:hover { opacity: .9; }
       .search-check:active { transform: translateY(1px); }
+
+      /* ===== Hero ===== */
+      .hero { text-align: center; padding: 46px 0 4px; }
+      .hero-badge {
+        display: inline-flex; align-items: center; gap: 9px;
+        background: var(--navy); color: #fff;
+        font-size: 13px; font-weight: 700; letter-spacing: .2px;
+        padding: 8px 16px; border-radius: 999px; margin-bottom: 24px;
+      }
+      .hero-badge::before {
+        content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--purple-2);
+      }
+      .hero-headline {
+        font-size: clamp(40px, 7vw, 74px); font-weight: 900;
+        line-height: 1.05; letter-spacing: -1.6px; color: var(--text);
+        max-width: 920px; margin: 0 auto;
+      }
+      .hero-headline .hl {
+        background: linear-gradient(92deg, var(--purple), var(--purple-2));
+        -webkit-background-clip: text; background-clip: text; color: transparent;
+      }
+      .hero-sub {
+        font-size: clamp(16px, 1.7vw, 19px); color: var(--navy);
+        max-width: 660px; margin: 22px auto 0; line-height: 1.55;
+      }
+      @media (max-width: 640px) { .hero { padding: 30px 0 2px; } .hero-headline { letter-spacing: -1px; } }
+
+      /* ===== AI Trust Score preview ===== */
+      .ai-preview {
+        max-width: 680px; margin: 28px auto 30px;
+        background: var(--navy); color: #fff; border-radius: 18px; padding: 26px 30px;
+        display: flex; gap: 28px; align-items: center; justify-content: space-between;
+        box-shadow: 0 22px 54px rgba(7,26,61,.28); flex-wrap: wrap;
+      }
+      .ai-preview-left { flex: 1 1 190px; min-width: 170px; }
+      .ai-preview-left .lbl { font-size: 12.5px; letter-spacing: .5px; text-transform: uppercase; color: #9FB0D4; font-weight: 800; }
+      .ai-preview-left .score { font-size: 48px; font-weight: 900; line-height: 1; margin: 8px 0 4px; }
+      .ai-preview-left .score span { font-size: 20px; color: #9FB0D4; font-weight: 700; }
+      .ai-preview-left .verdict { font-size: 12.5px; font-weight: 800; letter-spacing: .6px; color: #fff; }
+      .ai-stars { display: inline-flex; gap: 3px; margin-top: 12px; }
+      .ai-stars svg { width: 19px; height: 19px; }
+      .star-p { color: var(--purple-2); }
+      .star-e { color: #33456b; }
+      .ai-preview-right { flex: 1 1 250px; min-width: 230px; display: grid; gap: 13px; }
+      .ai-plat-row { display: flex; align-items: center; gap: 11px; }
+      .ai-plat-ico {
+        width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
+        display: grid; place-items: center; font-weight: 800; font-size: 14px; color: #fff;
+      }
+      .ai-plat-ico.g { background: #fff; color: #4285F4; }
+      .ai-plat-ico.y { background: var(--yelp); }
+      .ai-plat-ico.t { background: var(--tripadvisor); }
+      .ai-plat-name { font-size: 14px; font-weight: 600; color: #E7ECF7; width: 88px; }
+      .ai-plat-stars { display: inline-flex; gap: 2px; }
+      .ai-plat-stars svg { width: 14px; height: 14px; }
+      .ai-plat-val { margin-left: auto; font-size: 15px; font-weight: 800; }
+
+      /* ===== Feature cards ===== */
+      .feature-grid {
+        max-width: 980px; margin: 0 auto 8px;
+        display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+      }
+      .feature-card {
+        background: #fff; border: 1px solid var(--border); border-radius: 14px;
+        padding: 22px 20px; box-shadow: var(--shadow-soft);
+        transition: transform .15s, box-shadow .15s, border-color .15s;
+      }
+      .feature-card:hover { transform: translateY(-2px); border-color: #E0D4FF; box-shadow: 0 14px 34px rgba(123,60,255,.12); }
+      .feature-ico {
+        width: 44px; height: 44px; border-radius: 11px; margin-bottom: 14px;
+        background: var(--purple-soft); color: var(--purple);
+        display: grid; place-items: center;
+      }
+      .feature-ico svg { width: 22px; height: 22px; }
+      .feature-card h4 { font-size: 17px; font-weight: 800; letter-spacing: -.2px; color: var(--text); }
+      .feature-card p { font-size: 14px; color: var(--navy); margin-top: 7px; line-height: 1.5; opacity: .82; }
+      @media (max-width: 900px) { .feature-grid { grid-template-columns: repeat(2, 1fr); } }
+      @media (max-width: 620px) {
+        .feature-grid { grid-template-columns: 1fr; }
+        .ai-preview { flex-direction: column; align-items: stretch; gap: 22px; }
+        .search-pill { flex-wrap: wrap; }
+        .search-check { width: 100%; }
+      }
+
+      /* ===== Footer line ===== */
+      .foot-line { text-align: center; color: var(--navy); font-weight: 600; padding: 26px 0 54px; font-size: 14.5px; }
 
       /* ===== Buttons ===== */
       .btn {
@@ -203,7 +286,7 @@
         font-size: 10.5px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
         padding: 5px 10px; border-radius: 5px;
       }
-      .tag-aqua { background: #E5FCFB; color: #0B7E7C; }
+      .tag-aqua { background: var(--purple-soft); color: var(--purple); }
       .overall-rating { display: flex; align-items: center; gap: 10px; margin-top: 15px; flex-wrap: wrap; }
       .overall-rating .txt { font-size: 14px; color: var(--text-2); }
       .overall-rating .txt b { color: var(--text); font-weight: 800; font-size: 15px; }
@@ -294,7 +377,7 @@
         padding: 12px 18px; min-height: 76px;
         transition: border-color .15s, box-shadow .15s, transform .1s;
       }
-      .result-row:hover { border-color: var(--aqua); box-shadow: var(--shadow-soft); }
+      .result-row:hover { border-color: var(--purple); box-shadow: var(--shadow-soft); }
       .result-logo {
         width: 52px; height: 52px; border-radius: 10px; flex-shrink: 0;
         background: #fff; border: 1px solid var(--border);
@@ -459,7 +542,7 @@
       .unlock-report-button:hover { opacity: .92; }
       .pre-payment-note {
         margin-top: 20px; padding: 12px 14px; border-radius: 10px;
-        background: rgba(56, 197, 187, .1); border: 1px solid rgba(56, 197, 187, .35);
+        background: rgba(123, 60, 255, .08); border: 1px solid rgba(123, 60, 255, .3);
         color: var(--text-2); font-size: 13px; line-height: 1.45;
       }
       .report-request-form { display: grid; gap: 14px; margin-top: 18px; }
@@ -472,7 +555,7 @@
         box-sizing: border-box;
       }
       .report-request-form input:focus {
-        outline: none; border-color: var(--aqua); box-shadow: 0 0 0 3px rgba(56, 197, 187, .18);
+        outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(123, 60, 255, .18);
       }
       .checkbox-row {
         display: flex; align-items: flex-start; gap: 10px;
@@ -521,7 +604,7 @@
         width: 100%; height: 44px; border: 1px solid var(--divider); border-radius: 10px;
         padding: 0 12px; font-size: 15px; font-family: inherit; box-sizing: border-box; background: #fff; color: var(--text);
       }
-      .admin-gate input:focus { outline: none; border-color: var(--aqua); box-shadow: 0 0 0 3px rgba(56,197,187,.18); }
+      .admin-gate input:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(123,60,255,.18); }
       .admin-gate .admin-btn { width: 100%; margin-top: 16px; text-align: center; }
       .admin-denied {
         margin: 14px 0 0; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
@@ -574,31 +657,114 @@
   <body>
     <header class="topbar">
       <div class="page-shell topbar-inner">
-        <div class="brand-mark">CR</div>
-        <div class="brand-name">Compare Reviews</div>
-        <div class="brand-tag">Trust before you book</div>
+        <div class="brand-name">Find Business Reviews</div>
+        <div class="brand-tag">Trust before you buy</div>
       </div>
     </header>
 
     <main class="page-shell">
-      <!-- Search -->
+      <!-- Hero (landing only) -->
+      <div id="heroWrap" class="hero">
+        <div class="hero-badge">Find Business Reviews</div>
+        <h1 class="hero-headline">Don&rsquo;t trust <span class="hl">one rating</span>.<br /><span class="hl">Compare</span> them all.</h1>
+        <p class="hero-sub">Search businesses and compare Google, Yelp and TripAdvisor ratings side by side. Get an AI Trust Score before you buy, book or visit.</p>
+      </div>
+
+      <!-- Search (persistent) -->
       <div class="search-wrap">
         <div class="search-pill">
           <div class="search-circle">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
           </div>
           <input id="searchInput" class="search-input" type="search" autocomplete="off"
-                 placeholder="Search a business, restaurant, hotel or cafe…" />
-          <button id="searchBtn" class="search-check">Check</button>
+                 placeholder="Search for a business, service or category..." />
+          <button id="searchBtn" class="search-check">CHECK TRUST SCORE — FREE</button>
         </div>
       </div>
 
       <section class="panel">
-        <!-- Empty -->
-        <div id="emptyState" class="state">
-          <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
-          <h3>Compare reviews before you book</h3>
-          <p>Enter a business name to compare its Google, Yelp and TripAdvisor ratings side by side, with a computed Trust Score.</p>
+        <!-- Empty / landing (AI preview + feature cards) -->
+        <div id="emptyState">
+          <div class="ai-preview">
+            <div class="ai-preview-left">
+              <div class="lbl">AI Trust Score</div>
+              <div class="score">82<span>/100</span></div>
+              <div class="verdict">VERY TRUSTED</div>
+              <div class="ai-stars">
+                <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+              </div>
+            </div>
+            <div class="ai-preview-right">
+              <div class="ai-plat-row">
+                <div class="ai-plat-ico g">G</div>
+                <div class="ai-plat-name">Google</div>
+                <div class="ai-plat-stars">
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                  <svg class="star-e" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                </div>
+                <div class="ai-plat-val">4.3</div>
+              </div>
+              <div class="ai-plat-row">
+                <div class="ai-plat-ico y">Y</div>
+                <div class="ai-plat-name">Yelp</div>
+                <div class="ai-plat-stars">
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                  <svg class="star-e" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                </div>
+                <div class="ai-plat-val">4.0</div>
+              </div>
+              <div class="ai-plat-row">
+                <div class="ai-plat-ico t">T</div>
+                <div class="ai-plat-name">TripAdvisor</div>
+                <div class="ai-plat-stars">
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
+                </div>
+                <div class="ai-plat-val">4.5</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feature-grid">
+            <div class="feature-card">
+              <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 8.3-7 9.5C8 19.3 5 15.4 5 11V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
+              <h4>AI Trust Score</h4>
+              <p>Our AI analyzes reviews and signals to give you a clear, data-driven trust score.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></div>
+              <h4>Compare Ratings</h4>
+              <p>See Google, Yelp and TripAdvisor ratings side by side.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg></div>
+              <h4>AI Review Sentiment</h4>
+              <p>Understand what people really think with AI powered insights.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 6-9 12-9 12s-9-6-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
+              <h4>Nearby Comparison</h4>
+              <p>Find better rated businesses near you in seconds.</p>
+            </div>
+            <div class="feature-card">
+              <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4l-8-8A2 2 0 0011.2 5H6a1 1 0 00-1 1v5.2a2 2 0 00.6 1.4l8 8a2 2 0 002.8 0l4.2-4.2a2 2 0 000-2.8z"/><path d="M8.5 8.5h.01"/></svg></div>
+              <h4>Offers Found</h4>
+              <p>Discover verified deals and special offers before you go.</p>
+            </div>
+          </div>
         </div>
 
         <!-- Loading -->
@@ -620,7 +786,7 @@
       </section>
     </main>
 
-    <footer class="page-shell">Compare Reviews &middot; Live data from Google, Yelp &amp; TripAdvisor via SerpApi.</footer>
+    <footer class="page-shell foot-line">Independent. Unbiased. Built for smarter decisions.</footer>
 
     <!-- Report modal (full AI insights live here, opened from VIEW REPORT) -->
     <div id="reportModal" class="modal-overlay hidden">
@@ -643,7 +809,7 @@
 
     <script>
       /* =====================================================================
-         Compare Reviews — premium comparison-results page
+         Find Business Reviews — premium comparison-results page
 
          Data comes from the backend API (keys stay server-side):
            GET  /api/search-business?query=<name>   -> full business profile
@@ -822,6 +988,7 @@
         input: document.getElementById('searchInput'),
         searchBtn: document.getElementById('searchBtn'),
         empty: document.getElementById('emptyState'),
+        hero: document.getElementById('heroWrap'),
         loading: document.getElementById('loadingState'),
         error: document.getElementById('errorState'),
         results: document.getElementById('results'),
@@ -834,6 +1001,7 @@
 
       function show(which) {
         els.empty.classList.toggle('hidden', which !== 'empty');
+        els.hero.classList.toggle('hidden', which !== 'empty');
         els.loading.classList.toggle('hidden', which !== 'loading');
         els.error.classList.toggle('hidden', which !== 'error');
         els.results.classList.toggle('hidden', which !== 'results');
@@ -1027,7 +1195,7 @@
 
           // Footer note
           '<div class="foot-note">' + ICO.shield +
-            '<span>Compare Reviews checks public review platforms to help customers make better decisions before they buy, book or visit.</span>' +
+            '<span>Find Business Reviews checks public review platforms to help customers make better decisions before they buy, book or visit.</span>' +
           '</div>';
 
         // Wire featured-card / footer actions

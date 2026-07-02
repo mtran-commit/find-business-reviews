@@ -1,0 +1,233 @@
+Update the current Find Business Reviews landing page to match the latest approved design.
+
+Main changes:
+- Keep the white clean landing page style.
+- Use the logo colours only: dark navy, black, white, and purple.
+- Remove turquoise / light blue completely.
+- Subtitles and body text should be black or dark navy, not light blue.
+- CTA button should say: “CHECK TRUST SCORE — FREE”
+- Remove the word “Australian” from all landing page copy.
+- Remove the top-left logo pill/header badge if it appears twice.
+- Remove the “Own a business?” section.
+- Remove the “Business Report” feature card.
+- Keep “Offers Found” in the middle/right position, not alone at the bottom.
+- Add the dark AI Trust Score preview section with Google, Yelp and TripAdvisor ratings under the search bar.
+
+Landing page structure:
+
+1. Header
+Top left:
+Find Business Reviews text/logo only once.
+
+Top right:
+Trust before you buy
+
+No extra logo badge in the top-left corner if it duplicates the main brand.
+
+2. Hero badge
+Centered small pill:
+Find Business Reviews
+
+Use dark navy background and purple logo/accent.
+
+3. Main headline
+Use this exact headline:
+
+Don’t trust one rating.
+Compare them all.
+
+Style:
+- Very large bold black text.
+- Highlight “one rating” and “Compare” in purple gradient or solid purple.
+- No turquoise.
+
+4. Subtitle
+Use this exact text:
+
+Search businesses and compare Google, Yelp and TripAdvisor ratings side by side. Get an AI Trust Score before you buy, book or visit.
+
+Style:
+- Black or dark navy text.
+- Do not use light blue.
+- Make it easy to read.
+
+5. Search bar
+Large pill search bar under the subtitle.
+
+Placeholder:
+Search for a business, service or category...
+
+Search icon:
+Purple circle background.
+
+CTA button:
+CHECK TRUST SCORE — FREE
+
+Button style:
+- Dark navy background #071A3D or black
+- White text
+- Rounded pill
+- Strong bold text
+
+6. Add AI Trust Score preview panel under the search bar
+This section should look like a dark navy card.
+
+Card layout:
+Left side:
+AI Trust Score
+82/100
+VERY TRUSTED
+5 purple stars
+
+Right side:
+Three platform rows:
+Google 4.3 stars
+Yelp 4.0 stars
+TripAdvisor 4.5 stars
+
+Use real platform colours for icons:
+Google multicolour or G icon
+Yelp red
+TripAdvisor green
+
+Card style:
+- Dark navy background
+- Rounded corners
+- White text
+- Purple stars
+- Subtle shadow
+- Similar to the reference mockup
+
+7. Feature cards
+Use only these 5 feature cards:
+
+AI Trust Score
+Text:
+Our AI analyzes reviews and signals to give you a clear, data-driven trust score.
+
+Compare Ratings
+Text:
+See Google, Yelp and TripAdvisor ratings side by side.
+
+AI Review Sentiment
+Text:
+Understand what people really think with AI powered insights.
+
+Nearby Comparison
+Text:
+Find better rated businesses near you in seconds.
+
+Offers Found
+Text:
+Discover verified deals and special offers before you go.
+
+Important:
+Delete this card completely:
+Business Report
+
+Feature card layout:
+Desktop:
+- First row: AI Trust Score, Compare Ratings, AI Review Sentiment
+- Second row: Nearby Comparison, Offers Found
+- Offers Found should sit in the middle/right area, not alone on the left.
+
+Mobile:
+- Stack cards one per row.
+
+8. Footer line
+Keep this line:
+
+Independent. Unbiased. Built for smarter decisions.
+
+Use dark navy or black text.
+
+9. Colours
+Use:
+- Dark navy: #071A3D
+- Black: #050505
+- White: #FFFFFF
+- Light background: #F7F7F4 or #FFFFFF
+- Purple: #7B3CFF / #8B4DFF
+- Soft purple background: #F1E8FF
+
+Do not use:
+- turquoise
+- aqua
+- light blue subtitles
+
+10. CSS requirements
+Create clean responsive CSS.
+
+Hero headline:
+font-size desktop around 64px to 76px
+font-weight 950
+line-height 1.05
+
+Mobile headline:
+font-size around 40px to 46px
+
+Search bar:
+max-width 820px
+height around 74px desktop
+rounded pill
+shadow subtle
+
+CTA button:
+height around 56px
+border-radius 999px
+
+AI preview card:
+max-width around 620px to 700px
+centered
+margin-top 28px
+margin-bottom 30px
+
+Feature grid:
+max-width around 980px
+grid-template-columns repeat(3, 1fr) on desktop
+gap 18px
+
+For 5 cards, layout should look balanced:
+- 3 cards first row
+- 2 cards second row centered or evenly placed
+
+11. Text replacements
+Replace:
+“Search an Australian business...”
+with:
+“Search for a business, service or category...”
+
+Replace:
+“Search Australian businesses...”
+with:
+“Search businesses...”
+
+Replace:
+“CHECK TRUST SCORE”
+with:
+“CHECK TRUST SCORE — FREE”
+
+Replace:
+“Trust before you book”
+with:
+“Trust before you buy”
+
+12. Remove sections
+Delete/hide:
+- duplicated top-left logo pill
+- Own a business section
+- Business Report feature card
+- any launch price $10 section on the landing page
+
+The paid business report can still exist inside the search results/report modal, but it should not appear on the landing page.
+
+13. Final visual goal
+The landing page should look like:
+- clean white SaaS landing page
+- purple and dark navy branding
+- no turquoise
+- headline focused on trust
+- free trust score CTA
+- dark AI score preview panel
+- simple feature cards
+- no business owner sales section on homepage
