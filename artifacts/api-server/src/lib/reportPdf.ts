@@ -18,17 +18,25 @@ const PAGE_W = 595.28; // A4 width (pt)
 const PAGE_H = 841.89; // A4 height (pt)
 const MARGIN = 48;
 const CONTENT_W = PAGE_W - MARGIN * 2;
+const FOOTER_H = 30;
+const BOTTOM_LIMIT = FOOTER_H + 26; // content must stay above this
 
 const NAVY = rgb(0x07 / 255, 0x1a / 255, 0x3d / 255);
+const DEEP_NAVY = rgb(0x03 / 255, 0x12 / 255, 0x2e / 255);
 const PURPLE = rgb(0x7b / 255, 0x3c / 255, 0xff / 255);
+const PURPLE_LIGHT = rgb(0x9a / 255, 0x5c / 255, 0xff / 255);
 const LIGHT_PURPLE = rgb(0xf1 / 255, 0xe8 / 255, 0xff / 255);
+const LAVENDER = rgb(0.91, 0.89, 0.98);
+const LAVENDER_DIM = rgb(0.66, 0.62, 0.83);
 const BLACK = rgb(0.05, 0.05, 0.05);
-const GREY = rgb(0.38, 0.38, 0.4);
+const GREY = rgb(0.37, 0.39, 0.41);
 const WHITE = rgb(1, 1, 1);
 const GREEN = rgb(0x16 / 255, 0xa3 / 255, 0x4a / 255);
 const ORANGE = rgb(0xf9 / 255, 0x73 / 255, 0x16 / 255);
 const RED = rgb(0xdc / 255, 0x26 / 255, 0x26 / 255);
 const CARD_BORDER = rgb(0.9, 0.9, 0.9);
+const CARD_FILL = rgb(0.985, 0.982, 0.975);
+const ZEBRA = rgb(0.975, 0.97, 0.99);
 
 function riskColor(level: string): RGB {
   if (level === "High") return RED;
@@ -36,13 +44,24 @@ function riskColor(level: string): RGB {
   return GREEN;
 }
 
+const PRIORITY_COLORS: Record<string, RGB> = {
+  High: PURPLE,
+  Medium: ORANGE,
+  Low: GREY,
+  "Not relevant": rgb(0.61, 0.64, 0.69),
+};
+
 interface Layout {
   doc: PDFDocument;
   page: PDFPage;
   y: number;
   font: PDFFont;
   bold: PDFFont;
+  sectionNo: number;
 }
+
+/** Max height a single drawn block can occupy on one page. */
+const MAX_BLOCK_H = PAGE_H - MARGIN - BOTTOM_LIMIT - 10;
 
 function sanitize(text: string): string {
   return (text || "")
@@ -54,13 +73,79 @@ function sanitize(text: string): string {
     .replace(/[^\x09\x0A\x0D\x20-\x7E]/g, "");
 }
 
+/** Filled rounded rectangle built from circles + rectangles (pdf-lib has no radius option). */
+function fillRounded(
+  page: PDFPage,
+  x: number,
+  y: number, // bottom
+  w: number,
+  h: number,
+  r: number,
+  color: RGB,
+  opacity?: number,
+): void {
+  const rad = Math.max(0, Math.min(r, h / 2, w / 2));
+  const opts = opacity !== undefined ? { opacity } : {};
+  if (rad > 0) {
+    page.drawCircle({ x: x + rad, y: y + rad, size: rad, color, ...opts });
+    page.drawCircle({ x: x + w - rad, y: y + rad, size: rad, color, ...opts });
+    page.drawCircle({ x: x + rad, y: y + h - rad, size: rad, color, ...opts });
+    page.drawCircle({ x: x + w - rad, y: y + h - rad, size: rad, color, ...opts });
+    page.drawRectangle({ x: x + rad, y, width: w - rad * 2, height: h, color, ...opts });
+    page.drawRectangle({ x, y: y + rad, width: w, height: h - rad * 2, color, ...opts });
+  } else {
+    page.drawRectangle({ x, y, width: w, height: h, color, ...opts });
+  }
+}
+
+/** Rounded card: border colour underneath, fill colour inset. */
+function roundedCard(
+  page: PDFPage,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  r: number,
+  fill: RGB,
+  border?: RGB,
+  bw = 1,
+): void {
+  if (border) {
+    fillRounded(page, x, y, w, h, r, border);
+    fillRounded(page, x + bw, y + bw, w - bw * 2, h - bw * 2, Math.max(0, r - bw), fill);
+  } else {
+    fillRounded(page, x, y, w, h, r, fill);
+  }
+}
+
+/** Pill badge. Returns pill width. */
+function pill(
+  page: PDFPage,
+  x: number,
+  yBottom: number,
+  text: string,
+  font: PDFFont,
+  size: number,
+  bg: RGB,
+  fg: RGB,
+  opacity?: number,
+): number {
+  const t = sanitize(text);
+  const padX = 7;
+  const h = size + 7;
+  const w = font.widthOfTextAtSize(t, size) + padX * 2;
+  fillRounded(page, x, yBottom, w, h, h / 2, bg, opacity);
+  page.drawText(t, { x: x + padX, y: yBottom + 3.4, size, font, color: fg });
+  return w;
+}
+
 function newPage(l: Layout): void {
   l.page = l.doc.addPage([PAGE_W, PAGE_H]);
   l.y = PAGE_H - MARGIN;
 }
 
 function ensureSpace(l: Layout, needed: number): void {
-  if (l.y - needed < MARGIN + 24) newPage(l);
+  if (l.y - needed < BOTTOM_LIMIT) newPage(l);
 }
 
 function wrapLines(text: string, font: PDFFont, size: number, maxWidth: number): string[] {
@@ -89,7 +174,7 @@ function drawParagraph(
   const color = opts.color ?? BLACK;
   const indent = opts.indent ?? 0;
   const font = opts.bold ? l.bold : l.font;
-  const lineHeight = size * 1.42;
+  const lineHeight = size * 1.45;
   const lines = wrapLines(text, font, size, CONTENT_W - indent);
   for (const line of lines) {
     ensureSpace(l, lineHeight);
@@ -99,86 +184,94 @@ function drawParagraph(
   l.y -= opts.gap ?? 4;
 }
 
-function drawBullets(l: Layout, items: string[]): void {
-  const size = 10.5;
-  const lineHeight = size * 1.42;
-  for (const item of items) {
-    const lines = wrapLines(item, l.font, size, CONTENT_W - 16);
-    lines.forEach((line, i) => {
-      ensureSpace(l, lineHeight);
-      if (i === 0) {
-        l.page.drawText("-", { x: MARGIN, y: l.y - size, size, font: l.bold, color: PURPLE });
-      }
-      l.page.drawText(line, { x: MARGIN + 16, y: l.y - size, size, font: l.font, color: BLACK });
-      l.y -= lineHeight;
-    });
-    l.y -= 2;
-  }
-  l.y -= 4;
-}
-
-let sectionNo = 0;
 function drawSectionHeading(l: Layout, title: string): void {
-  sectionNo += 1;
-  ensureSpace(l, 46);
-  l.y -= 10;
-  // Number chip.
-  const chip = 18;
-  l.page.drawRectangle({
-    x: MARGIN,
-    y: l.y - chip + 3,
-    width: chip,
-    height: chip,
-    color: LIGHT_PURPLE,
-  });
-  l.page.drawText(String(sectionNo), {
-    x: MARGIN + (sectionNo < 10 ? 6 : 3),
-    y: l.y - chip + 8,
-    size: 10,
+  l.sectionNo += 1;
+  ensureSpace(l, 52);
+  l.y -= 12;
+  const chip = 21;
+  fillRounded(l.page, MARGIN, l.y - chip + 3, chip, chip, 6, PURPLE);
+  const numStr = String(l.sectionNo);
+  const numW = l.bold.widthOfTextAtSize(numStr, 10.5);
+  l.page.drawText(numStr, {
+    x: MARGIN + (chip - numW) / 2,
+    y: l.y - chip + 9.5,
+    size: 10.5,
     font: l.bold,
-    color: PURPLE,
+    color: WHITE,
   });
   l.page.drawText(sanitize(title), {
     x: MARGIN + chip + 10,
-    y: l.y - 13,
-    size: 13,
+    y: l.y - 14,
+    size: 14,
     font: l.bold,
     color: NAVY,
   });
-  l.y -= chip + 8;
-  l.page.drawRectangle({ x: MARGIN, y: l.y + 4, width: CONTENT_W, height: 0.8, color: CARD_BORDER });
-  l.y -= 8;
+  l.y -= chip + 9;
+  // Accent rule: short purple segment + thin grey remainder.
+  l.page.drawRectangle({ x: MARGIN, y: l.y + 4, width: 42, height: 2, color: PURPLE });
+  l.page.drawRectangle({ x: MARGIN + 46, y: l.y + 4.5, width: CONTENT_W - 46, height: 0.7, color: CARD_BORDER });
+  l.y -= 10;
+}
+
+/** Deterministic trust-range label from the real trust score (matches the HTML view). */
+function trustLabel(score: number | null): string {
+  if (score === null) return "No data";
+  if (score >= 85) return "Very Trusted";
+  if (score >= 70) return "Trusted";
+  if (score >= 55) return "Building trust";
+  if (score >= 40) return "Mixed signals";
+  return "Needs attention";
 }
 
 function drawKpiCards(l: Layout, m: ReportMetrics, s: AiSections): void {
   const cards = [
-    { label: "TRUST SCORE", value: m.trustScore !== null ? String(m.trustScore) : "-", sub: m.trustScore !== null ? "/ 100" : "no data" },
-    { label: "AVG RATING", value: m.averageRating !== null ? String(m.averageRating) : "-", sub: m.averageRating !== null ? "/ 5" : "no data" },
-    { label: "REVIEWS", value: m.totalReviews.toLocaleString("en-AU"), sub: `${m.platformCount} platforms` },
-    { label: "SENTIMENT", value: sanitize(s.customerSentimentLabel || "-"), sub: `Data: ${m.dataQuality}` },
+    {
+      label: "TRUST SCORE",
+      value: m.trustScore !== null ? String(m.trustScore) : "-",
+      denom: m.trustScore !== null ? "/100" : "",
+      sub: trustLabel(m.trustScore),
+    },
+    {
+      label: "AVERAGE RATING",
+      value: m.averageRating !== null ? String(m.averageRating) : "-",
+      denom: m.averageRating !== null ? "/5" : "",
+      sub: m.averageRating !== null ? "Available platforms" : "No rating data",
+    },
+    {
+      label: "REVIEWS ANALYSED",
+      value: m.totalReviews.toLocaleString("en-AU"),
+      denom: "",
+      sub: `${m.platformCount} platform${m.platformCount === 1 ? "" : "s"} with data`,
+    },
+    {
+      label: "SENTIMENT",
+      value: sanitize(s.customerSentimentLabel || "-"),
+      denom: "",
+      sub: `Data quality: ${m.dataQuality}`,
+    },
   ];
   const gap = 10;
   const cardW = (CONTENT_W - gap * 3) / 4;
-  const cardH = 60;
+  const cardH = 70;
   ensureSpace(l, cardH + 10);
   const top = l.y;
   cards.forEach((c, i) => {
     const x = MARGIN + i * (cardW + gap);
-    l.page.drawRectangle({
-      x,
-      y: top - cardH,
-      width: cardW,
-      height: cardH,
-      color: WHITE,
-      borderColor: CARD_BORDER,
-      borderWidth: 1,
-    });
-    l.page.drawText(c.label, { x: x + 8, y: top - 16, size: 7, font: l.bold, color: GREY });
-    const vSize = c.value.length > 8 ? 12 : 20;
-    l.page.drawText(c.value, { x: x + 8, y: top - 40, size: vSize, font: l.bold, color: NAVY });
-    l.page.drawText(sanitize(c.sub), { x: x + 8, y: top - 52, size: 7.5, font: l.font, color: PURPLE });
+    roundedCard(l.page, x, top - cardH, cardW, cardH, 9, WHITE, CARD_BORDER);
+    // Purple accent bar across the card top.
+    fillRounded(l.page, x + 10, top - 7, 26, 3, 1.5, PURPLE);
+    l.page.drawText(c.label, { x: x + 10, y: top - 21, size: 6.5, font: l.bold, color: GREY });
+    let vSize = 20;
+    if (l.bold.widthOfTextAtSize(c.value, vSize) > cardW - 20 - (c.denom ? 20 : 0)) vSize = 11;
+    l.page.drawText(c.value, { x: x + 10, y: top - 44, size: vSize, font: l.bold, color: NAVY });
+    if (c.denom) {
+      const vw = l.bold.widthOfTextAtSize(c.value, vSize);
+      l.page.drawText(c.denom, { x: x + 12 + vw, y: top - 44, size: 9, font: l.bold, color: GREY });
+    }
+    const subLines = wrapLines(c.sub, l.bold, 7.5, cardW - 20);
+    l.page.drawText(subLines[0] ?? "", { x: x + 10, y: top - 59, size: 7.5, font: l.bold, color: PURPLE });
   });
-  l.y = top - cardH - 12;
+  l.y = top - cardH - 14;
 }
 
 interface Col {
@@ -186,91 +279,395 @@ interface Col {
   width: number;
 }
 
-function drawTable(l: Layout, cols: Col[], rows: string[][]): void {
+interface TableOpts {
+  badgeCol?: number;
+  badgeColors?: Record<string, RGB>;
+}
+
+function drawTable(l: Layout, cols: Col[], rows: string[][], opts: TableOpts = {}): void {
   const size = 9;
-  const padX = 6;
-  const headerH = 18;
-  ensureSpace(l, headerH + 20);
-  // Header.
+  const padX = 7;
+  const headerH = 20;
+  ensureSpace(l, headerH + 22);
+  // Rounded header band.
   let x = MARGIN;
-  l.page.drawRectangle({ x: MARGIN, y: l.y - headerH, width: CONTENT_W, height: headerH, color: LIGHT_PURPLE });
+  fillRounded(l.page, MARGIN, l.y - headerH, CONTENT_W, headerH, 6, LIGHT_PURPLE);
   cols.forEach((c) => {
-    l.page.drawText(sanitize(c.header), { x: x + padX, y: l.y - headerH + 6, size: 8, font: l.bold, color: NAVY });
+    l.page.drawText(sanitize(c.header), { x: x + padX, y: l.y - headerH + 7, size: 8, font: l.bold, color: NAVY });
     x += c.width;
   });
   l.y -= headerH;
-  // Rows.
-  for (const row of rows) {
-    // Measure row height by tallest cell.
+  // Rows with zebra striping.
+  rows.forEach((row, ri) => {
     const cellLines = row.map((cell, i) =>
       wrapLines(cell, l.font, size, cols[i]!.width - padX * 2),
     );
     const maxLines = Math.max(1, ...cellLines.map((ls) => ls.length));
-    const rowH = maxLines * (size * 1.3) + 8;
+    const rowH = maxLines * (size * 1.35) + 9;
     ensureSpace(l, rowH);
+    if (ri % 2 === 1) {
+      l.page.drawRectangle({ x: MARGIN, y: l.y - rowH, width: CONTENT_W, height: rowH, color: ZEBRA });
+    }
     x = MARGIN;
     cellLines.forEach((lines, i) => {
-      lines.forEach((line, li) => {
-        l.page.drawText(line, {
-          x: x + padX,
-          y: l.y - 4 - size - li * (size * 1.3),
-          size,
-          font: i === 0 ? l.bold : l.font,
-          color: i === 0 ? NAVY : BLACK,
+      if (opts.badgeCol === i) {
+        const val = sanitize(row[i] ?? "");
+        const bg = (opts.badgeColors && opts.badgeColors[val]) || GREY;
+        pill(l.page, x + padX, l.y - 6 - 12, val || "-", l.bold, 7, bg, WHITE);
+      } else {
+        lines.forEach((line, li) => {
+          l.page.drawText(line, {
+            x: x + padX,
+            y: l.y - 5 - size - li * (size * 1.35),
+            size,
+            font: i === 0 ? l.bold : l.font,
+            color: i === 0 ? NAVY : BLACK,
+          });
         });
-      });
+      }
       x += cols[i]!.width;
     });
     l.y -= rowH;
     l.page.drawRectangle({ x: MARGIN, y: l.y, width: CONTENT_W, height: 0.6, color: CARD_BORDER });
+  });
+  l.y -= 10;
+}
+
+/** Light-purple callout box with a bold purple kicker line. */
+function drawCallout(l: Layout, kicker: string, text: string): void {
+  const size = 9.5;
+  const inner = CONTENT_W - 28;
+  const lines = wrapLines(text, l.font, size, inner);
+  const h = 24 + lines.length * (size * 1.45) + 10;
+  if (h > MAX_BLOCK_H) {
+    // Too tall for a single boxed callout — fall back to flowing paragraphs.
+    drawParagraph(l, kicker.toUpperCase(), { size: 7.5, color: PURPLE, bold: true, gap: 2 });
+    drawParagraph(l, text, { size, color: NAVY, gap: 8 });
+    return;
   }
-  l.y -= 8;
+  ensureSpace(l, h + 6);
+  fillRounded(l.page, MARGIN, l.y - h, CONTENT_W, h, 9, LIGHT_PURPLE);
+  l.page.drawText(sanitize(kicker).toUpperCase(), { x: MARGIN + 14, y: l.y - 16, size: 7.5, font: l.bold, color: PURPLE });
+  lines.forEach((line, i) => {
+    l.page.drawText(line, { x: MARGIN + 14, y: l.y - 30 - i * (size * 1.45), size, font: l.font, color: NAVY });
+  });
+  l.y -= h + 8;
 }
 
-function drawBadge(l: Layout, text: string, color: RGB): void {
-  const size = 8;
-  const w = l.bold.widthOfTextAtSize(sanitize(text), size) + 12;
-  ensureSpace(l, 16);
-  l.page.drawRectangle({ x: MARGIN, y: l.y - 12, width: w, height: 13, color });
-  l.page.drawText(sanitize(text), { x: MARGIN + 6, y: l.y - 9, size, font: l.bold, color: WHITE });
-  l.y -= 18;
+/** Full-width card with optional coloured left accent bar. Body = list of text blocks. */
+interface CardBlock {
+  text: string;
+  size?: number;
+  color?: RGB;
+  bold?: boolean;
+  gapAfter?: number;
 }
 
-/** Build the AI Business Reputation Report as a styled dashboard PDF. */
+function drawContentCard(l: Layout, blocks: CardBlock[], accent?: RGB, badge?: { text: string; color: RGB }): void {
+  const padX = 14;
+  const padY = 12;
+  const inner = CONTENT_W - padX * 2 - (accent ? 4 : 0);
+  const measured = blocks
+    .filter((b) => b.text)
+    .map((b) => {
+      const size = b.size ?? 10;
+      const font = b.bold ? l.bold : l.font;
+      const lines = wrapLines(b.text, font, size, inner);
+      return { ...b, size, font, lines, height: lines.length * size * 1.45 + (b.gapAfter ?? 4) };
+    });
+  const badgeH = badge ? 18 : 0;
+  const h = padY * 2 + badgeH + measured.reduce((a, b) => a + b.height, 0);
+  if (h > MAX_BLOCK_H) {
+    // Too tall for a single card — fall back to flowing paragraphs.
+    if (badge) {
+      ensureSpace(l, 20);
+      pill(l.page, MARGIN, l.y - 13, badge.text, l.bold, 7.5, badge.color, WHITE);
+      l.y -= 20;
+    }
+    for (const b of measured) {
+      drawParagraph(l, b.text, { size: b.size, color: b.color ?? BLACK, bold: b.bold, gap: b.gapAfter ?? 4 });
+    }
+    l.y -= 4;
+    return;
+  }
+  ensureSpace(l, h + 6);
+  roundedCard(l.page, MARGIN, l.y - h, CONTENT_W, h, 9, WHITE, CARD_BORDER);
+  if (accent) fillRounded(l.page, MARGIN + 1, l.y - h + 6, 3.5, h - 12, 1.75, accent);
+  const tx = MARGIN + padX + (accent ? 4 : 0);
+  let cy = l.y - padY;
+  if (badge) {
+    pill(l.page, tx, cy - 13, badge.text, l.bold, 7.5, badge.color, WHITE);
+    cy -= badgeH;
+  }
+  for (const b of measured) {
+    for (const line of b.lines) {
+      l.page.drawText(line, { x: tx, y: cy - b.size, size: b.size, font: b.font, color: b.color ?? BLACK });
+      cy -= b.size * 1.45;
+    }
+    cy -= b.gapAfter ?? 4;
+  }
+  l.y -= h + 8;
+}
+
+function drawSentimentBars(l: Layout, s: AiSections): void {
+  const se = s.sentiment;
+  const rows: Array<[string, number, RGB]> = [
+    ["Positive", se.positive, GREEN],
+    ["Neutral", se.neutral, ORANGE],
+    ["Negative", se.negative, RED],
+  ];
+  const labelW = 58;
+  const pctW = 34;
+  const trackW = CONTENT_W - labelW - pctW - 14;
+  for (const [label, valRaw, color] of rows) {
+    const val = Math.max(0, Math.min(100, valRaw));
+    ensureSpace(l, 16);
+    l.page.drawText(label, { x: MARGIN, y: l.y - 9, size: 9.5, font: l.bold, color: NAVY });
+    fillRounded(l.page, MARGIN + labelW, l.y - 11, trackW, 8, 4, LIGHT_PURPLE);
+    if (val > 0) {
+      fillRounded(l.page, MARGIN + labelW, l.y - 11, Math.max(8, trackW * (val / 100)), 8, 4, color);
+    }
+    const pct = `${Math.round(val)}%`;
+    const pw = l.bold.widthOfTextAtSize(pct, 9.5);
+    l.page.drawText(pct, { x: MARGIN + CONTENT_W - pw, y: l.y - 9, size: 9.5, font: l.bold, color: NAVY });
+    l.y -= 16;
+  }
+  l.y -= 4;
+}
+
+function drawChipsRow(l: Layout, title: string, items: string[], color: RGB): void {
+  if (!items?.length) return;
+  ensureSpace(l, 30);
+  l.page.drawText(sanitize(title).toUpperCase(), { x: MARGIN, y: l.y - 8, size: 7.5, font: l.bold, color: GREY });
+  l.y -= 14;
+  let x = MARGIN;
+  for (const item of items) {
+    const t = sanitize(item);
+    const w = l.bold.widthOfTextAtSize(t, 8) + 14;
+    if (x + w > MARGIN + CONTENT_W) {
+      x = MARGIN;
+      l.y -= 18;
+      ensureSpace(l, 18);
+    }
+    // Soft chip: light fill + coloured text.
+    fillRounded(l.page, x, l.y - 13, w, 15, 7.5, WHITE);
+    fillRounded(l.page, x, l.y - 13, w, 15, 7.5, color, 0.12);
+    l.page.drawText(t, { x: x + 7, y: l.y - 9, size: 8, font: l.bold, color });
+    x += w + 6;
+  }
+  l.y -= 24;
+}
+
+/** Dark navy card with label/value rows (Final Recommendation, competitor conclusion). */
+function drawNavyCard(l: Layout, rows: Array<{ label?: string; text: string }>): void {
+  const padX = 16;
+  const size = 9.5;
+  const inner = CONTENT_W - padX * 2;
+  const measured = rows.map((r) => {
+    const lines = wrapLines(r.text, l.font, size, r.label ? inner - 110 : inner);
+    return { ...r, lines };
+  });
+  const rowHeights = measured.map((r) => Math.max(r.lines.length * size * 1.5, 14) + 8);
+  const h = 20 + rowHeights.reduce((a, b) => a + b, 0);
+  if (h > MAX_BLOCK_H) {
+    // Too tall for a single navy card — fall back to flowing paragraphs.
+    for (const r of rows) {
+      if (r.label) drawParagraph(l, r.label.toUpperCase(), { size: 7.5, color: PURPLE, bold: true, gap: 2 });
+      drawParagraph(l, r.text, { size, color: NAVY, gap: 6 });
+    }
+    return;
+  }
+  ensureSpace(l, h + 6);
+  fillRounded(l.page, MARGIN, l.y - h, CONTENT_W, h, 10, NAVY);
+  let cy = l.y - 14;
+  measured.forEach((r, i) => {
+    if (r.label) {
+      l.page.drawText(sanitize(r.label).toUpperCase(), { x: MARGIN + padX, y: cy - size, size: 7.5, font: l.bold, color: PURPLE_LIGHT });
+      r.lines.forEach((line, li) => {
+        l.page.drawText(line, { x: MARGIN + padX + 110, y: cy - size - li * size * 1.5, size, font: l.font, color: LAVENDER });
+      });
+    } else {
+      r.lines.forEach((line, li) => {
+        l.page.drawText(line, { x: MARGIN + padX, y: cy - size - li * size * 1.5, size, font: l.font, color: LAVENDER });
+      });
+    }
+    cy -= rowHeights[i]!;
+    if (i < measured.length - 1) {
+      l.page.drawRectangle({ x: MARGIN + padX, y: cy + 4, width: inner, height: 0.6, color: rgb(1, 1, 1), opacity: 0.15 });
+    }
+  });
+  l.y -= h + 8;
+}
+
+/** Timeline row: purple day pill + boxed action text. */
+function drawTimeline(l: Layout, items: Array<{ day: string; action: string }>): void {
+  const pillW = 52;
+  const boxX = MARGIN + pillW + 12;
+  const boxW = CONTENT_W - pillW - 12;
+  const size = 9.5;
+  items.forEach((item, idx) => {
+    const lines = wrapLines(item.action, l.font, size, boxW - 24);
+    const boxH = lines.length * size * 1.45 + 14;
+    ensureSpace(l, boxH + 6);
+    // Connector dot + line.
+    const cx = MARGIN + pillW + 6;
+    if (idx > 0) {
+      l.page.drawRectangle({ x: cx - 0.6, y: l.y - 2, width: 1.2, height: 8, color: LIGHT_PURPLE });
+    }
+    l.page.drawCircle({ x: cx, y: l.y - boxH / 2, size: 3, color: PURPLE });
+    pill(l.page, MARGIN, l.y - boxH / 2 - 8, item.day, l.bold, 8, LIGHT_PURPLE, PURPLE);
+    roundedCard(l.page, boxX, l.y - boxH, boxW, boxH, 8, CARD_FILL, CARD_BORDER);
+    lines.forEach((line, li) => {
+      l.page.drawText(line, { x: boxX + 12, y: l.y - 12 - size + 3 - li * size * 1.45, size, font: l.font, color: BLACK });
+    });
+    l.y -= boxH + 6;
+  });
+  l.y -= 4;
+}
+
+/** Two-column week cards with purple left bar. */
+function drawWeekCards(l: Layout, items: Array<{ week: string; focus: string }>): void {
+  const gap = 12;
+  const cardW = (CONTENT_W - gap) / 2;
+  const size = 9.5;
+  for (let i = 0; i < items.length; i += 2) {
+    const pair = items.slice(i, i + 2);
+    const measured = pair.map((w) => wrapLines(w.focus, l.font, size, cardW - 30));
+    const h = Math.max(...measured.map((ls) => ls.length)) * size * 1.45 + 34;
+    ensureSpace(l, h + 6);
+    pair.forEach((w, j) => {
+      const x = MARGIN + j * (cardW + gap);
+      roundedCard(l.page, x, l.y - h, cardW, h, 8, WHITE, CARD_BORDER);
+      fillRounded(l.page, x + 1, l.y - h + 6, 3.5, h - 12, 1.75, PURPLE);
+      l.page.drawText(sanitize(w.week).toUpperCase(), { x: x + 14, y: l.y - 17, size: 8, font: l.bold, color: PURPLE });
+      measured[j]!.forEach((line, li) => {
+        l.page.drawText(line, { x: x + 14, y: l.y - 31 - li * size * 1.45, size, font: l.font, color: BLACK });
+      });
+    });
+    l.y -= h + 8;
+  }
+  l.y -= 2;
+}
+
+/** Purple gradient-style offer card (solid purple with lighter inner panel). */
+function drawOfferCard(l: Layout, offer: string, why: string, exampleCopy: string): void {
+  const padX = 16;
+  const inner = CONTENT_W - padX * 2;
+  const offerLines = wrapLines(offer, l.bold, 12.5, inner);
+  const whyLines = why ? wrapLines("Why it works: " + why, l.font, 9.5, inner) : [];
+  const copyLines = exampleCopy ? wrapLines('"' + exampleCopy + '"', l.font, 9.5, inner - 24) : [];
+  const copyBoxH = copyLines.length ? copyLines.length * 9.5 * 1.45 + 16 : 0;
+  const h =
+    16 + 12 + offerLines.length * 12.5 * 1.4 + 6 +
+    whyLines.length * 9.5 * 1.45 + (copyBoxH ? copyBoxH + 10 : 0) + 14;
+  if (h > MAX_BLOCK_H) {
+    // Too tall for a single offer card — fall back to flowing paragraphs.
+    drawParagraph(l, "RECOMMENDED OFFER", { size: 7.5, color: PURPLE, bold: true, gap: 2 });
+    drawParagraph(l, offer, { size: 12, color: NAVY, bold: true, gap: 4 });
+    if (why) drawParagraph(l, "Why it works: " + why, { size: 9.5, gap: 4 });
+    if (exampleCopy) drawParagraph(l, '"' + exampleCopy + '"', { size: 9.5, color: GREY, gap: 8 });
+    return;
+  }
+  ensureSpace(l, h + 6);
+  fillRounded(l.page, MARGIN, l.y - h, CONTENT_W, h, 11, PURPLE);
+  // Lighter sheen strip at the top for a gradient feel.
+  fillRounded(l.page, MARGIN, l.y - h / 2, CONTENT_W, h / 2, 11, PURPLE_LIGHT, 0.35);
+  let cy = l.y - 16;
+  l.page.drawText("RECOMMENDED OFFER", { x: MARGIN + padX, y: cy - 7, size: 7, font: l.bold, color: LAVENDER });
+  cy -= 19;
+  for (const line of offerLines) {
+    l.page.drawText(line, { x: MARGIN + padX, y: cy - 12.5, size: 12.5, font: l.bold, color: WHITE });
+    cy -= 12.5 * 1.4;
+  }
+  cy -= 4;
+  for (const line of whyLines) {
+    l.page.drawText(line, { x: MARGIN + padX, y: cy - 9.5, size: 9.5, font: l.font, color: LAVENDER });
+    cy -= 9.5 * 1.45;
+  }
+  if (copyBoxH) {
+    cy -= 8;
+    fillRounded(l.page, MARGIN + padX, cy - copyBoxH, inner, copyBoxH, 8, WHITE);
+    copyLines.forEach((line, li) => {
+      l.page.drawText(line, { x: MARGIN + padX + 12, y: cy - 12 - 9.5 + 3 - li * 9.5 * 1.45, size: 9.5, font: l.font, color: NAVY });
+    });
+  }
+  l.y -= h + 8;
+}
+
+/** Build the AI Business Reputation Report as a premium dashboard-style PDF. */
 export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array> {
-  sectionNo = 0;
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
 
-  const l: Layout = { doc, page: doc.addPage([PAGE_W, PAGE_H]), y: PAGE_H - MARGIN, font, bold };
+  const l: Layout = {
+    doc,
+    page: doc.addPage([PAGE_W, PAGE_H]),
+    y: PAGE_H - MARGIN,
+    font,
+    bold,
+    sectionNo: 0,
+  };
   const m = report.metrics;
   const s = report.sections;
 
-  // ---- Header band ----
-  const bandH = 130;
-  l.page.drawRectangle({ x: 0, y: PAGE_H - bandH, width: PAGE_W, height: bandH, color: NAVY });
-  l.page.drawText("AI Business Reputation Report", { x: MARGIN, y: PAGE_H - 46, size: 20, font: bold, color: WHITE });
-  l.page.drawText(sanitize(`Prepared for ${report.businessName}`), { x: MARGIN, y: PAGE_H - 68, size: 12, font, color: rgb(0.79, 0.75, 0.94) });
-  if (report.businessAddress) {
-    l.page.drawText(sanitize(report.businessAddress), { x: MARGIN, y: PAGE_H - 84, size: 9, font, color: rgb(0.6, 0.56, 0.78) });
+  // ---- Premium header band (vertical gradient deep navy -> lighter navy) ----
+  const bandH = 158;
+  const steps = 32;
+  const c0 = { r: 0x03 / 255, g: 0x12 / 255, b: 0x2e / 255 };
+  const c1 = { r: 0x12 / 255, g: 0x23 / 255, b: 0x5c / 255 };
+  for (let i = 0; i < steps; i++) {
+    const t = i / (steps - 1);
+    const stripW = PAGE_W / steps + 1;
+    l.page.drawRectangle({
+      x: i * (PAGE_W / steps),
+      y: PAGE_H - bandH,
+      width: stripW,
+      height: bandH,
+      color: rgb(c0.r + (c1.r - c0.r) * t, c0.g + (c1.g - c0.g) * t, c0.b + (c1.b - c0.b) * t),
+    });
   }
-  const generated = new Date(report.generatedAt);
-  const dateStr = isNaN(generated.getTime()) ? "" : generated.toLocaleString("en-AU");
-  l.page.drawText(sanitize(`Generated ${dateStr}  |  Data quality: ${m.dataQuality}  |  Platforms: Google, Yelp, TripAdvisor`), {
-    x: MARGIN,
-    y: PAGE_H - 104,
-    size: 8.5,
-    font,
-    color: rgb(0.7, 0.66, 0.86),
-  });
-  // Paid badge.
-  const badgeText = "Paid Report - $10";
-  const bw = bold.widthOfTextAtSize(badgeText, 9) + 16;
-  l.page.drawRectangle({ x: PAGE_W - MARGIN - bw, y: PAGE_H - 50, width: bw, height: 16, color: PURPLE });
-  l.page.drawText(badgeText, { x: PAGE_W - MARGIN - bw + 8, y: PAGE_H - 46, size: 9, font: bold, color: WHITE });
+  // Purple accent line at the base of the band.
+  l.page.drawRectangle({ x: 0, y: PAGE_H - bandH, width: PAGE_W, height: 3, color: PURPLE });
 
-  l.y = PAGE_H - bandH - 18;
+  // Brand row.
+  l.page.drawText("FIND BUSINESS REVIEWS", { x: MARGIN, y: PAGE_H - 34, size: 8.5, font: bold, color: LAVENDER });
+  const paidText = "PAID REPORT";
+  const paidW = bold.widthOfTextAtSize(paidText, 8) + 18;
+  fillRounded(l.page, PAGE_W - MARGIN - paidW, PAGE_H - 40, paidW, 17, 8.5, PURPLE);
+  l.page.drawText(paidText, { x: PAGE_W - MARGIN - paidW + 9, y: PAGE_H - 35, size: 8, font: bold, color: WHITE });
+
+  // Title + business.
+  l.page.drawText("AI Business Reputation Report", { x: MARGIN, y: PAGE_H - 66, size: 23, font: bold, color: WHITE });
+  l.page.drawText(sanitize(`Prepared for ${report.businessName}`), { x: MARGIN, y: PAGE_H - 86, size: 12, font: bold, color: LAVENDER });
+  if (report.businessAddress) {
+    l.page.drawText(sanitize(report.businessAddress), { x: MARGIN, y: PAGE_H - 101, size: 9, font, color: LAVENDER_DIM });
+  }
+
+  // Meta chips row.
+  const generated = new Date(report.generatedAt);
+  const dateStr = isNaN(generated.getTime())
+    ? ""
+    : generated.toLocaleString("en-AU", { dateStyle: "medium", timeStyle: "short" });
+  let chipX = MARGIN;
+  const chipY = PAGE_H - 138;
+  const metaChip = (text: string, dotColor?: RGB) => {
+    const t = sanitize(text);
+    const dotSpace = dotColor ? 10 : 0;
+    const w = font.widthOfTextAtSize(t, 8) + 16 + dotSpace;
+    fillRounded(l.page, chipX, chipY, w, 16, 8, WHITE, 0.12);
+    if (dotColor) l.page.drawCircle({ x: chipX + 10, y: chipY + 8, size: 2.6, color: dotColor });
+    l.page.drawText(t, { x: chipX + 8 + dotSpace, y: chipY + 4.8, size: 8, font, color: LAVENDER });
+    chipX += w + 7;
+  };
+  if (dateStr) metaChip(`Generated ${dateStr}`);
+  metaChip(
+    `Data quality: ${m.dataQuality}`,
+    m.dataQuality === "High" ? GREEN : m.dataQuality === "Medium" ? ORANGE : RED,
+  );
+  metaChip("Platforms: Google, Yelp, TripAdvisor");
+
+  l.y = PAGE_H - bandH - 20;
 
   // ---- KPI cards ----
   drawKpiCards(l, m, s);
@@ -278,107 +675,144 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   // 1. Executive Summary
   drawSectionHeading(l, "Executive Summary");
   drawParagraph(l, s.executiveSummary);
+  const meaning =
+    m.trustScore !== null
+      ? `A Trust Score of ${m.trustScore}/100 places this business in the "${trustLabel(m.trustScore)}" range, based on ${m.totalReviews.toLocaleString("en-AU")} public reviews across ${m.platformCount} platform${m.platformCount === 1 ? "" : "s"}.`
+      : "No public rating data was available to compute a Trust Score for this business yet.";
+  drawCallout(l, "What this means", meaning);
 
   // 2. Platform comparison
   drawSectionHeading(l, "Platform-by-Platform Comparison");
   const pm = s.platformMeanings || { google: "", yelp: "", tripadvisor: "" };
+  const checklistArr = Array.isArray(s.platformChecklist) ? s.platformChecklist : [];
+  const actionFor = (platformName: string, hasData: boolean): string => {
+    const match = checklistArr.find(
+      (c) => (c.platform || "").toLowerCase().trim() === platformName.toLowerCase().trim(),
+    );
+    if (match && match.recommendedAction && match.recommendedAction !== "-" && match.recommendedAction !== "—")
+      return match.recommendedAction;
+    return hasData ? "Keep monitoring and responding to reviews" : "Not checked yet";
+  };
   drawTable(
     l,
     [
-      { header: "Platform", width: 78 },
-      { header: "Rating", width: 60 },
-      { header: "Reviews", width: 60 },
-      { header: "Business Meaning", width: CONTENT_W - 78 - 60 - 60 },
+      { header: "Platform", width: 72 },
+      { header: "Rating", width: 46 },
+      { header: "Reviews", width: 50 },
+      { header: "Status", width: 62 },
+      { header: "Business Meaning", width: 150 },
+      { header: "Recommended Action", width: CONTENT_W - 72 - 46 - 50 - 62 - 150 },
     ],
-    m.platforms.map((p) => [
-      p.platform,
-      p.rating,
-      p.reviews,
-      (pm as Record<string, string>)[p.key] || (p.rating === "-" || p.rating === "—" ? "No public listing found." : ""),
-    ]),
+    m.platforms.map((p) => {
+      const hasData = p.rating !== "-" && p.rating !== "—";
+      return [
+        p.platform,
+        p.rating,
+        p.reviews,
+        hasData ? "Active" : "Not available",
+        (pm as Record<string, string>)[p.key] || (hasData ? "" : "No public listing found."),
+        actionFor(p.platform, hasData),
+      ];
+    }),
   );
 
   // 3. Platform checklist
   drawSectionHeading(l, "Platform Checklist");
-  if (s.platformChecklist?.length) {
+  if (checklistArr.length) {
     drawParagraph(l, PLATFORM_CHECKLIST_INTRO, { size: 9.5, color: GREY });
     drawTable(
       l,
       [
         { header: "Platform", width: 78 },
-        { header: "Relevant for this business?", width: 130 },
-        { header: "Current Status", width: 82 },
-        { header: "Recommended Action", width: CONTENT_W - 78 - 130 - 82 - 52 },
-        { header: "Priority", width: 52 },
+        { header: "Relevant for this business?", width: 128 },
+        { header: "Current Status", width: 84 },
+        { header: "Recommended Action", width: CONTENT_W - 78 - 128 - 84 - 62 },
+        { header: "Priority", width: 62 },
       ],
-      s.platformChecklist.map((c) => [
+      checklistArr.map((c) => [
         c.platform,
         c.relevant || "-",
         c.currentStatus || "Not checked yet",
         c.recommendedAction || "-",
         c.priority || "-",
       ]),
+      { badgeCol: 4, badgeColors: PRIORITY_COLORS },
     );
   } else {
     drawParagraph(l, "No platform checklist was generated for this report.", { color: GREY });
   }
-  drawParagraph(l, TRUST_SCORE_EXPLANATION, { size: 8.5, color: GREY });
+  drawCallout(l, "How the Trust Score treats this", TRUST_SCORE_EXPLANATION);
 
   // 4. Sentiment
   drawSectionHeading(l, "AI Customer Sentiment Analysis");
   const se = s.sentiment;
-  drawParagraph(l, `Positive ${Math.round(se.positive)}%   |   Neutral ${Math.round(se.neutral)}%   |   Negative ${Math.round(se.negative)}%`, { color: NAVY, bold: true, gap: 4 });
-  if (se.estimated) drawParagraph(l, "Estimated from available review samples.", { size: 8.5, color: GREY, gap: 4 });
-  if (se.positiveThemes?.length) drawParagraph(l, "Positive themes: " + se.positiveThemes.join(", "), { color: GREEN, size: 10 });
-  if (se.negativeThemes?.length) drawParagraph(l, "Negative themes: " + se.negativeThemes.join(", "), { color: RED, size: 10 });
-  if (se.insight) drawParagraph(l, "AI insight: " + se.insight);
+  drawSentimentBars(l, s);
+  if (se.estimated) drawParagraph(l, "Estimated from available review samples.", { size: 8.5, color: GREY, gap: 6 });
+  drawChipsRow(l, "Positive themes", se.positiveThemes || [], GREEN);
+  drawChipsRow(l, "Negative themes", se.negativeThemes || [], RED);
+  if (se.insight) drawCallout(l, "AI insight", se.insight);
 
-  // 4. Strengths
+  // 5. Strengths
   drawSectionHeading(l, "Top Strengths Customers Mention");
   if (s.topStrengths?.length) {
     for (const st of s.topStrengths) {
-      drawParagraph(l, st.theme, { color: NAVY, bold: true, gap: 2 });
-      if (st.explanation) drawParagraph(l, st.explanation, { indent: 12, gap: 2 });
-      if (st.evidence) drawParagraph(l, st.evidence, { indent: 12, color: GREY, size: 9.5, gap: 6 });
+      drawContentCard(
+        l,
+        [
+          { text: st.theme, size: 11, color: NAVY, bold: true, gapAfter: 3 },
+          { text: st.explanation, size: 9.5 },
+          { text: st.evidence || "", size: 8.5, color: GREY },
+        ],
+        GREEN,
+      );
     }
   } else drawParagraph(l, "No distinct strengths could be derived from the available data.", { color: GREY });
 
-  // 5. Complaints + risk
+  // 6. Complaints + risk
   drawSectionHeading(l, "Main Complaints and Risk Level");
   if (s.mainComplaints?.length) {
     for (const c of s.mainComplaints) {
-      drawParagraph(l, c.theme, { color: NAVY, bold: true, gap: 2 });
-      drawBadge(l, `${c.riskLevel} risk`, riskColor(c.riskLevel));
-      if (c.explanation) drawParagraph(l, c.explanation, { indent: 12, gap: 2 });
-      if (c.fix) drawParagraph(l, "Recommended fix: " + c.fix, { indent: 12, color: GREY, size: 9.5, gap: 6 });
+      drawContentCard(
+        l,
+        [
+          { text: c.theme, size: 11, color: NAVY, bold: true, gapAfter: 3 },
+          { text: c.explanation, size: 9.5 },
+          { text: c.fix ? "Recommended fix: " + c.fix : "", size: 9, color: NAVY },
+        ],
+        riskColor(c.riskLevel),
+        { text: `${c.riskLevel} risk`, color: riskColor(c.riskLevel) },
+      );
     }
   } else drawParagraph(l, "No notable complaint themes were evident from the available review data.", { color: GREY });
 
-  // 6. Costing you customers
+  // 7. Costing you customers
   drawSectionHeading(l, "What May Be Costing You Customers");
-  if (s.costingYouCustomers?.length) drawBullets(l, s.costingYouCustomers);
-  else drawParagraph(l, "No material issues identified from the available data.", { color: GREY });
+  if (s.costingYouCustomers?.length) {
+    for (const item of s.costingYouCustomers) {
+      drawContentCard(l, [{ text: item, size: 9.5 }], ORANGE);
+    }
+  } else drawParagraph(l, "No material issues identified from the available data.", { color: GREY });
 
-  // 7. Customer language
+  // 8. Customer language
   drawSectionHeading(l, "Customer Language Insights");
   const cl = s.customerLanguage;
-  if (cl.words?.length) drawParagraph(l, "Words customers use: " + cl.words.join(", "));
-  if (cl.marketingPhrases?.length) drawParagraph(l, "Phrases to use in marketing: " + cl.marketingPhrases.join(", "), { color: GREEN });
-  if (cl.avoidPhrases?.length) drawParagraph(l, "Phrases / issues to avoid: " + cl.avoidPhrases.join(", "), { color: RED });
+  drawChipsRow(l, "Words customers use", cl.words || [], PURPLE);
+  drawChipsRow(l, "Phrases to use in marketing", cl.marketingPhrases || [], GREEN);
+  drawChipsRow(l, "Phrases / issues to avoid", cl.avoidPhrases || [], RED);
   if (!cl.words?.length && !cl.marketingPhrases?.length && !cl.avoidPhrases?.length)
     drawParagraph(l, "Not enough public review text to analyse language patterns.", { color: GREY });
 
-  // 8. Competitor snapshot
+  // 9. Competitor snapshot
   drawSectionHeading(l, "Competitor Snapshot");
   if (m.competitors?.length) {
     drawTable(
       l,
       [
-        { header: "Competitor", width: CONTENT_W - 70 - 70 - 70 - 90 },
-        { header: "Trust", width: 70 },
-        { header: "Rating", width: 70 },
-        { header: "Reviews", width: 70 },
-        { header: "Comparison", width: 90 },
+        { header: "Competitor", width: CONTENT_W - 56 - 52 - 56 - 120 },
+        { header: "Trust", width: 56 },
+        { header: "Rating", width: 52 },
+        { header: "Reviews", width: 56 },
+        { header: "Comparison", width: 120 },
       ],
       m.competitors.map((c) => [
         c.name + (c.demo ? " (illustrative)" : ""),
@@ -389,67 +823,103 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
       ]),
     );
   } else drawParagraph(l, "No nearby competitor data was available for comparison.", { color: GREY });
-  if (s.competitorConclusion) drawParagraph(l, s.competitorConclusion, { color: NAVY, bold: true });
+  if (s.competitorConclusion) drawNavyCard(l, [{ text: s.competitorConclusion }]);
 
-  // 9. Recommended offer
+  // 10. Recommended offer
   drawSectionHeading(l, "Recommended Offer to Win More Bookings");
   const o = s.recommendedOffer;
   if (o.offer) {
-    drawParagraph(l, o.offer, { color: PURPLE, bold: true, gap: 2 });
-    if (o.why) drawParagraph(l, "Why it works: " + o.why, { gap: 2 });
-    if (o.exampleCopy) drawParagraph(l, "Example copy: \"" + o.exampleCopy + "\"", { color: GREY, size: 9.5 });
+    drawOfferCard(l, o.offer, o.why || "", o.exampleCopy || "");
   } else drawParagraph(l, "No specific offer recommendation available.", { color: GREY });
 
-  // 10. Review improvement
+  // 11. Review improvement
   drawSectionHeading(l, "Review Improvement Opportunity");
   const ri = s.reviewImprovement;
-  drawBadge(l, `Priority: ${ri.priority}`, riskColor(ri.priority));
-  if (ri.why) drawParagraph(l, "Why it matters: " + ri.why, { gap: 2 });
-  if (ri.action) drawParagraph(l, "Recommended action: " + ri.action);
+  drawContentCard(
+    l,
+    [
+      { text: ri.why ? "Why it matters: " + ri.why : "", size: 9.5, gapAfter: 5 },
+      { text: ri.action ? "Recommended action: " + ri.action : "", size: 9.5, color: NAVY, bold: true },
+    ],
+    riskColor(ri.priority),
+    { text: `Priority: ${ri.priority}`, color: riskColor(ri.priority) },
+  );
 
-  // 11. 7-day plan
+  // 12. 7-day plan
   drawSectionHeading(l, "7-Day Reputation Action Plan");
-  if (s.sevenDayActionPlan?.length) drawBullets(l, s.sevenDayActionPlan.map((d) => `${d.day}: ${d.action}`));
+  if (s.sevenDayActionPlan?.length) drawTimeline(l, s.sevenDayActionPlan);
   else drawParagraph(l, "No 7-day plan was generated.", { color: GREY });
 
-  // 12. 30-day plan
+  // 13. 30-day plan
   drawSectionHeading(l, "30-Day Reputation Plan");
-  if (s.thirtyDayPlan?.length) drawBullets(l, s.thirtyDayPlan.map((w) => `${w.week}: ${w.focus}`));
+  if (s.thirtyDayPlan?.length) drawWeekCards(l, s.thirtyDayPlan);
   else drawParagraph(l, "No 30-day plan was generated.", { color: GREY });
 
-  // 13. Response templates
+  // 14. Response templates
   drawSectionHeading(l, "Suggested Response Templates");
   const rt = s.responseTemplates;
   if (rt.positive || rt.negative) {
     if (rt.positive) {
-      drawParagraph(l, "Positive review response", { color: GREEN, bold: true, gap: 2 });
-      drawParagraph(l, rt.positive, { indent: 12, color: GREY, gap: 6 });
+      drawContentCard(
+        l,
+        [
+          { text: "Positive review response", size: 9.5, color: GREEN, bold: true, gapAfter: 4 },
+          { text: rt.positive, size: 9 },
+        ],
+        GREEN,
+      );
     }
     if (rt.negative) {
-      drawParagraph(l, "Critical review response", { color: RED, bold: true, gap: 2 });
-      drawParagraph(l, rt.negative, { indent: 12, color: GREY, gap: 6 });
+      drawContentCard(
+        l,
+        [
+          { text: "Critical review response", size: 9.5, color: RED, bold: true, gapAfter: 4 },
+          { text: rt.negative, size: 9 },
+        ],
+        RED,
+      );
     }
   } else drawParagraph(l, "No response templates were generated.", { color: GREY });
 
-  // 14. Final recommendation
+  // 15. Final recommendation
   drawSectionHeading(l, "Final Recommendation");
   const f = s.finalRecommendation;
-  const finalItems: string[] = [];
-  if (f.first) finalItems.push("Do first: " + f.first);
-  if (f.fastest) finalItems.push("Fastest trust win: " + f.fastest);
-  if (f.monitor) finalItems.push("Monitor next: " + f.monitor);
-  if (finalItems.length) drawBullets(l, finalItems);
+  const finalRows: Array<{ label: string; text: string }> = [];
+  if (f.first) finalRows.push({ label: "Do first", text: f.first });
+  if (f.fastest) finalRows.push({ label: "Fastest trust win", text: f.fastest });
+  if (f.monitor) finalRows.push({ label: "Monitor next", text: f.monitor });
+  if (finalRows.length) drawNavyCard(l, finalRows);
   else drawParagraph(l, "Continue monitoring reviews and encourage satisfied customers to leave feedback.", { color: GREY });
 
-  // Disclaimer
-  drawSectionHeading(l, "Disclaimer");
-  drawParagraph(l, report.disclaimer, { size: 8.5, color: GREY });
+  // Disclaimer (unnumbered muted box).
+  l.y -= 4;
+  {
+    const size = 8.5;
+    const lines = wrapLines(report.disclaimer, l.font, size, CONTENT_W - 28);
+    const h = lines.length * size * 1.5 + 22;
+    ensureSpace(l, h + 6);
+    roundedCard(l.page, MARGIN, l.y - h, CONTENT_W, h, 9, CARD_FILL, CARD_BORDER);
+    lines.forEach((line, i) => {
+      l.page.drawText(line, { x: MARGIN + 14, y: l.y - 14 - size + 3 - i * size * 1.5, size, font: l.font, color: GREY });
+    });
+    l.y -= h + 8;
+  }
 
-  // Footer page numbers.
+  // ---- Navy footer band on every page ----
   const pages = doc.getPages();
   pages.forEach((pg, i) => {
-    pg.drawText(`Page ${i + 1} of ${pages.length}`, { x: PAGE_W - MARGIN - 62, y: 26, size: 8, font, color: GREY });
-    pg.drawText("AI Business Reputation Report", { x: MARGIN, y: 26, size: 8, font, color: GREY });
+    pg.drawRectangle({ x: 0, y: 0, width: PAGE_W, height: FOOTER_H, color: DEEP_NAVY });
+    pg.drawRectangle({ x: 0, y: FOOTER_H, width: PAGE_W, height: 1.5, color: PURPLE });
+    pg.drawText("Find Business Reviews - AI Business Reputation Report", {
+      x: MARGIN,
+      y: 11,
+      size: 7.5,
+      font: bold,
+      color: LAVENDER,
+    });
+    const pageText = `Page ${i + 1} of ${pages.length}`;
+    const ptw = font.widthOfTextAtSize(pageText, 8);
+    pg.drawText(pageText, { x: PAGE_W - MARGIN - ptw, y: 11, size: 8, font, color: LAVENDER_DIM });
   });
 
   return doc.save();
