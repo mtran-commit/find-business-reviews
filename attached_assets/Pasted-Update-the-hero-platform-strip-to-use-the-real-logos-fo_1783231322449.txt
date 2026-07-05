@@ -1,0 +1,117 @@
+Update the hero platform strip to use the real logos for Google, Yelp and TripAdvisor instead of simple letter badges.
+
+Goal:
+Under the headline, show a clean platform logo strip with:
+- Google logo
+- Yelp logo
+- TripAdvisor logo
+
+Design:
+- Keep the same dark navy rounded pill/card style
+- Keep white platform names next to the logos
+- Logos should be real brand logos, not just letters
+- Keep the strip centered under the headline and above the subtitle
+
+Platform strip content:
+Google
+Yelp
+TripAdvisor
+
+Implementation options:
+Preferred option:
+Use SVG logos.
+
+If available, use local SVG assets or a trusted icon source.
+If the app already uses an icon package, use that package.
+
+Acceptable sources:
+- Simple Icons
+- react-icons
+- local SVG files in /public/icons/
+
+Suggested structure:
+
+<div class="platform-strip">
+  <div class="platform-pill">
+    <img src="/icons/google.svg" alt="Google logo" class="platform-logo" />
+    <span class="platform-name">Google</span>
+  </div>
+  <div class="platform-pill">
+    <img src="/icons/yelp.svg" alt="Yelp logo" class="platform-logo" />
+    <span class="platform-name">Yelp</span>
+  </div>
+  <div class="platform-pill">
+    <img src="/icons/tripadvisor.svg" alt="TripAdvisor logo" class="platform-logo" />
+    <span class="platform-name">TripAdvisor</span>
+  </div>
+</div>
+
+CSS:
+
+.platform-strip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 18px 0 18px;
+}
+
+.platform-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #071A3D;
+  color: #FFFFFF;
+  border-radius: 14px;
+  padding: 12px 16px;
+  min-width: 150px;
+  box-shadow: 0 10px 24px rgba(7, 26, 61, 0.12);
+}
+
+.platform-logo {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  flex-shrink: 0;
+  background: #FFFFFF;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.platform-name {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+@media (max-width: 700px) {
+  .platform-pill {
+    min-width: 130px;
+    padding: 10px 14px;
+  }
+
+  .platform-logo {
+    width: 24px;
+    height: 24px;
+  }
+
+  .platform-name {
+    font-size: 16px;
+  }
+}
+
+If official/local SVGs are not already present:
+Create:
+- /public/icons/google.svg
+- /public/icons/yelp.svg
+- /public/icons/tripadvisor.svg
+
+Then render those files in the platform strip.
+
+Important:
+- Keep the landing page premium and clean
+- Keep the dark navy pill background
+- Keep the logos small and readable
+- Do not use turquoise or aqua
+- Keep this strip directly under the main headline

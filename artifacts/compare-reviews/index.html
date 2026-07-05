@@ -146,39 +146,6 @@
       }
       @media (max-width: 640px) { .hero { padding: 30px 0 2px; } .hero-headline { letter-spacing: -1px; } }
 
-      /* ===== AI Trust Score preview ===== */
-      .ai-preview {
-        max-width: 760px; margin: 28px auto 30px;
-        background: var(--navy); color: #fff; border-radius: 18px; padding: 32px;
-        display: flex; gap: 32px; align-items: stretch; justify-content: space-between;
-        box-shadow: 0 22px 54px rgba(7,26,61,.28);
-      }
-      .ai-preview-left {
-        flex: 0 1 210px; min-width: 180px; align-self: center;
-        border-right: 1px solid rgba(255,255,255,.12); padding-right: 28px;
-      }
-      .ai-preview-left .lbl { font-size: 12.5px; letter-spacing: .5px; text-transform: uppercase; color: #9FB0D4; font-weight: 800; }
-      .ai-preview-left .score { font-size: 48px; font-weight: 900; line-height: 1; margin: 8px 0 4px; }
-      .ai-preview-left .score span { font-size: 20px; color: #9FB0D4; font-weight: 700; }
-      .ai-preview-left .verdict { font-size: 12.5px; font-weight: 800; letter-spacing: .6px; color: #fff; }
-      .ai-stars { display: inline-flex; gap: 3px; margin-top: 12px; }
-      .ai-stars svg { width: 19px; height: 19px; }
-      .star-p { color: var(--purple-2); }
-      .star-e { color: #33456b; }
-      .ai-preview-right { flex: 1 1 280px; min-width: 240px; display: grid; gap: 10px; }
-      .ai-plat-row { display: flex; align-items: center; gap: 11px; background: rgba(255,255,255,.06); border-radius: 12px; padding: 10px 14px; }
-      .ai-plat-ico {
-        width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0;
-        display: grid; place-items: center; font-weight: 800; font-size: 14px; color: #fff;
-      }
-      .ai-plat-ico.g { background: #fff; color: #4285F4; }
-      .ai-plat-ico.y { background: var(--yelp); }
-      .ai-plat-ico.t { background: var(--tripadvisor); }
-      .ai-plat-name { font-size: 14px; font-weight: 600; color: #E7ECF7; width: 88px; }
-      .ai-plat-stars { display: inline-flex; gap: 2px; }
-      .ai-plat-stars svg { width: 14px; height: 14px; }
-      .ai-plat-val { margin-left: auto; font-size: 15px; font-weight: 800; }
-
       /* ===== Feature cards ===== */
       .feature-grid {
         max-width: 1180px; margin: 0 auto 8px;
@@ -211,8 +178,6 @@
       }
       @media (max-width: 700px) {
         .feature-grid { grid-template-columns: 1fr; }
-        .ai-preview { flex-direction: column; align-items: stretch; gap: 22px; }
-        .ai-preview-left { border-right: none; border-bottom: 1px solid rgba(255,255,255,.12); padding-right: 0; padding-bottom: 22px; align-self: stretch; }
       }
 
       /* ===== Footer line ===== */
@@ -757,61 +722,8 @@
       </div>
 
       <section class="panel">
-        <!-- Empty / landing (AI preview + feature cards) -->
+        <!-- Empty / landing (feature cards) -->
         <div id="emptyState">
-          <div class="ai-preview">
-            <div class="ai-preview-left">
-              <div class="lbl">AI Trust Score</div>
-              <div class="score">82<span>/100</span></div>
-              <div class="verdict">VERY TRUSTED</div>
-              <div class="ai-stars">
-                <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-              </div>
-            </div>
-            <div class="ai-preview-right">
-              <div class="ai-plat-row">
-                <div class="ai-plat-ico g">G</div>
-                <div class="ai-plat-name">Google</div>
-                <div class="ai-plat-stars">
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                  <svg class="star-e" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                </div>
-                <div class="ai-plat-val">4.3</div>
-              </div>
-              <div class="ai-plat-row">
-                <div class="ai-plat-ico y">Y</div>
-                <div class="ai-plat-name">Yelp</div>
-                <div class="ai-plat-stars">
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                  <svg class="star-e" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                </div>
-                <div class="ai-plat-val">4.0</div>
-              </div>
-              <div class="ai-plat-row">
-                <div class="ai-plat-ico t">T</div>
-                <div class="ai-plat-name">TripAdvisor</div>
-                <div class="ai-plat-stars">
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                  <svg class="star-p" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.3 6.9.6-5.2 4.6 1.6 6.8L12 17.6 5.8 20.9l1.6-6.8L2.2 8.9l6.9-.6z"/></svg>
-                </div>
-                <div class="ai-plat-val">4.5</div>
-              </div>
-            </div>
-          </div>
-
           <div class="feature-grid">
             <div class="feature-card">
               <div class="feature-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.4-3 8.3-7 9.5C8 19.3 5 15.4 5 11V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
