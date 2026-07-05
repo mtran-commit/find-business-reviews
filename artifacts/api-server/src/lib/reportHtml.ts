@@ -1,6 +1,7 @@
 import {
   PLATFORM_CHECKLIST_INTRO,
   TRUST_SCORE_EXPLANATION,
+  computeAnalytics,
   type BusinessReport,
   type AiSections,
   type ReportMetrics,
@@ -417,22 +418,206 @@ function finalSection(s: AiSections): string {
   return `<div class="final-card">${body}</div>`;
 }
 
+/* ===== Business Analytics (8 dashboard widgets) ===== */
+
+const TREND_STYLES: Record<string, [string, string]> = {
+  Improving: ["#16A34A", "&#8599;"],
+  Stable: ["#7B3CFF", "&#8594;"],
+  Declining: ["#DC2626", "&#8600;"],
+};
+
+function analyticsSection(report: BusinessReport): string {
+  const m = report.metrics;
+  const s = report.sections;
+  const a = s.analytics;
+  const calc = computeAnalytics(m);
+
+  const widget = (title: string, iconName: string, body: string) =>
+    `<div class="ana-card">
+      <div class="ana-head"><span class="ana-ico">${icon(iconName, 15)}</span><span class="ana-title">${esc(title)}</span></div>
+      ${body}
+    </div>`;
+  const na = (text: string) => `<p class="muted" style="margin:0">${esc(text)}</p>`;
+  const note = (text: string) =>
+    text ? `<div class="ana-note">${esc(text)}</div>` : "";
+
+  /* 1. Trust Score Trend */
+  const dir = a.trustScoreTrend.direction || "Unknown";
+  const [trendColor, trendArrow] = TREND_STYLES[dir] || ["#5F6368", "&#8226;"];
+  const trend = widget(
+    "Trust Score Trend",
+    "up",
+    `<div class="ana-big" style="color:${trendColor}"><span class="ana-arrow">${trendArrow}</span>${esc(dir)}</div>
+     ${note(a.trustScoreTrend.explanation || (dir === "Unknown" ? "Not enough review history to judge a trend yet." : ""))}
+     <div class="ana-est">AI estimated from available review data</div>`,
+  );
+
+  /* 2. Review Volume Trend */
+  const rv = calc.reviewVolume;
+  let volBody: string;
+  if (rv.competitorAverage !== null) {
+    const maxN = Math.max(rv.own, rv.competitorAverage, 1);
+    const volBar = (label: string, val: number, color: string) => `
+      <div class="bar-row">
+        <div class="bar-label" style="width:110px">${esc(label)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.max(3, Math.round((val / maxN) * 100))}%;background:${color}"></div></div>
+        <div class="bar-val" style="width:64px">${val.toLocaleString("en-AU")}</div>
+      </div>`;
+    const volLabel =
+      rv.comparison === "Above"
+        ? "Above nearby competitor average"
+        : rv.comparison === "Below"
+          ? "Below nearby competitor average"
+          : "In line with nearby competitors";
+    volBody = `<div class="bars" style="margin-bottom:8px">
+        ${volBar("This business", rv.own, "#7B3CFF")}
+        ${volBar("Competitor avg", rv.competitorAverage, "#C9BEEF")}
+      </div>
+      <div class="ana-big ana-mid" style="color:${rv.comparison === "Below" ? "#DC2626" : rv.comparison === "Above" ? "#16A34A" : "#071A3D"}">${esc(volLabel)}</div>
+      ${note(a.reviewVolumeInsight)}`;
+  } else {
+    volBody =
+      `<div class="ana-big ana-mid">${rv.own.toLocaleString("en-AU")} reviews counted</div>` +
+      note(
+        a.reviewVolumeInsight ||
+          "No competitor review counts were available to compare against.",
+      );
+  }
+  const volume = widget("Review Volume Trend", "reviews", volBody);
+
+  /* 3. Rating Gap Analysis */
+  const rg = calc.ratingGap;
+  const gapBars = rg.values
+    .map((v) => {
+      const has = v.rating !== null;
+      return `<div class="bar-row">
+        <div class="bar-label" style="width:86px">${esc(v.platform)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${has ? Math.round((v.rating! / 5) * 100) : 0}%;background:#7B3CFF"></div></div>
+        <div class="bar-val" style="width:52px">${has ? v.rating!.toFixed(1) : "—"}</div>
+      </div>`;
+    })
+    .join("");
+  const gapLine =
+    rg.gap !== null && rg.highest && rg.lowest
+      ? `<div class="ana-big ana-mid" style="color:${rg.gap >= 0.5 ? "#F97316" : "#16A34A"}">${rg.gap.toFixed(1)}-star gap${rg.gap >= 0.5 ? ` (${esc(rg.highest.platform)} vs ${esc(rg.lowest.platform)})` : " — consistent across platforms"}</div>`
+      : `<div class="ana-big ana-mid muted">Fewer than 2 platforms have ratings</div>`;
+  const gapW = widget(
+    "Rating Gap Analysis",
+    "scale",
+    `<div class="bars" style="margin-bottom:8px">${gapBars}</div>${gapLine}${note(a.ratingGapInsight)}`,
+  );
+
+  /* 4. Sentiment Breakdown */
+  const se = s.sentiment;
+  const hasSent = se.positive + se.neutral + se.negative > 0;
+  const sentBar = (label: string, val: number, color: string) => `
+    <div class="bar-row">
+      <div class="bar-label">${esc(label)}</div>
+      <div class="bar-track"><div class="bar-fill" style="width:${Math.max(0, Math.min(100, val))}%;background:${color}"></div></div>
+      <div class="bar-val">${Math.round(val)}%</div>
+    </div>`;
+  const sentiment = widget(
+    "Sentiment Breakdown",
+    "chat",
+    hasSent
+      ? `<div class="bars" style="margin-bottom:4px">
+          ${sentBar("Positive", se.positive, "#16A34A")}
+          ${sentBar("Neutral", se.neutral, "#F97316")}
+          ${sentBar("Negative", se.negative, "#DC2626")}
+        </div>${se.estimated ? `<div class="ana-est">Estimated from available review text</div>` : ""}`
+      : na("Not enough review text to estimate sentiment."),
+  );
+
+  /* 5. Complaint Frequency */
+  const freq = safeArr(a.complaintFrequency);
+  const complaint = widget(
+    "Complaint Frequency",
+    "alert",
+    freq.length
+      ? `<div class="ana-rows">${freq
+          .map((c) => {
+            const color = RISK_COLORS[c.frequency] || "#5F6368";
+            return `<div class="ana-row">
+              <span class="ana-row-text">${esc(c.issue)}${c.note ? `<span class="muted"> — ${esc(c.note)}</span>` : ""}</span>
+              <span class="risk-badge" style="background:${color}">${esc(c.frequency || "—")}</span>
+            </div>`;
+          })
+          .join("")}</div>`
+      : na("No repeated complaint themes were identified in the available review samples."),
+  );
+
+  /* 6. Competitor Analytics */
+  const comps = m.competitors;
+  const competitor = widget(
+    "Competitor Analytics",
+    "chart",
+    comps.length
+      ? `<table class="tbl ana-tbl">
+          <thead><tr><th>Competitor</th><th>Trust</th><th>Rating</th><th>Reviews</th><th>Position</th></tr></thead>
+          <tbody>${comps
+            .map(
+              (c) => `<tr>
+                <td class="strong">${esc(c.name)}${c.demo ? ` <span class="demo-tag">Illustrative</span>` : ""}</td>
+                <td>${c.trustScore !== null ? `${esc(c.trustScore)}/100` : "—"}</td>
+                <td>${esc(c.averageRating)}</td>
+                <td>${esc(c.reviews)}</td>
+                <td class="muted">${esc(c.comparison)}</td>
+              </tr>`,
+            )
+            .join("")}</tbody>
+        </table>
+        <div class="ana-est">Sentiment comparison is not available for competitors from public data.</div>`
+      : na("No nearby competitor data was available for this report."),
+  );
+
+  /* 7. Lost Customer Risk */
+  const lcr = a.lostCustomerRisk;
+  const lcrColor = RISK_COLORS[lcr.level] || "#5F6368";
+  const lost = widget(
+    "Lost Customer Risk",
+    "users",
+    lcr.level || lcr.factors.length
+      ? `${lcr.level ? `<div class="ana-big" style="color:${lcrColor}">${esc(lcr.level)} risk</div>` : ""}
+        ${lcr.factors.length ? `<ul class="ana-list">${lcr.factors.map((f) => `<li>${esc(f)}</li>`).join("")}</ul>` : ""}
+        <div class="ana-est">AI estimated from available review data</div>`
+      : na("Not enough data to estimate what may be stopping customers."),
+  );
+
+  /* 8. Growth Opportunity Score */
+  const go = a.growthOpportunity;
+  const growth = widget(
+    "Growth Opportunity Score",
+    "gauge",
+    go.score !== null
+      ? `<div class="ana-big" style="color:#7B3CFF">${Math.round(go.score)}<span class="ana-denom">/100</span></div>
+        <div class="bar-track" style="margin:6px 0 10px"><div class="bar-fill" style="width:${Math.max(0, Math.min(100, go.score))}%;background:linear-gradient(90deg,#7B3CFF,#9A5CFF)"></div></div>
+        ${go.focusAreas.length ? `<div class="chips" style="margin-bottom:8px">${go.focusAreas.map((f) => `<span class="chip" style="border-color:#7B3CFF55;color:#7B3CFF">${esc(f)}</span>`).join("")}</div>` : ""}
+        ${note(go.rationale)}
+        <div class="ana-est">AI estimated — higher means more untapped opportunity</div>`
+      : na("Not enough data to estimate a growth opportunity score yet."),
+  );
+
+  return `<p class="muted" style="margin-top:0">A dashboard view of the key reputation analytics behind this report. Estimated items are based only on the public review data available.</p>
+    <div class="ana-grid">${trend}${volume}${gapW}${sentiment}${complaint}${competitor}${lost}${growth}</div>`;
+}
+
 const SECTION_ICONS: Record<number, string> = {
   1: "doc",
   2: "scale",
   3: "check",
-  4: "chat",
-  5: "star",
-  6: "alert",
-  7: "users",
-  8: "speech",
-  9: "chart",
-  10: "gift",
-  11: "up",
-  12: "calendar",
-  13: "flag",
-  14: "reply",
-  15: "shield",
+  4: "chart",
+  5: "chat",
+  6: "star",
+  7: "alert",
+  8: "users",
+  9: "speech",
+  10: "chart",
+  11: "gift",
+  12: "up",
+  13: "calendar",
+  14: "flag",
+  15: "reply",
+  16: "shield",
 };
 
 function section(num: number, title: string, body: string): string {
@@ -556,6 +741,25 @@ export function buildReportHtml(report: BusinessReport): string {
   .risk-item { display:flex; gap:11px; align-items:flex-start; background:#FAFAF8; border:1px solid #EEE; border-radius:11px; padding:12px 14px; font-size:13.5px; }
   .risk-ico { color:#F97316; flex:none; margin-top:2px; display:inline-flex; }
 
+  /* ===== Business Analytics ===== */
+  .ana-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+  .ana-card { border:1px solid #E5E5E5; border-radius:14px; padding:16px 18px; background:#fff; box-shadow:0 1px 4px rgba(7,26,61,.04); }
+  .ana-head { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
+  .ana-ico { width:28px; height:28px; border-radius:8px; background:#F1E8FF; color:#7B3CFF; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+  .ana-title { font-weight:800; color:#071A3D; font-size:14px; }
+  .ana-big { font-size:22px; font-weight:900; color:#071A3D; letter-spacing:-.01em; margin-bottom:6px; }
+  .ana-mid { font-size:15px; }
+  .ana-arrow { margin-right:6px; }
+  .ana-denom { font-size:14px; font-weight:700; color:#5F6368; }
+  .ana-note { font-size:12.5px; color:#050505; background:#F7F7F4; border-radius:9px; padding:9px 11px; margin-top:8px; }
+  .ana-est { font-size:11px; color:#5F6368; font-style:italic; margin-top:8px; }
+  .ana-rows { display:flex; flex-direction:column; gap:8px; }
+  .ana-row { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; background:#FAFAF8; border:1px solid #EEE; border-radius:10px; padding:9px 12px; font-size:13px; }
+  .ana-row-text { flex:1; }
+  .ana-list { margin:0; padding-left:18px; font-size:13px; }
+  .ana-list li { margin-bottom:5px; }
+  .ana-tbl th, .ana-tbl td { padding:8px 9px; font-size:12.5px; }
+
   .lang-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
   .conclusion { display:flex; gap:10px; align-items:flex-start; background:linear-gradient(135deg,#03122E,#071A3D); color:#fff; border-radius:12px; padding:15px 17px; margin-top:14px; font-weight:600; font-size:13.5px; }
   .conclusion svg { flex:none; margin-top:2px; color:#9A5CFF; }
@@ -615,7 +819,7 @@ export function buildReportHtml(report: BusinessReport): string {
   @media (max-width:760px){
     .report-header h1 { font-size:28px; }
     .kpi-grid{grid-template-columns:repeat(2,1fr);}
-    .card-grid,.lang-grid,.week-grid,.tpl-grid,.theme-grid{grid-template-columns:1fr;}
+    .card-grid,.lang-grid,.week-grid,.tpl-grid,.theme-grid,.ana-grid{grid-template-columns:1fr;}
     .final-row{grid-template-columns:1fr;gap:4px;}
     .tbl{font-size:12.5px;}
     .tl-row{grid-template-columns:52px 22px 1fr;}
@@ -638,18 +842,19 @@ export function buildReportHtml(report: BusinessReport): string {
     ${section(1, "Executive Summary", execSummary(report))}
     ${section(2, "Platform-by-Platform Comparison", platformTable(m, s))}
     ${section(3, "Platform Checklist", checklistSection(s))}
-    ${section(4, "AI Customer Sentiment Analysis", sentimentSection(s))}
-    ${section(5, "Top Strengths Customers Mention", strengthsSection(s))}
-    ${section(6, "Main Complaints and Risk Level", complaintsSection(s))}
-    ${section(7, "What May Be Costing You Customers", costingSection(s.costingYouCustomers))}
-    ${section(8, "Customer Language Insights", languageSection(s))}
-    ${section(9, "Competitor Snapshot", competitorSection(m, s))}
-    ${section(10, "Recommended Offer to Win More Bookings", offerSection(s))}
-    ${section(11, "Review Improvement Opportunity", improvementSection(s))}
-    ${section(12, "7-Day Reputation Action Plan", sevenDaySection(s))}
-    ${section(13, "30-Day Reputation Plan", thirtyDaySection(s))}
-    ${section(14, "Suggested Response Templates", templatesSection(s))}
-    ${section(15, "Final Recommendation", finalSection(s))}
+    ${section(4, "Business Analytics", analyticsSection(report))}
+    ${section(5, "AI Customer Sentiment Analysis", sentimentSection(s))}
+    ${section(6, "Top Strengths Customers Mention", strengthsSection(s))}
+    ${section(7, "Main Complaints and Risk Level", complaintsSection(s))}
+    ${section(8, "What May Be Costing You Customers", costingSection(s.costingYouCustomers))}
+    ${section(9, "Customer Language Insights", languageSection(s))}
+    ${section(10, "Competitor Snapshot", competitorSection(m, s))}
+    ${section(11, "Recommended Offer to Win More Bookings", offerSection(s))}
+    ${section(12, "Review Improvement Opportunity", improvementSection(s))}
+    ${section(13, "7-Day Reputation Action Plan", sevenDaySection(s))}
+    ${section(14, "30-Day Reputation Plan", thirtyDaySection(s))}
+    ${section(15, "Suggested Response Templates", templatesSection(s))}
+    ${section(16, "Final Recommendation", finalSection(s))}
     <div class="disclaimer">${esc(report.disclaimer)}</div>
   </div>
   <footer class="report-footer">

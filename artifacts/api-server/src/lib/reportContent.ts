@@ -181,6 +181,48 @@ const AiSectionsSchema = z.object({
       monitor: z.string().trim().default(""),
     })
     .default({ first: "", fastest: "", monitor: "" }),
+  analytics: z
+    .object({
+      trustScoreTrend: z
+        .object({
+          direction: z.string().trim().default("Unknown"),
+          explanation: z.string().trim().default(""),
+        })
+        .default({ direction: "Unknown", explanation: "" }),
+      reviewVolumeInsight: z.string().trim().default(""),
+      ratingGapInsight: z.string().trim().default(""),
+      complaintFrequency: z
+        .array(
+          z.object({
+            issue: z.string().trim().min(1),
+            frequency: z.string().trim().default(""),
+            note: z.string().trim().default(""),
+          }),
+        )
+        .max(6)
+        .default([]),
+      lostCustomerRisk: z
+        .object({
+          level: z.string().trim().default(""),
+          factors: z.array(z.string().trim().min(1)).max(5).default([]),
+        })
+        .default({ level: "", factors: [] }),
+      growthOpportunity: z
+        .object({
+          score: z.number().min(0).max(100).nullable().default(null),
+          focusAreas: z.array(z.string().trim().min(1)).max(4).default([]),
+          rationale: z.string().trim().default(""),
+        })
+        .default({ score: null, focusAreas: [], rationale: "" }),
+    })
+    .default({
+      trustScoreTrend: { direction: "Unknown", explanation: "" },
+      reviewVolumeInsight: "",
+      ratingGapInsight: "",
+      complaintFrequency: [],
+      lostCustomerRisk: { level: "", factors: [] },
+      growthOpportunity: { score: null, focusAreas: [], rationale: "" },
+    }),
 });
 
 export type AiSections = z.infer<typeof AiSectionsSchema>;
@@ -377,6 +419,86 @@ export function computeMetrics(
   };
 }
 
+/** Deterministic analytics computed from real metrics (never from the AI). */
+export interface ReportAnalytics {
+  ratingGap: {
+    gap: number | null;
+    highest: { platform: string; rating: number } | null;
+    lowest: { platform: string; rating: number } | null;
+    values: Array<{ platform: string; rating: number | null }>;
+  };
+  reviewVolume: {
+    own: number;
+    competitorAverage: number | null;
+    comparison: "Above" | "Similar" | "Below" | "Unknown";
+  };
+}
+
+function parseRating(s: string): number | null {
+  const m = /^(\d+(?:\.\d+)?)/.exec(s.trim());
+  if (!m || !m[1]) return null;
+  const n = Number(m[1]);
+  return Number.isFinite(n) && n >= 0 && n <= 5 ? n : null;
+}
+
+function parseCount(s: string): number | null {
+  const n = Number(s.replace(/[^0-9]/g, ""));
+  return s.trim() && s.trim() !== "—" && s.trim() !== "-" && Number.isFinite(n)
+    ? n
+    : null;
+}
+
+/** Compute the rating-gap and review-volume analytics from stored metrics. */
+export function computeAnalytics(m: ReportMetrics): ReportAnalytics {
+  const values = m.platforms.map((p) => ({
+    platform: p.platform,
+    rating: parseRating(p.rating),
+  }));
+  const rated = values.filter(
+    (v): v is { platform: string; rating: number } => v.rating !== null,
+  );
+  let gap: ReportAnalytics["ratingGap"] = {
+    gap: null,
+    highest: null,
+    lowest: null,
+    values,
+  };
+  if (rated.length >= 2) {
+    const sorted = [...rated].sort((a, b) => b.rating - a.rating);
+    const highest = sorted[0]!;
+    const lowest = sorted[sorted.length - 1]!;
+    gap = {
+      gap: Math.round((highest.rating - lowest.rating) * 10) / 10,
+      highest,
+      lowest,
+      values,
+    };
+  }
+
+  const realCompetitorCounts = m.competitors
+    .filter((c) => !c.demo)
+    .map((c) => parseCount(c.reviews))
+    .filter((n): n is number => n !== null && n > 0);
+  const competitorAverage =
+    realCompetitorCounts.length > 0
+      ? Math.round(
+          realCompetitorCounts.reduce((s, n) => s + n, 0) /
+            realCompetitorCounts.length,
+        )
+      : null;
+  let comparison: ReportAnalytics["reviewVolume"]["comparison"] = "Unknown";
+  if (competitorAverage !== null && m.totalReviews > 0) {
+    if (m.totalReviews >= competitorAverage * 1.25) comparison = "Above";
+    else if (m.totalReviews <= competitorAverage * 0.75) comparison = "Below";
+    else comparison = "Similar";
+  }
+
+  return {
+    ratingGap: gap,
+    reviewVolume: { own: m.totalReviews, competitorAverage, comparison },
+  };
+}
+
 const SYSTEM_PROMPT =
   "You are generating a paid AI Business Reputation Report for a business owner. " +
   "Analyse the available Google, Yelp and TripAdvisor ratings, review counts, " +
@@ -439,7 +561,34 @@ const SYSTEM_PROMPT =
   "responseTemplates (object {positive, negative} — professional, business-" +
   "friendly review reply templates); " +
   "finalRecommendation (object {first, fastest, monitor} — what to do first, " +
-  "what improves trust fastest, what to monitor next).";
+  "what improves trust fastest, what to monitor next); " +
+  "analytics (object with EXACTLY these keys — all estimates must come ONLY " +
+  "from the data provided, never invented: " +
+  "trustScoreTrend (object {direction, explanation}: direction is 'Improving', " +
+  "'Stable', 'Declining' or 'Unknown' — judge cautiously from the balance of " +
+  "recent positive vs negative review snippet themes; if snippets are limited " +
+  "use 'Unknown' and say why in explanation (1-2 sentences)); " +
+  "reviewVolumeInsight (string, 1-2 sentences: whether the business appears to " +
+  "be getting enough new reviews compared with the competitor review counts " +
+  "given — if no competitor data, say the comparison is not available); " +
+  "ratingGapInsight (string, 1-2 sentences interpreting differences between " +
+  "the Google, Yelp and TripAdvisor ratings given — mention missing listings " +
+  "honestly; '' if fewer than 2 platforms have ratings); " +
+  "complaintFrequency (array of 0-5 objects {issue, frequency, note}: the most " +
+  "repeated issues mentioned in the review snippets, frequency 'High', " +
+  "'Medium' or 'Low' judged only from how often the theme appears in the " +
+  "snippets given, note is one short sentence; empty array if snippets are " +
+  "too limited); " +
+  "lostCustomerRisk (object {level, factors}: level 'Low', 'Medium' or 'High'; " +
+  "factors is 1-4 short statements on what may be stopping customers from " +
+  "choosing the business, worded carefully like 'may be costing'; use level " +
+  "'Low' with a cautious factor when data is limited); " +
+  "growthOpportunity (object {score, focusAreas, rationale}: score is an " +
+  "integer 0-100 estimating how much room there is to improve fastest (higher " +
+  "= more untapped opportunity, e.g. missing platforms, low review volume, " +
+  "fixable complaints), focusAreas is 1-4 short phrases naming the fastest " +
+  "improvement areas, rationale is 1-2 sentences; score null if there is no " +
+  "meaningful data)).";
 
 function snippetBlock(label: string, items: string[]): string {
   const clean = items
