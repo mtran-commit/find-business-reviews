@@ -8,6 +8,18 @@ export const REPORT_DISCLAIMER =
   "as legal, financial or professional advice. Public review data may be " +
   "incomplete or change over time.";
 
+/** Fixed intro shown above the Platform Checklist table. */
+export const PLATFORM_CHECKLIST_INTRO =
+  "Not every review platform matters equally. This checklist shows which " +
+  "platforms are most relevant for your industry and where your reputation " +
+  "should be monitored next.";
+
+/** Fixed Trust Score explanation shown with the Platform Checklist. */
+export const TRUST_SCORE_EXPLANATION =
+  "The Trust Score is calculated from available relevant review platforms. " +
+  "Platforms that are not relevant to this business category are not heavily " +
+  "weighted.";
+
 /** Data confidence based on how much public review text we could analyse. */
 export type DataQuality = "High" | "Medium" | "Low";
 
@@ -63,6 +75,18 @@ const AiSectionsSchema = z.object({
       tripadvisor: z.string().trim().default(""),
     })
     .default({ google: "", yelp: "", tripadvisor: "" }),
+  platformChecklist: z
+    .array(
+      z.object({
+        platform: z.string().trim().min(1),
+        relevant: z.string().trim().default(""),
+        currentStatus: z.string().trim().default(""),
+        recommendedAction: z.string().trim().default(""),
+        priority: z.string().trim().default(""),
+      }),
+    )
+    .max(10)
+    .default([]),
   sentiment: z
     .object({
       positive: z.number().min(0).max(100).default(0),
@@ -372,6 +396,27 @@ const SYSTEM_PROMPT =
   "customerSentimentLabel (string: e.g. 'Mostly Positive', 'Positive', 'Mixed'); " +
   "platformMeanings (object {google, yelp, tripadvisor}: each a one-sentence " +
   "business meaning, '' if no listing); " +
+  "platformChecklist (array of 4-7 objects {platform, relevant, currentStatus, " +
+  "recommendedAction, priority} — a platform monitoring checklist chosen for " +
+  "the detected business category. 'platform' is the platform name (e.g. " +
+  "'Google', 'Facebook', 'Yelp', 'TripAdvisor', plus industry platforms); " +
+  "'relevant' is a short judgement like 'Yes - primary local trust platform' " +
+  "or 'Low for this industry'; 'currentStatus' reflects ONLY the data given " +
+  "(e.g. 'Active, strong rating', 'No public listing found') — for any " +
+  "platform not covered by the data write 'Not checked yet', NEVER invent a " +
+  "status; 'recommendedAction' is one practical sentence; 'priority' is " +
+  "'High', 'Medium', 'Low' or 'Not relevant'. Always include Google, Yelp and " +
+  "TripAdvisor rows plus Facebook and relevant industry platforms. Industry " +
+  "guidance: real estate -> Google High, Facebook Medium, " +
+  "Realestate.com.au/Domain/RateMyAgent High, Yelp Low, TripAdvisor Low (never " +
+  "highly relevant for real estate); restaurants/cafes -> Google High, " +
+  "TripAdvisor High, Yelp Medium, Facebook/Instagram Medium, Zomato or local " +
+  "food platforms Medium; trades -> Google High, Facebook Medium, " +
+  "Hipages/Oneflare/ServiceSeeking High, Yelp Low-Medium, TripAdvisor Not " +
+  "relevant; beauty/wellness -> Google High, Facebook Medium, Instagram " +
+  "Medium, Fresha/Bookwell/Treatwell High, Yelp Medium. Do NOT punish the " +
+  "business when a platform is irrelevant to its industry; use careful " +
+  "wording like 'recommended', 'priority', 'secondary signal'); " +
   "sentiment (object {positive, neutral, negative (integers summing to ~100), " +
   "positiveThemes (2-5 short phrases), negativeThemes (0-4 short phrases), " +
   "insight (1-2 sentence AI insight), estimated (boolean, true unless you have " +

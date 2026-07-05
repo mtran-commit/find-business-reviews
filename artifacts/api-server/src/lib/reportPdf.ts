@@ -6,7 +6,13 @@ import {
   type PDFPage,
   type RGB,
 } from "pdf-lib";
-import type { BusinessReport, AiSections, ReportMetrics } from "./reportContent";
+import {
+  PLATFORM_CHECKLIST_INTRO,
+  TRUST_SCORE_EXPLANATION,
+  type BusinessReport,
+  type AiSections,
+  type ReportMetrics,
+} from "./reportContent";
 
 const PAGE_W = 595.28; // A4 width (pt)
 const PAGE_H = 841.89; // A4 height (pt)
@@ -292,7 +298,33 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
     ]),
   );
 
-  // 3. Sentiment
+  // 3. Platform checklist
+  drawSectionHeading(l, "Platform Checklist");
+  if (s.platformChecklist?.length) {
+    drawParagraph(l, PLATFORM_CHECKLIST_INTRO, { size: 9.5, color: GREY });
+    drawTable(
+      l,
+      [
+        { header: "Platform", width: 78 },
+        { header: "Relevant for this business?", width: 130 },
+        { header: "Current Status", width: 82 },
+        { header: "Recommended Action", width: CONTENT_W - 78 - 130 - 82 - 52 },
+        { header: "Priority", width: 52 },
+      ],
+      s.platformChecklist.map((c) => [
+        c.platform,
+        c.relevant || "-",
+        c.currentStatus || "Not checked yet",
+        c.recommendedAction || "-",
+        c.priority || "-",
+      ]),
+    );
+  } else {
+    drawParagraph(l, "No platform checklist was generated for this report.", { color: GREY });
+  }
+  drawParagraph(l, TRUST_SCORE_EXPLANATION, { size: 8.5, color: GREY });
+
+  // 4. Sentiment
   drawSectionHeading(l, "AI Customer Sentiment Analysis");
   const se = s.sentiment;
   drawParagraph(l, `Positive ${Math.round(se.positive)}%   |   Neutral ${Math.round(se.neutral)}%   |   Negative ${Math.round(se.negative)}%`, { color: NAVY, bold: true, gap: 4 });

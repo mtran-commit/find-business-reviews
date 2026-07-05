@@ -1,0 +1,104 @@
+Update the /admin-report-requests admin table to show the date and time each report request was created.
+
+Current issue:
+The admin table shows name, email, phone, business, address, payment, report and request ID, but it does not show when the request came in.
+
+Add a new column near the beginning of the table:
+
+DATE RECEIVED
+
+This column should display:
+- date
+- time
+- timezone
+
+Example format:
+05 Jul 2026, 6:09 AM
+
+or:
+05/07/2026 6:09 AM
+
+Use the request created_at field from the report_requests database table.
+
+If created_at does not exist, add it to the database table.
+
+Database:
+Make sure report_requests has:
+created_at TIMESTAMP DEFAULT NOW()
+
+When a new report request is created, save:
+created_at = new Date()
+
+Admin table order should be:
+
+DATE RECEIVED
+NAME
+EMAIL
+PHONE
+BUSINESS
+ADDRESS
+WEBSITE / LINK
+PAYMENT
+REPORT
+REQUEST ID
+ACTIONS
+
+Also add:
+- Sort newest requests first
+- Show newest report requests at the top of the table
+
+Backend:
+Update GET /api/report-requests so it returns created_at for every request.
+
+SQL should order by:
+created_at DESC
+
+Frontend:
+Render created_at in the DATE RECEIVED column.
+
+Use a helper:
+
+function formatDateTime(dateValue) {
+  if (!dateValue) return "—";
+
+  return new Date(dateValue).toLocaleString("en-AU", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true
+  });
+}
+
+Then display:
+formatDateTime(request.created_at)
+
+Also add optional status dates if available:
+- paid_at
+- report_generated_at
+- report_sent_at
+
+If these fields exist, show them in smaller text under the relevant status badge.
+
+Example:
+Payment: Paid
+Paid: 05 Jul 2026, 6:12 AM
+
+Report: Generated
+Generated: 05 Jul 2026, 6:15 AM
+
+When clicking Mark as paid:
+- set payment_status = paid
+- set paid_at = NOW()
+
+When report is generated:
+- set report_status = generated
+- set report_generated_at = NOW()
+
+When clicking Mark report as sent:
+- set report_status = sent
+- set report_sent_at = NOW()
+
+Final check:
+The admin table must clearly show when each request came in, with newest requests first.

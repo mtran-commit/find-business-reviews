@@ -1,8 +1,10 @@
-import type {
-  BusinessReport,
-  AiSections,
-  ReportMetrics,
-  DataQuality,
+import {
+  PLATFORM_CHECKLIST_INTRO,
+  TRUST_SCORE_EXPLANATION,
+  type BusinessReport,
+  type AiSections,
+  type ReportMetrics,
+  type DataQuality,
 } from "./reportContent";
 
 /** HTML-escape a value for safe insertion into markup. */
@@ -91,6 +93,40 @@ function platformTable(m: ReportMetrics, s: AiSections): string {
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
+}
+
+const PRIORITY_COLORS: Record<string, string> = {
+  High: "#7B3CFF",
+  Medium: "#F97316",
+  Low: "#5F6368",
+  "Not relevant": "#9CA3AF",
+};
+
+function checklistSection(s: AiSections): string {
+  const items = safeArr(s.platformChecklist);
+  if (!items.length)
+    return `<p class="muted">No platform checklist was generated for this report.</p>
+      <p class="muted">${esc(TRUST_SCORE_EXPLANATION)}</p>`;
+  const rows = items
+    .map((c) => {
+      const color = PRIORITY_COLORS[c.priority] || "#5F6368";
+      return `<tr>
+        <td class="strong">${esc(c.platform)}</td>
+        <td>${esc(c.relevant || "—")}</td>
+        <td>${esc(c.currentStatus || "Not checked yet")}</td>
+        <td>${esc(c.recommendedAction || "—")}</td>
+        <td><span class="prio-badge" style="background:${color}">${esc(c.priority || "—")}</span></td>
+      </tr>`;
+    })
+    .join("");
+  return `<p>${esc(PLATFORM_CHECKLIST_INTRO)}</p>
+    <table class="tbl">
+      <thead><tr>
+        <th>Platform</th><th>Relevant for this business?</th><th>Current Status</th><th>Recommended Action</th><th>Priority</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p class="muted" style="margin-top:12px">${esc(TRUST_SCORE_EXPLANATION)}</p>`;
 }
 
 function sentimentSection(s: AiSections): string {
@@ -350,6 +386,7 @@ export function buildReportHtml(report: BusinessReport): string {
   .mini-evi { font-size:13px; color:#5F6368; margin-top:8px; font-style:italic; }
   .mini-fix { font-size:13px; color:#071A3D; margin-top:10px; }
   .risk-badge { display:inline-block; color:#fff; border-radius:999px; padding:3px 11px; font-size:11px; font-weight:700; margin-bottom:8px; }
+  .prio-badge { display:inline-block; color:#fff; border-radius:999px; padding:3px 11px; font-size:11px; font-weight:700; white-space:nowrap; }
   .clean-list { margin:0; padding-left:20px; }
   .clean-list li { margin-bottom:8px; }
   .lang-col { }
@@ -393,18 +430,19 @@ export function buildReportHtml(report: BusinessReport): string {
     ${kpiCards(m, s)}
     ${section(1, "Executive Summary", `<p>${esc(s.executiveSummary)}</p>`)}
     ${section(2, "Platform-by-Platform Comparison", platformTable(m, s))}
-    ${section(3, "AI Customer Sentiment Analysis", sentimentSection(s))}
-    ${section(4, "Top Strengths Customers Mention", strengthsSection(s))}
-    ${section(5, "Main Complaints and Risk Level", complaintsSection(s))}
-    ${section(6, "What May Be Costing You Customers", listSection(s.costingYouCustomers, "No material issues identified from the available data."))}
-    ${section(7, "Customer Language Insights", languageSection(s))}
-    ${section(8, "Competitor Snapshot", competitorSection(m, s))}
-    ${section(9, "Recommended Offer to Win More Bookings", offerSection(s))}
-    ${section(10, "Review Improvement Opportunity", improvementSection(s))}
-    ${section(11, "7-Day Reputation Action Plan", sevenDaySection(s))}
-    ${section(12, "30-Day Reputation Plan", thirtyDaySection(s))}
-    ${section(13, "Suggested Response Templates", templatesSection(s))}
-    ${section(14, "Final Recommendation", finalSection(s))}
+    ${section(3, "Platform Checklist", checklistSection(s))}
+    ${section(4, "AI Customer Sentiment Analysis", sentimentSection(s))}
+    ${section(5, "Top Strengths Customers Mention", strengthsSection(s))}
+    ${section(6, "Main Complaints and Risk Level", complaintsSection(s))}
+    ${section(7, "What May Be Costing You Customers", listSection(s.costingYouCustomers, "No material issues identified from the available data."))}
+    ${section(8, "Customer Language Insights", languageSection(s))}
+    ${section(9, "Competitor Snapshot", competitorSection(m, s))}
+    ${section(10, "Recommended Offer to Win More Bookings", offerSection(s))}
+    ${section(11, "Review Improvement Opportunity", improvementSection(s))}
+    ${section(12, "7-Day Reputation Action Plan", sevenDaySection(s))}
+    ${section(13, "30-Day Reputation Plan", thirtyDaySection(s))}
+    ${section(14, "Suggested Response Templates", templatesSection(s))}
+    ${section(15, "Final Recommendation", finalSection(s))}
     <div class="disclaimer">${esc(report.disclaimer)}</div>
   </div>
 </body></html>`;

@@ -1,0 +1,99 @@
+Add a new section to the paid AI Business Reputation Report called:
+
+Platform Checklist
+
+Purpose:
+Show business owners which platforms they should check, monitor and improve based on their business category.
+
+Place this section after:
+Platform-by-Platform Comparison
+
+and before:
+AI Customer Sentiment Analysis
+
+The section should include:
+- platform name
+- relevance for this business
+- current status
+- recommended action
+- priority level
+
+Use a table layout.
+
+Table columns:
+Platform
+Relevant for this business?
+Current Status
+Recommended Action
+Priority
+
+Example for a real estate agency:
+
+Google
+Relevant: Yes — primary local trust platform
+Current Status: Active, strong rating
+Recommended Action: Keep collecting recent reviews and respond to all reviews
+Priority: High
+
+Facebook
+Relevant: Yes — useful for local reputation and community proof
+Current Status: Not checked / not available
+Recommended Action: Check page reviews/recommendations and keep profile active
+Priority: Medium
+
+Realestate.com.au / Domain / RateMyAgent
+Relevant: Yes — industry-specific proof
+Current Status: Not checked yet
+Recommended Action: Add these to future reputation monitoring
+Priority: High
+
+Yelp
+Relevant: Low for real estate in Australia
+Current Status: No public listing found
+Recommended Action: Do not prioritise unless the business has an active Yelp listing
+Priority: Low
+
+TripAdvisor
+Relevant: Low for real estate
+Current Status: Secondary signal only
+Recommended Action: Do not treat as a primary ranking factor for real estate
+Priority: Low
+
+For restaurants/cafes:
+Google: High
+TripAdvisor: High
+Yelp: Medium
+Facebook/Instagram: Medium
+Zomato or local food platforms if available: Medium
+
+For trades:
+Google: High
+Facebook: Medium
+Hipages / Oneflare / ServiceSeeking if available: High
+Yelp: Low/Medium
+TripAdvisor: Not relevant
+
+For beauty/wellness:
+Google: High
+Facebook: Medium
+Instagram: Medium
+Fresha / Bookwell / Treatwell if available: High
+Yelp: Medium
+
+The AI should choose the checklist based on the detected business category.
+
+Rules:
+- Do not show TripAdvisor as highly relevant for real estate agencies.
+- Do not punish a business if a platform is not relevant to its industry.
+- If a platform is not checked, write “Not checked yet” instead of making up data.
+- Use careful wording: “recommended”, “priority”, “secondary signal”.
+- The report should explain that different industries rely on different review platforms.
+
+Add a short explanation above the table:
+
+“Not every review platform matters equally. This checklist shows which platforms are most relevant for your industry and where your reputation should be monitored next.”
+
+Also update the Trust Score explanation:
+“The Trust Score is calculated from available relevant review platforms. Platforms that are not relevant to this business category are not heavily weighted.”
+
+Add this section to the PDF and HTML report.
