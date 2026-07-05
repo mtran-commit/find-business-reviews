@@ -506,8 +506,11 @@
         background: var(--navy); color: #fff; border: none;
       }
       .report-action-stack .report-label {
-        font-size: 13px; line-height: 1.15; font-weight: 900; flex: 1 1 auto;
+        font-size: 13px; line-height: 1.2; font-weight: 900; flex: 1 1 auto;
+        min-width: 0;
       }
+      .report-action-stack .rl-line { display: block; white-space: nowrap; }
+      .report-action-stack .free-report-button .report-label { font-size: 12px; }
       .report-action-stack .pill {
         flex: 0 0 auto; border-radius: 999px; padding: 5px 9px;
         font-size: 11px; font-weight: 900; line-height: 1; white-space: nowrap;
@@ -516,6 +519,7 @@
       .report-action-stack .pill.paid { background: #fff; color: var(--navy); }
       @media (max-width: 700px) {
         .report-action-stack .report-label { font-size: 14px; }
+        .report-action-stack .free-report-button .report-label { font-size: 13px; }
         .report-action-stack button { min-height: 50px; }
       }
 
@@ -1192,7 +1196,7 @@
               '<div class="score-sub">' + escapeHtml(scoreSub) + '</div>' +
               '<div class="report-action-stack">' +
                 '<button class="report-button" data-act="report">VIEW REPORT ' + ICO.arrow + '</button>' +
-                '<button class="free-report-button" data-act="sentiment"><span class="report-label">AI Review Sentiment</span><span class="pill free">FREE</span></button>' +
+                '<button class="free-report-button" data-act="sentiment"><span class="report-label"><span class="rl-line">AI Customer Review</span><span class="rl-line">Sentiment Report</span></span><span class="pill free">FREE</span></button>' +
                 '<button class="business-report-button" data-act="business-report"><span class="report-label">Business Reputation Report</span><span class="pill paid">$10</span></button>' +
               '</div>' +
             '</div>' +
