@@ -130,18 +130,15 @@
         padding: 12px 16px; min-width: 150px;
         box-shadow: 0 10px 24px rgba(7, 26, 61, 0.12);
       }
-      .platform-icon {
-        width: 34px; height: 34px; border-radius: 10px;
-        display: inline-flex; align-items: center; justify-content: center;
-        font-weight: 900; color: #fff; flex-shrink: 0;
+      .platform-logo {
+        width: 28px; height: 28px; object-fit: contain; flex-shrink: 0;
+        background: #fff; border-radius: 8px; padding: 4px;
       }
-      .google-pill .platform-icon { background: #fff; color: var(--google); }
-      .yelp-pill .platform-icon { background: var(--yelp); color: #fff; }
-      .tripadvisor-pill .platform-icon { background: var(--tripadvisor); color: #fff; }
       .platform-name { font-size: 18px; font-weight: 800; line-height: 1; }
       @media (max-width: 700px) {
         .platform-strip { gap: 10px; margin: 18px 0 14px; }
         .platform-pill { min-width: 130px; padding: 10px 14px; }
+        .platform-logo { width: 24px; height: 24px; }
         .platform-name { font-size: 16px; }
       }
       @media (max-width: 640px) { .hero { padding: 30px 0 2px; } .hero-headline { letter-spacing: -1px; } }
@@ -683,16 +680,16 @@
       <div id="heroWrap" class="hero">
         <h1 class="hero-headline">Compare business ratings with one <span class="hl">free search</span>.</h1>
         <div class="platform-strip">
-          <div class="platform-pill google-pill">
-            <span class="platform-icon">G</span>
+          <div class="platform-pill">
+            <img src="./icons/google.svg" alt="Google logo" class="platform-logo" />
             <span class="platform-name">Google</span>
           </div>
-          <div class="platform-pill yelp-pill">
-            <span class="platform-icon">Y</span>
+          <div class="platform-pill">
+            <img src="./icons/yelp.svg" alt="Yelp logo" class="platform-logo" />
             <span class="platform-name">Yelp</span>
           </div>
-          <div class="platform-pill tripadvisor-pill">
-            <span class="platform-icon">T</span>
+          <div class="platform-pill">
+            <img src="./icons/tripadvisor.svg" alt="TripAdvisor logo" class="platform-logo" />
             <span class="platform-name">TripAdvisor</span>
           </div>
         </div>
