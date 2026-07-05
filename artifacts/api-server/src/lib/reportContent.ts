@@ -343,6 +343,10 @@ export interface BusinessReport {
   suburb: string;
   website: string;
   phone: string;
+  /** Client business logo URL ("" when no trusted logo is available). */
+  businessLogo: string;
+  /** Business photo URL (e.g. Google Maps thumbnail; "" when unavailable). */
+  businessImage: string;
   generatedAt: string;
   metrics: ReportMetrics;
   sections: AiSections;
@@ -404,6 +408,8 @@ export function normalizeReport(raw: unknown): BusinessReport {
     suburb: str(r["suburb"]),
     website: str(r["website"]),
     phone: str(r["phone"]),
+    businessLogo: str(r["businessLogo"]),
+    businessImage: str(r["businessImage"]),
     generatedAt: str(r["generatedAt"], new Date().toISOString()),
     metrics: coerceMetrics(r["metrics"]),
     sections,

@@ -340,6 +340,11 @@ router.post(
         suburb,
         website: data.website ?? "",
         phone: data.phone ?? "",
+        // Zero-tolerance logo rule: only a confidently matched brand mark may
+        // appear in the report; otherwise renderers show a neat initials tile.
+        businessLogo:
+          data.logoConfidence === "high" && data.logoUrl ? data.logoUrl : "",
+        businessImage: data.imageUrl ?? "",
         generatedAt: new Date().toISOString(),
         metrics,
         sections,

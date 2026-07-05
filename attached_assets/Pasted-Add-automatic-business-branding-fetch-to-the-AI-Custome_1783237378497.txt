@@ -1,0 +1,110 @@
+Add automatic business branding fetch to the AI Customer Review Sentiment Report.
+
+Goal:
+When generating a report for a business, automatically fetch and use public branding assets so the report and card look personalised.
+
+Branding sources to check:
+1. Google Business Profile / Google Maps via SerpApi
+2. Facebook business profile via SerpApi Facebook Profile API
+3. Instagram business profile via SerpApi Instagram Profile API
+
+Use SerpApi where available:
+- Google Maps / Google Place data for business thumbnail, website, address, phone, rating, review count, photos and social links if available
+- Facebook Profile API with engine=facebook_profile
+- Instagram Profile API with engine=instagram_profile
+
+Data to collect:
+- businessLogo
+- businessImage
+- facebookProfileUrl
+- instagramProfileUrl
+- facebookProfileImage
+- instagramProfileImage
+- website
+- businessName
+- businessAddress
+- primaryPhoto
+- fallbackPhoto
+
+Matching logic:
+- First use Google Maps place result / place details to confirm the correct business.
+- Match by business name, address, phone number and website.
+- If Facebook or Instagram profiles are found from Google/social links, use those URLs.
+- If no direct links are found, search for:
+  “[business name] [suburb] Facebook”
+  “[business name] [suburb] Instagram”
+- Only use the social profile if the name/location clearly matches the business.
+- Do not use unrelated profiles with similar names.
+
+Brand asset priority:
+1. Client business logo from website or social profile if clearly available
+2. Facebook profile image
+3. Instagram profile image
+4. Google Business Profile thumbnail/photo
+5. Website favicon/logo
+6. Clean placeholder with business initials
+
+Report template update:
+- On page 1 of the PDF/report, show:
+  - Our logo as the report provider
+  - Client business logo as the business being analysed
+  - Business name and address
+  - Report title: AI Customer Review Sentiment Report
+- Keep the client logo smaller than our logo.
+- Do not stretch or distort images.
+- Use object-fit: contain for logos.
+- Use object-fit: cover for card/business photos.
+
+Report card update:
+Add a business photo/image to the report preview card.
+
+Card should include:
+- Business image/photo at the top
+- Client logo if available
+- Business name
+- Report title:
+  AI Customer Review
+  Sentiment Report
+- Price badge:
+  $23 + GST
+- Short line:
+  Personalised AI reputation insights for your business
+- CTA:
+  Get My Report — $23 + GST
+
+Fallback behaviour:
+- If businessLogo is missing, show business initials in a neat circle/card.
+- If businessImage is missing, use Google thumbnail or a clean gradient placeholder.
+- If Facebook/Instagram data cannot be confidently matched, skip it.
+- Never break the layout because an image is missing.
+
+Compliance and safety:
+- Only use publicly available business branding assets.
+- Do not scrape private accounts.
+- Do not use personal profiles unless they clearly represent the business.
+- Store the source URL for each image used so we can audit where it came from.
+
+Technical requirements:
+- Add a backend service/function called fetchBusinessBranding.
+- It should accept:
+  businessName
+  businessAddress
+  suburb
+  website
+  phone
+  googlePlaceId if available
+- It should return:
+  businessLogo
+  businessImage
+  facebookProfileUrl
+  instagramProfileUrl
+  brandingSource
+  confidenceScore
+- Cache results so we do not call SerpApi every time the same report is opened.
+- Add error handling so the report still generates if SerpApi fails.
+- Add logs for missing/failed branding fetches.
+
+Important:
+Do not change unrelated features.
+Do not change the report content structure.
+Only add personalised branding fetch, client logo placement, and business image placement on the report card and PDF/report.

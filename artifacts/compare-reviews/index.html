@@ -534,6 +534,29 @@
       .report-stat-grid div { background: var(--bg); border: 1px solid var(--border); border-radius: 12px; padding: 14px; }
       .report-stat-grid strong { display: block; font-size: 24px; color: var(--text); font-weight: 900; letter-spacing: -.5px; }
       .report-stat-grid span { color: var(--text-2); font-size: 12.5px; }
+      .paid-preview-card {
+        border: 1px solid var(--border); border-radius: 16px; overflow: hidden;
+        background: var(--bg); margin-bottom: 18px;
+      }
+      .paid-preview-card .ppc-image {
+        width: 100%; height: 150px; object-fit: cover; display: block;
+        background: var(--navy);
+      }
+      .paid-preview-card .ppc-body { padding: 14px 16px 16px; }
+      .paid-preview-card .ppc-title-row {
+        display: flex; align-items: flex-start; gap: 10px; flex-wrap: wrap; row-gap: 6px;
+      }
+      .paid-preview-card .ppc-title {
+        font-weight: 900; color: var(--text); font-size: 15px; line-height: 1.25; flex: 1 1 auto; min-width: 0;
+      }
+      .paid-preview-card .ppc-title span { display: block; white-space: nowrap; }
+      .paid-preview-card .ppc-price {
+        flex: 0 0 auto; margin-left: auto; border-radius: 999px; padding: 5px 10px;
+        font-size: 11.5px; font-weight: 900; white-space: nowrap;
+        background: var(--soft-purple, #F1E8FF); color: var(--purple, #7B3CFF);
+      }
+      .paid-preview-card .ppc-biz { margin-top: 8px; font-weight: 800; font-size: 13.5px; color: var(--text); }
+      .paid-preview-card .ppc-line { margin-top: 3px; font-size: 12.5px; color: var(--text-2); }
       .paid-report-banner {
         background: var(--navy); color: #fff; border-radius: 14px; padding: 16px;
         margin: 18px 0; display: flex; justify-content: space-between; gap: 12px; align-items: center;
@@ -1375,7 +1398,24 @@
           ? '<div class="report-section"><h4>AI sentiment overview</h4><p>' + escapeHtml(ai.reviewSummary) + '</p></div>'
           : '';
 
+        const previewImg = safeHttpUrl(data.imageUrl);
+        const previewCard = '' +
+          '<div class="paid-preview-card">' +
+            (previewImg
+              ? '<img class="ppc-image" src="' + escapeAttr(previewImg) + '" alt="' + escapeAttr(data.name || 'Business') + '" onerror="this.style.display=\'none\'" />'
+              : '') +
+            '<div class="ppc-body">' +
+              '<div class="ppc-title-row">' +
+                '<div class="ppc-title"><span>AI Customer Review</span><span>Sentiment Report</span></div>' +
+                '<div class="ppc-price">$23 + GST</div>' +
+              '</div>' +
+              '<div class="ppc-biz">' + escapeHtml(data.name || '') + '</div>' +
+              '<div class="ppc-line">Personalised AI reputation insights for your business</div>' +
+            '</div>' +
+          '</div>';
+
         els.reportBody.innerHTML = '' +
+          previewCard +
           '<p class="ab-body">See what customers really think, where your business is strongest, what may be costing you customers, and the actions to improve your reputation.</p>' +
           '<div class="paid-report-banner"><strong>$23 + GST one-time report</strong><span>AI-powered · Built for business owners</span></div>' +
           '<div class="report-stat-grid">' +

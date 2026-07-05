@@ -3,9 +3,11 @@ import {
   StandardFonts,
   rgb,
   type PDFFont,
+  type PDFImage,
   type PDFPage,
   type RGB,
 } from "pdf-lib";
+import { BRAND_LOGO_PNG_BASE64 } from "./brandLogo";
 import {
   PLATFORM_CHECKLIST_INTRO,
   TRUST_SCORE_EXPLANATION,
@@ -63,6 +65,44 @@ interface Layout {
 
 /** Max height a single drawn block can occupy on one page. */
 const MAX_BLOCK_H = PAGE_H - MARGIN - BOTTOM_LIMIT - 10;
+
+/** Initials for the client branding tile fallback (max 2 letters). */
+function businessInitials(name: string): string {
+  return (
+    (name || "")
+      .split(/\s+/)
+      .filter((w) => /[a-z0-9]/i.test(w))
+      .slice(0, 2)
+      .map((w) => w.charAt(0).toUpperCase())
+      .join("") || "B"
+  );
+}
+
+/**
+ * Best-effort fetch + embed of the client business logo (PNG/JPEG only,
+ * http(s) only, 5s timeout). Any failure returns null so the header falls
+ * back to a clean initials tile — never a broken or wrong image.
+ */
+async function fetchClientLogoImage(
+  doc: PDFDocument,
+  url: string,
+): Promise<PDFImage | null> {
+  if (!/^https?:\/\//i.test(url)) return null;
+  try {
+    const res = await fetch(url, { signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return null;
+    const buf = new Uint8Array(await res.arrayBuffer());
+    if (buf.length > 2 && buf[0] === 0x89 && buf[1] === 0x50) {
+      return await doc.embedPng(buf);
+    }
+    if (buf.length > 2 && buf[0] === 0xff && buf[1] === 0xd8) {
+      return await doc.embedJpg(buf);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 function sanitize(text: string): string {
   return (text || "")
@@ -1009,18 +1049,56 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   // Purple accent line at the base of the band.
   l.page.drawRectangle({ x: 0, y: PAGE_H - bandH, width: PAGE_W, height: 3, color: PURPLE });
 
-  // Brand row.
-  l.page.drawText("AI CUSTOMER REVIEW SENTIMENT REPORT", { x: MARGIN, y: PAGE_H - 34, size: 8.5, font: bold, color: LAVENDER });
+  // Brand row: our logo (report provider brand) + top label + paid pill.
+  try {
+    const brandLogo = await doc.embedPng(BRAND_LOGO_PNG_BASE64);
+    const logoH = 20;
+    const logoW = (brandLogo.width / brandLogo.height) * logoH;
+    l.page.drawImage(brandLogo, { x: MARGIN, y: PAGE_H - 42, width: logoW, height: logoH });
+    l.page.drawText("AI CUSTOMER REVIEW SENTIMENT REPORT", { x: MARGIN + logoW + 12, y: PAGE_H - 35.5, size: 8.5, font: bold, color: LAVENDER });
+  } catch {
+    l.page.drawText("AI CUSTOMER REVIEW SENTIMENT REPORT", { x: MARGIN, y: PAGE_H - 34, size: 8.5, font: bold, color: LAVENDER });
+  }
   const paidText = "PAID REPORT";
   const paidW = bold.widthOfTextAtSize(paidText, 8) + 18;
   fillRounded(l.page, PAGE_W - MARGIN - paidW, PAGE_H - 40, paidW, 17, 8.5, PURPLE);
   l.page.drawText(paidText, { x: PAGE_W - MARGIN - paidW + 9, y: PAGE_H - 35, size: 8, font: bold, color: WHITE });
 
-  // Title + business.
+  // Title + client business branding tile (logo when trusted, else initials).
   l.page.drawText("AI Customer Review Sentiment Report", { x: MARGIN, y: PAGE_H - 66, size: 23, font: bold, color: WHITE });
-  l.page.drawText(sanitize(`Prepared for ${report.businessName}`), { x: MARGIN, y: PAGE_H - 86, size: 12, font: bold, color: LAVENDER });
+  const tileSize = 32;
+  const tileY = PAGE_H - 104; // bottom of the tile
+  fillRounded(l.page, MARGIN, tileY, tileSize, tileSize, 8, WHITE);
+  const clientLogo = report.businessLogo
+    ? await fetchClientLogoImage(doc, report.businessLogo)
+    : null;
+  if (clientLogo) {
+    const pad = 4;
+    const maxSide = tileSize - pad * 2;
+    const ratio = clientLogo.width / clientLogo.height;
+    const cw = ratio >= 1 ? maxSide : maxSide * ratio;
+    const ch = ratio >= 1 ? maxSide / ratio : maxSide;
+    l.page.drawImage(clientLogo, {
+      x: MARGIN + (tileSize - cw) / 2,
+      y: tileY + (tileSize - ch) / 2,
+      width: cw,
+      height: ch,
+    });
+  } else {
+    const initials = businessInitials(report.businessName);
+    const iw = bold.widthOfTextAtSize(initials, 13);
+    l.page.drawText(initials, {
+      x: MARGIN + (tileSize - iw) / 2,
+      y: tileY + (tileSize - 13) / 2 + 1.5,
+      size: 13,
+      font: bold,
+      color: NAVY,
+    });
+  }
+  const clientTextX = MARGIN + tileSize + 11;
+  l.page.drawText(sanitize(`Prepared for ${report.businessName}`), { x: clientTextX, y: PAGE_H - 86, size: 12, font: bold, color: LAVENDER });
   if (report.businessAddress) {
-    l.page.drawText(sanitize(report.businessAddress), { x: MARGIN, y: PAGE_H - 101, size: 9, font, color: LAVENDER_DIM });
+    l.page.drawText(sanitize(report.businessAddress), { x: clientTextX, y: PAGE_H - 101, size: 9, font, color: LAVENDER_DIM });
   }
 
   // Meta chips row.

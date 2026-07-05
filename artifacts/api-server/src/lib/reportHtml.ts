@@ -7,6 +7,7 @@ import {
   type ReportMetrics,
   type DataQuality,
 } from "./reportContent";
+import { BRAND_LOGO_PNG_BASE64 } from "./brandLogo";
 
 /** HTML-escape a value for safe insertion into markup. */
 function esc(value: unknown): string {
@@ -30,6 +31,32 @@ const PRIORITY_COLORS: Record<string, string> = {
   Low: "#5F6368",
   "Not relevant": "#9CA3AF",
 };
+
+/** Initials for the client tile fallback (max 2 letters). */
+function businessInitials(name: string): string {
+  return (
+    (name || "")
+      .split(/\s+/)
+      .filter((w) => /[a-z0-9]/i.test(w))
+      .slice(0, 2)
+      .map((w) => w.charAt(0).toUpperCase())
+      .join("") || "B"
+  );
+}
+
+/**
+ * Client business branding tile: shows the trusted business logo when one is
+ * available (http(s) only), otherwise a clean initials tile. A broken logo
+ * image degrades to the initials at view time via the inline onerror handler.
+ */
+function clientTile(report: BusinessReport): string {
+  const initials = esc(businessInitials(report.businessName));
+  const logo = report.businessLogo || "";
+  if (/^https?:\/\//i.test(logo)) {
+    return `<div class="client-tile" data-in="${initials}"><img src="${esc(logo)}" alt="${esc(report.businessName)} logo" onerror="this.parentNode.textContent=this.parentNode.getAttribute('data-in')" /></div>`;
+  }
+  return `<div class="client-tile">${initials}</div>`;
+}
 
 function qualityColor(q: DataQuality): string {
   if (q === "High") return "#16A34A";
@@ -855,6 +882,12 @@ export function buildReportHtml(report: BusinessReport): string {
   .report-header .inner { max-width:940px; margin:0 auto; position:relative; }
   .brand-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px; }
   .brand-name { font-size:14px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#E8E3FA; }
+  .brand-logo { height:36px; width:auto; display:block; }
+  .client-row { display:flex; align-items:center; gap:13px; margin-bottom:20px; }
+  .client-tile { width:48px; height:48px; border-radius:12px; background:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:19px; color:#071A3D; flex:0 0 auto; overflow:hidden; box-shadow:0 6px 18px rgba(0,0,0,.28); }
+  .client-tile img { width:100%; height:100%; object-fit:contain; padding:5px; box-sizing:border-box; background:#fff; display:block; }
+  .client-meta .sub { margin-bottom:2px; }
+  .client-meta .addr { margin-bottom:0; }
   .paid-badge { background:linear-gradient(135deg,#7B3CFF,#9A5CFF); color:#fff; border-radius:999px; padding:6px 16px; font-size:12px; font-weight:800; letter-spacing:.02em; box-shadow:0 4px 14px rgba(123,60,255,.4); }
   .report-header h1 { margin:0 0 10px; font-size:38px; font-weight:900; letter-spacing:-.02em; line-height:1.12; }
   .report-header .sub { color:#E8E3FA; font-size:17px; font-weight:700; margin-bottom:4px; }
@@ -1029,12 +1062,17 @@ export function buildReportHtml(report: BusinessReport): string {
 <body>
   <header class="report-header"><div class="inner">
     <div class="brand-row">
-      <div class="brand-name">AI Customer Review Sentiment Report</div>
+      <img class="brand-logo" src="data:image/png;base64,${BRAND_LOGO_PNG_BASE64}" alt="Find Business Reviews" />
       <div class="paid-badge">Paid Report</div>
     </div>
     <h1>AI Customer Review Sentiment Report</h1>
-    <div class="sub">Prepared for ${esc(report.businessName)}</div>
-    ${report.businessAddress ? `<div class="addr">${esc(report.businessAddress)}</div>` : ""}
+    <div class="client-row">
+      ${clientTile(report)}
+      <div class="client-meta">
+        <div class="sub">Prepared for ${esc(report.businessName)}</div>
+        ${report.businessAddress ? `<div class="addr">${esc(report.businessAddress)}</div>` : ""}
+      </div>
+    </div>
     <div class="meta">${meta}</div>
   </div></header>
   <div class="wrap">

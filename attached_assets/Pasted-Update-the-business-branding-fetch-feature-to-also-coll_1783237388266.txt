@@ -1,0 +1,116 @@
+Update the business branding fetch feature to also collect social proof data from Facebook and Instagram where available.
+
+Goal:
+When generating the AI Customer Review Sentiment Report, collect public social profile data so the report can show extra business credibility signals.
+
+Add to SerpApi fetch:
+1. Facebook Profile API
+2. Instagram Profile API
+3. Google Maps / Google Business Profile data
+
+Collect these fields where available:
+
+Facebook:
+- facebookProfileUrl
+- facebookProfileImage
+- facebookCoverImage if available
+- facebookFollowersCount
+- facebookLikesCount
+- facebookRating if available
+- facebookReviewsCount if available
+- facebookRecentReviewSnippets if available
+- facebookCategory
+- facebookAboutText
+- facebookPhone
+- facebookWebsite
+- facebookAddress
+
+Instagram:
+- instagramProfileUrl
+- instagramProfileImage
+- instagramFollowersCount
+- instagramFollowingCount
+- instagramPostsCount
+- instagramBio
+- instagramWebsite
+- instagramVerifiedStatus if available
+- instagramRecentPostImages if available
+
+Google:
+- googleRating
+- googleReviewsCount
+- googleBusinessImage
+- googleBusinessPhotos
+- googleBusinessCategory
+- googleAddress
+- googlePhone
+- googleWebsite
+
+Matching rules:
+- Only use Facebook or Instagram data if the profile clearly matches the business.
+- Match using business name, suburb, address, phone number, website, and profile bio.
+- If confidence is low, do not use the social profile.
+- Never use personal profiles unless they are clearly the official business profile.
+
+Update fetchBusinessBranding return object to include:
+
+{
+  businessLogo,
+  businessImage,
+  facebookProfileUrl,
+  instagramProfileUrl,
+  facebookFollowersCount,
+  facebookLikesCount,
+  facebookRating,
+  facebookReviewsCount,
+  instagramFollowersCount,
+  instagramFollowingCount,
+  instagramPostsCount,
+  googleRating,
+  googleReviewsCount,
+  brandingSource,
+  confidenceScore
+}
+
+Update the report card:
+Show social proof where available, for example:
+
+Google: 4.9 ★ from 254 reviews
+Facebook: 1.2k followers
+Instagram: 850 followers
+
+Only show fields that exist.
+Do not show empty or zero-value fields unless they are confirmed real.
+
+Update the PDF/report:
+Add a small section called:
+
+Social Presence Snapshot
+
+Include:
+- Google rating and review count
+- Facebook followers/likes and reviews if available
+- Instagram followers and post count if available
+- Website/social links if available
+
+Keep this section short and clean.
+It should support the reputation report, not dominate it.
+
+Example layout:
+
+Social Presence Snapshot
+Google: 4.9/5 from 254 reviews
+Facebook: 1,240 followers · 38 reviews
+Instagram: 860 followers · 214 posts
+
+Fallback:
+- If no social profiles are found, hide the Social Presence Snapshot section.
+- If only Google data exists, show only Google.
+- If Facebook/Instagram match confidence is low, skip those fields.
+
+Important:
+- Cache the social profile data.
+- Store the source URL for every social profile used.
+- Add error handling so the report still generates if SerpApi fails.
+- Do not change unrelated report sections.
+- Keep the design premium, clean, and mobile friendly.
