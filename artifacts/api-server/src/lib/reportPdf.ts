@@ -973,7 +973,7 @@ function drawOfferCard(l: Layout, offer: string, why: string, exampleCopy: strin
   l.y -= h + 8;
 }
 
-/** Build the AI Business Reputation Report as a premium dashboard-style PDF. */
+/** Build the paid AI Customer Review Sentiment Report as a premium dashboard-style PDF. */
 export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -1010,14 +1010,14 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   l.page.drawRectangle({ x: 0, y: PAGE_H - bandH, width: PAGE_W, height: 3, color: PURPLE });
 
   // Brand row.
-  l.page.drawText("FIND BUSINESS REVIEWS", { x: MARGIN, y: PAGE_H - 34, size: 8.5, font: bold, color: LAVENDER });
+  l.page.drawText("AI CUSTOMER REVIEW SENTIMENT REPORT", { x: MARGIN, y: PAGE_H - 34, size: 8.5, font: bold, color: LAVENDER });
   const paidText = "PAID REPORT";
   const paidW = bold.widthOfTextAtSize(paidText, 8) + 18;
   fillRounded(l.page, PAGE_W - MARGIN - paidW, PAGE_H - 40, paidW, 17, 8.5, PURPLE);
   l.page.drawText(paidText, { x: PAGE_W - MARGIN - paidW + 9, y: PAGE_H - 35, size: 8, font: bold, color: WHITE });
 
   // Title + business.
-  l.page.drawText("AI Business Reputation Report", { x: MARGIN, y: PAGE_H - 66, size: 23, font: bold, color: WHITE });
+  l.page.drawText("AI Customer Review Sentiment Report", { x: MARGIN, y: PAGE_H - 66, size: 23, font: bold, color: WHITE });
   l.page.drawText(sanitize(`Prepared for ${report.businessName}`), { x: MARGIN, y: PAGE_H - 86, size: 12, font: bold, color: LAVENDER });
   if (report.businessAddress) {
     l.page.drawText(sanitize(report.businessAddress), { x: MARGIN, y: PAGE_H - 101, size: 9, font, color: LAVENDER_DIM });
@@ -1297,7 +1297,7 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   pages.forEach((pg, i) => {
     pg.drawRectangle({ x: 0, y: 0, width: PAGE_W, height: FOOTER_H, color: DEEP_NAVY });
     pg.drawRectangle({ x: 0, y: FOOTER_H, width: PAGE_W, height: 1.5, color: PURPLE });
-    pg.drawText("Find Business Reviews - AI Business Reputation Report", {
+    pg.drawText("Find Business Reviews - AI Customer Review Sentiment Report", {
       x: MARGIN,
       y: 11,
       size: 7.5,

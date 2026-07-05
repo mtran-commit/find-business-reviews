@@ -841,7 +841,7 @@ export function buildReportHtml(report: BusinessReport): string {
 <html lang="en"><head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>AI Business Reputation Report — ${esc(report.businessName)}</title>
+<title>AI Customer Review Sentiment Report — ${esc(report.businessName)}</title>
 <style>
   * { box-sizing: border-box; }
   @page { size: A4; margin: 14mm 12mm; }
@@ -1029,10 +1029,10 @@ export function buildReportHtml(report: BusinessReport): string {
 <body>
   <header class="report-header"><div class="inner">
     <div class="brand-row">
-      <div class="brand-name">Find Business Reviews</div>
+      <div class="brand-name">AI Customer Review Sentiment Report</div>
       <div class="paid-badge">Paid Report</div>
     </div>
-    <h1>AI Business Reputation Report</h1>
+    <h1>AI Customer Review Sentiment Report</h1>
     <div class="sub">Prepared for ${esc(report.businessName)}</div>
     ${report.businessAddress ? `<div class="addr">${esc(report.businessAddress)}</div>` : ""}
     <div class="meta">${meta}</div>
@@ -1059,7 +1059,7 @@ export function buildReportHtml(report: BusinessReport): string {
     <div class="disclaimer">${esc(report.disclaimer)}</div>
   </div>
   <footer class="report-footer">
-    <div class="fb">Find Business Reviews — AI Business Reputation Report</div>
+    <div class="fb">Find Business Reviews — AI Customer Review Sentiment Report</div>
     <div>Prepared exclusively for ${esc(report.businessName)}. Independent. Unbiased. Built for smarter decisions.</div>
   </footer>
 </body></html>`;

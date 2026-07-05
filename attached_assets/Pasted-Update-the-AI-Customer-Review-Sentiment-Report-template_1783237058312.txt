@@ -1,0 +1,79 @@
+Update the AI Customer Review Sentiment Report template and the report card so each report feels personalised to the business receiving it.
+
+1. Personalised business branding inside the report
+Add the logo of the business we are creating the report for.
+
+Requirements:
+- Show the client business logo on page 1 of the PDF/report.
+- Place it near the top section, close to the business name and report title.
+- Keep it smaller than our own logo, but clearly visible.
+- Do not stretch or distort the logo.
+- Use a transparent background if available.
+- Keep the layout clean and premium.
+
+Brand structure on page 1:
+- Our company logo = report provider brand
+- Client business logo = business being analysed
+- Report title = AI Customer Review Sentiment Report
+- Prepared for = business name and address
+
+2. Add the business image on the card
+Add a business photo/image to the report card / preview card.
+
+Requirements:
+- Show a relevant image for the business on the card.
+- This can be the storefront, office, team photo, listing image, hero image, or main business image.
+- Place the image neatly inside the card without breaking the layout.
+- Use rounded corners to match the card style.
+- Keep the image professional and visually appealing.
+- Make sure the title, price badge, and buttons still fit cleanly.
+
+3. Card layout
+Update the card so it includes:
+- Business image
+- Report title:
+  AI Customer Review
+  Sentiment Report
+- Price badge:
+  $23 + GST
+- Business name
+- Optional short line such as:
+  Personalised AI reputation insights for your business
+- CTA button:
+  Get My Report — $23 + GST
+
+4. Dynamic/personalised data
+The report generator should support dynamic fields for each business:
+- businessName
+- businessAddress
+- businessLogo
+- businessImage
+- reportDate
+- trustScore
+- averageRating
+- reviewCount
+- platforms
+
+If businessLogo or businessImage is missing:
+- Keep the layout clean
+- Hide the empty image area or show a neat placeholder
+- Do not break the design
+
+5. Report header improvements
+On page 1 include:
+- Our logo in the main header
+- Client business logo in the top summary section
+- Business name and address
+- AI Customer Review Sentiment Report title
+
+6. Design rules
+- Keep the current premium design style
+- Maintain the same colours, border radius, shadows, typography, and spacing
+- Make sure the PDF export still looks polished
+- Make sure the card looks good on mobile and desktop
+- Prevent any overlap between image, title, and price badge
+
+7. Do not change
+- Do not change the overall report content structure
+- Do not change unrelated pages or features
+- Only improve personalisation and presentation by adding the client business logo and business image

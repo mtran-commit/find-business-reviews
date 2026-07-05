@@ -675,7 +675,7 @@ export function computeAnalytics(m: ReportMetrics): ReportAnalytics {
 }
 
 const SYSTEM_PROMPT =
-  "You are generating a paid AI Business Reputation Report for a business owner. " +
+  "You are generating a paid AI Customer Review Sentiment Report for a business owner. " +
   "You are analysing customer reviews for that owner: your job is to explain " +
   "what clients actually think, using the review text, Google review tags/topic " +
   "chips (with mention counts), repeated customer words and phrases, ratings, " +

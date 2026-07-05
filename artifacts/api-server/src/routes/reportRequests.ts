@@ -72,7 +72,7 @@ function requireAdmin(req: Request, res: Response): boolean {
 }
 
 /**
- * Save a Business Reputation Report request before sending the customer to
+ * Save a paid AI Customer Review Sentiment Report request before sending the customer to
  * Stripe. Stored as `pending_payment`. No card data is ever collected here —
  * payment is handled entirely by the hosted Stripe Payment Link.
  */
@@ -250,7 +250,7 @@ router.post(
 );
 
 /**
- * Admin only: generate the full paid AI Business Reputation Report. Requires the
+ * Admin only: generate the full paid AI Customer Review Sentiment Report. Requires the
  * request to be paid first. Re-fetches current review data, calls OpenAI for the
  * qualitative sections, persists the structured report JSON, and flips the report
  * status to `generated`. On any failure the status is set to `failed` so the

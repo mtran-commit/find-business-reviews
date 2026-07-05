@@ -510,16 +510,22 @@
         min-width: 0;
       }
       .report-action-stack .rl-line { display: block; white-space: nowrap; }
-      .report-action-stack .free-report-button .report-label { font-size: 12px; }
+      .report-action-stack .free-report-button .report-label,
+      .report-action-stack .business-report-button .report-label { font-size: 12px; }
+      .report-action-stack .business-report-button { flex-wrap: wrap; row-gap: 6px; }
+      .report-action-stack .business-report-button .pill.paid { margin-left: auto; }
       .report-action-stack .pill {
         flex: 0 0 auto; border-radius: 999px; padding: 5px 9px;
         font-size: 11px; font-weight: 900; line-height: 1; white-space: nowrap;
       }
       .report-action-stack .pill.free { background: #EEF3FF; color: var(--navy); }
-      .report-action-stack .pill.paid { background: #fff; color: var(--navy); }
+      .report-action-stack .pill.paid {
+        background: #fff; color: var(--navy); font-size: 10px; padding: 5px 7px;
+      }
       @media (max-width: 700px) {
         .report-action-stack .report-label { font-size: 14px; }
-        .report-action-stack .free-report-button .report-label { font-size: 13px; }
+        .report-action-stack .free-report-button .report-label,
+        .report-action-stack .business-report-button .report-label { font-size: 13px; }
         .report-action-stack button { min-height: 50px; }
       }
 
@@ -1197,7 +1203,7 @@
               '<div class="report-action-stack">' +
                 '<button class="report-button" data-act="report">VIEW REPORT ' + ICO.arrow + '</button>' +
                 '<button class="free-report-button" data-act="sentiment"><span class="report-label"><span class="rl-line">AI Customer Review</span><span class="rl-line">Sentiment Report</span></span><span class="pill free">FREE</span></button>' +
-                '<button class="business-report-button" data-act="business-report"><span class="report-label">Business Reputation Report</span><span class="pill paid">$10</span></button>' +
+                '<button class="business-report-button" data-act="business-report"><span class="report-label"><span class="rl-line">AI Customer Review</span><span class="rl-line">Sentiment Report</span></span><span class="pill paid">$23 + GST</span></button>' +
               '</div>' +
             '</div>' +
           '</div>' +
@@ -1247,7 +1253,7 @@
 
       function reportLoadingHtml(type) {
         const message = type === 'business'
-          ? 'Our AI is preparing your Business Reputation Report using the available Google, Yelp and TripAdvisor review data. This may take a few seconds.'
+          ? 'Our AI is preparing your AI Customer Review Sentiment Report using the available Google, Yelp and TripAdvisor review data. This may take a few seconds.'
           : 'Our AI is analysing the available Google, Yelp and TripAdvisor review data. This may take a few seconds.';
         return '' +
           '<div class="report-loading">' +
@@ -1334,8 +1340,8 @@
       // ---- Business-owner report (paid preview, reuses the report modal) ----
       async function openBusinessReport(data, m) {
         const token = ++reportToken;
-        els.reportTitle.textContent = 'AI Business Reputation Report — ' + data.name;
-        els.reportSub.textContent = 'For business owners · $10 one-time report';
+        els.reportTitle.textContent = 'AI Customer Review Sentiment Report — ' + data.name;
+        els.reportSub.textContent = 'For business owners · $23 + GST one-time report';
         els.reportBody.innerHTML = reportLoadingHtml('business');
         els.modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
@@ -1370,8 +1376,8 @@
           : '';
 
         els.reportBody.innerHTML = '' +
-          '<p class="ab-body">See how customers view your business online and what actions can improve trust, visibility and bookings.</p>' +
-          '<div class="paid-report-banner"><strong>$10 one-time report</strong><span>Built for business owners</span></div>' +
+          '<p class="ab-body">See what customers really think, where your business is strongest, what may be costing you customers, and the actions to improve your reputation.</p>' +
+          '<div class="paid-report-banner"><strong>$23 + GST one-time report</strong><span>AI-powered · Built for business owners</span></div>' +
           '<div class="report-stat-grid">' +
             '<div><strong>' + m.score + '/100</strong><span>Trust Score</span></div>' +
             '<div><strong>' + m.avg.toFixed(1) + '/5</strong><span>Average rating</span></div>' +
@@ -1386,7 +1392,7 @@
             locked.map(function (s) { return '<li>' + escapeHtml(s) + '</li>'; }).join('') +
           '</ul></div>' +
           '<p class="pre-payment-note">After payment, your report will be sent to the email address you provide on the next step.</p>' +
-          '<button class="unlock-report-button" data-act="unlock">Unlock full report — $10</button>';
+          '<button class="unlock-report-button" data-act="unlock">Get My Report — $23 + GST</button>';
 
         const unlockBtn = els.reportBody.querySelector('[data-act="unlock"]');
         if (unlockBtn) unlockBtn.addEventListener('click', function () { openReportRequestForm(); });
@@ -1395,10 +1401,10 @@
       // ---- Report request form (collects details, saves, then opens Stripe) ----
       function openReportRequestForm() {
         const d = currentData || {};
-        els.reportTitle.textContent = 'Business Reputation Report Request';
+        els.reportTitle.textContent = 'AI Customer Review Sentiment Report — Request';
         els.reportSub.textContent = 'Step 2 of 2 · Your details';
         els.reportBody.innerHTML = '' +
-          '<p class="ab-body">Enter your details so we can prepare and send your AI Business Reputation Report after payment.</p>' +
+          '<p class="ab-body">Enter your details so we can prepare and send your AI Customer Review Sentiment Report after payment.</p>' +
           '<form id="reportRequestForm" class="report-request-form" novalidate>' +
             '<label>Full name<input name="fullName" required placeholder="Your full name" /></label>' +
             '<label>Email address<input name="email" type="email" required placeholder="you@example.com" /></label>' +
@@ -1470,7 +1476,7 @@
           els.reportBody.innerHTML = '' +
             '<p class="ab-body">Your request has been saved. ' +
               (opened
-                ? 'A secure Stripe payment page has opened in a new tab — complete your $10 payment there.'
+                ? 'A secure Stripe payment page has opened in a new tab — complete your $23 + GST payment there.'
                 : 'Click the button below to open the secure Stripe payment page.') +
             '</p>' +
             '<p class="pre-payment-note">After payment, your report will be sent to <strong>' + escapeHtml(payload.email) + '</strong>.</p>' +
@@ -1483,9 +1489,9 @@
         }
       }
 
-      // Business Reputation Report ($10) is paid via a hosted Stripe Payment
-      // Link opened in a new tab — Stripe handles the card securely, we never
-      // collect card details. The free AI Review Sentiment report is unaffected.
+      // The paid AI Customer Review Sentiment Report ($23 + GST) is paid via a
+      // hosted Stripe Payment Link opened in a new tab — Stripe handles the card
+      // securely, we never collect card details. The free report is unaffected.
       var BUSINESS_REPORT_PAYMENT_LINK = 'https://buy.stripe.com/5kQ14oa2yfUh9JR1Tt2cg00';
 
       // Opens the hosted Stripe payment page. Only ever called AFTER the report
@@ -1713,7 +1719,7 @@
         adminRoot.innerHTML = '' +
           '<div class="admin-gate">' +
             '<h1>Admin access</h1>' +
-            '<p>Enter the admin token to view Business Reputation Report requests.</p>' +
+            '<p>Enter the admin token to view AI Customer Review Sentiment Report requests.</p>' +
             '<label for="adminTokenInput">Admin token</label>' +
             '<input id="adminTokenInput" type="password" autocomplete="off" placeholder="Enter admin token" />' +
             (denied ? '<div class="admin-denied">Access denied.</div>' : '') +
@@ -1777,7 +1783,7 @@
       function adminHeaderHtml() {
         return '' +
           '<div class="admin-topbar">' +
-            '<h1 class="admin-title">Report requests<span>Business Reputation Report — admin</span></h1>' +
+            '<h1 class="admin-title">Report requests<span>AI Customer Review Sentiment Report — admin</span></h1>' +
             '<div class="admin-actions">' +
               '<button class="admin-btn" id="adminRefreshBtn">Refresh</button>' +
               '<button class="admin-btn" id="adminLogoutBtn">Log out</button>' +
