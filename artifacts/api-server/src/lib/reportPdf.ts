@@ -7,7 +7,8 @@ import {
   type PDFPage,
   type RGB,
 } from "pdf-lib";
-import { BRAND_LOGO_PNG_BASE64 } from "./brandLogo";
+import { BRAND_LOGO_MONO_PNG_BASE64 } from "./brandLogoMono";
+import { ICON_PATHS, SECTION_ICON_NAMES } from "./reportIcons";
 import {
   PLATFORM_CHECKLIST_INTRO,
   TRUST_SCORE_EXPLANATION,
@@ -24,35 +25,76 @@ const CONTENT_W = PAGE_W - MARGIN * 2;
 const FOOTER_H = 30;
 const BOTTOM_LIMIT = FOOTER_H + 26; // content must stay above this
 
-const NAVY = rgb(0x07 / 255, 0x1a / 255, 0x3d / 255);
-const DEEP_NAVY = rgb(0x03 / 255, 0x12 / 255, 0x2e / 255);
-const PURPLE = rgb(0x7b / 255, 0x3c / 255, 0xff / 255);
-const PURPLE_LIGHT = rgb(0x9a / 255, 0x5c / 255, 0xff / 255);
-const LIGHT_PURPLE = rgb(0xf1 / 255, 0xe8 / 255, 0xff / 255);
-const LAVENDER = rgb(0.91, 0.89, 0.98);
-const LAVENDER_DIM = rgb(0.66, 0.62, 0.83);
+/* Monochrome report palette — black / white / grey only.
+   Legacy names are kept so call sites stay unchanged:
+   NAVY/PURPLE map to near-black accents, LIGHT_PURPLE/LAVENDER to greys. */
+const NAVY = rgb(0.067, 0.067, 0.067); // #111111 headings / dark cards
+const DEEP_NAVY = rgb(0.04, 0.04, 0.04); // footer band
+const PURPLE = rgb(0.067, 0.067, 0.067); // primary accent -> black
+const PURPLE_LIGHT = rgb(0.61, 0.64, 0.69); // light labels on dark cards
+const LIGHT_PURPLE = rgb(0.953, 0.957, 0.965); // light grey fills (#F3F4F6)
+const LAVENDER = rgb(0.9, 0.9, 0.92); // light text on dark bands
+const LAVENDER_DIM = rgb(0.65, 0.65, 0.68); // muted light text / light bars
 const BLACK = rgb(0.05, 0.05, 0.05);
 const GREY = rgb(0.37, 0.39, 0.41);
 const WHITE = rgb(1, 1, 1);
-const GREEN = rgb(0x16 / 255, 0xa3 / 255, 0x4a / 255);
-const ORANGE = rgb(0xf9 / 255, 0x73 / 255, 0x16 / 255);
-const RED = rgb(0xdc / 255, 0x26 / 255, 0x26 / 255);
+const GREEN = rgb(0.12, 0.16, 0.22); // "positive" -> darkest grey (#1F2937)
+const ORANGE = rgb(0.42, 0.45, 0.5); // "warning" -> mid grey (#6B7280)
+const RED = rgb(0.29, 0.33, 0.39); // "negative" -> charcoal (#4B5563)
 const CARD_BORDER = rgb(0.9, 0.9, 0.9);
-const CARD_FILL = rgb(0.985, 0.982, 0.975);
-const ZEBRA = rgb(0.975, 0.97, 0.99);
+const CARD_FILL = rgb(0.985, 0.985, 0.985);
+const ZEBRA = rgb(0.97, 0.97, 0.97);
+
+/* Monochrome pill backgrounds: High = black, Medium = dark grey, Low = light grey. */
+const PILL_HIGH = rgb(0.067, 0.067, 0.067);
+const PILL_MED = rgb(0.29, 0.33, 0.39);
+const PILL_LOW = rgb(0.898, 0.906, 0.922); // #E5E7EB
 
 function riskColor(level: string): RGB {
-  if (level === "High") return RED;
-  if (level === "Medium") return ORANGE;
-  return GREEN;
+  if (level === "High") return PILL_HIGH;
+  if (level === "Medium") return PILL_MED;
+  return PILL_LOW;
 }
 
 const PRIORITY_COLORS: Record<string, RGB> = {
-  High: PURPLE,
-  Medium: ORANGE,
-  Low: GREY,
-  "Not relevant": rgb(0.61, 0.64, 0.69),
+  High: PILL_HIGH,
+  Medium: PILL_MED,
+  Low: PILL_LOW,
+  "Not relevant": rgb(0.953, 0.957, 0.965),
 };
+
+/** Black text on light pills, white text on dark pills. */
+function pillFg(bg: RGB): RGB {
+  const lum = 0.299 * bg.red + 0.587 * bg.green + 0.114 * bg.blue;
+  return lum > 0.55 ? BLACK : WHITE;
+}
+
+/**
+ * Stroke a monochrome icon from the shared ICON_PATHS set.
+ * `yTop` is the top edge of the icon (pdf-lib draws SVG paths top-down).
+ */
+function drawIconGlyph(
+  page: PDFPage,
+  name: string,
+  x: number,
+  yTop: number,
+  size: number,
+  color: RGB,
+): void {
+  const paths = ICON_PATHS[name] || ICON_PATHS["doc"];
+  if (!paths) return;
+  const scale = size / 24;
+  for (const d of paths) {
+    page.drawSvgPath(d, {
+      x,
+      y: yTop,
+      scale,
+      borderColor: color,
+      borderWidth: 1.3,
+      borderLineCap: 1,
+    });
+  }
+}
 
 interface Layout {
   doc: PDFDocument;
@@ -240,8 +282,10 @@ function drawSectionHeading(l: Layout, title: string): void {
     font: l.bold,
     color: WHITE,
   });
+  const iconName = SECTION_ICON_NAMES[l.sectionNo] || "doc";
+  drawIconGlyph(l.page, iconName, MARGIN + chip + 9, l.y - 3, 13, GREY);
   l.page.drawText(sanitize(title), {
-    x: MARGIN + chip + 10,
+    x: MARGIN + chip + 9 + 13 + 7,
     y: l.y - 14,
     size: 14,
     font: l.bold,
@@ -267,24 +311,28 @@ function trustLabel(score: number | null): string {
 function drawKpiCards(l: Layout, m: ReportMetrics, s: AiSections): void {
   const cards = [
     {
+      icon: "gauge",
       label: "TRUST SCORE",
       value: m.trustScore !== null ? String(m.trustScore) : "-",
       denom: m.trustScore !== null ? "/100" : "",
       sub: trustLabel(m.trustScore),
     },
     {
+      icon: "star",
       label: "AVERAGE RATING",
       value: m.averageRating !== null ? String(m.averageRating) : "-",
       denom: m.averageRating !== null ? "/5" : "",
       sub: m.averageRating !== null ? "Available platforms" : "No rating data",
     },
     {
+      icon: "reviews",
       label: "REVIEWS ANALYSED",
       value: m.totalReviews.toLocaleString("en-AU"),
       denom: "",
       sub: `${m.platformCount} platform${m.platformCount === 1 ? "" : "s"} with data`,
     },
     {
+      icon: "users",
       label: "SENTIMENT",
       value: sanitize(s.customerSentimentLabel || "-"),
       denom: "",
@@ -299,8 +347,9 @@ function drawKpiCards(l: Layout, m: ReportMetrics, s: AiSections): void {
   cards.forEach((c, i) => {
     const x = MARGIN + i * (cardW + gap);
     roundedCard(l.page, x, top - cardH, cardW, cardH, 9, WHITE, CARD_BORDER);
-    // Purple accent bar across the card top.
+    // Black accent bar across the card top + monochrome icon in the corner.
     fillRounded(l.page, x + 10, top - 7, 26, 3, 1.5, PURPLE);
+    drawIconGlyph(l.page, c.icon, x + cardW - 24, top - 12, 13, rgb(0.61, 0.64, 0.69));
     l.page.drawText(c.label, { x: x + 10, y: top - 21, size: 6.5, font: l.bold, color: GREY });
     let vSize = 20;
     if (l.bold.widthOfTextAtSize(c.value, vSize) > cardW - 20 - (c.denom ? 20 : 0)) vSize = 11;
@@ -329,7 +378,7 @@ function drawSocialSnapshot(l: Layout, report: BusinessReport): void {
   );
   if (g) {
     rows.push({
-      color: rgb(0.26, 0.52, 0.96),
+      color: rgb(0.067, 0.067, 0.067),
       mark: "G",
       name: "Google",
       detail: `${g.rating} from ${g.reviews} reviews`,
@@ -344,7 +393,7 @@ function drawSocialSnapshot(l: Layout, report: BusinessReport): void {
     if (fb.rating !== null) parts.push(`${fb.rating}/5`);
     if (fb.reviews !== null) parts.push(`${fb.reviews.toLocaleString("en-AU")} reviews`);
     rows.push({
-      color: rgb(0.09, 0.47, 0.95),
+      color: rgb(0.067, 0.067, 0.067),
       mark: "f",
       name: "Facebook",
       detail: parts.join(" · ") || "Public business page",
@@ -358,7 +407,7 @@ function drawSocialSnapshot(l: Layout, report: BusinessReport): void {
     if (ig.posts !== null) parts.push(`${ig.posts.toLocaleString("en-AU")} posts`);
     if (ig.verified) parts.push("Verified");
     rows.push({
-      color: rgb(0.88, 0.19, 0.42),
+      color: rgb(0.067, 0.067, 0.067),
       mark: "I",
       name: "Instagram",
       detail: parts.join(" · ") || "Public business profile",
@@ -451,7 +500,7 @@ function drawTable(l: Layout, cols: Col[], rows: string[][], opts: TableOpts = {
       if (opts.badgeCol === i) {
         const val = sanitize(row[i] ?? "");
         const bg = (opts.badgeColors && opts.badgeColors[val]) || GREY;
-        pill(l.page, x + padX, l.y - 6 - 12, val || "-", l.bold, 7, bg, WHITE);
+        pill(l.page, x + padX, l.y - 6 - 12, val || "-", l.bold, 7, bg, pillFg(bg));
       } else {
         lines.forEach((line, li) => {
           l.page.drawText(line, {
@@ -485,7 +534,8 @@ function drawCallout(l: Layout, kicker: string, text: string): void {
   }
   ensureSpace(l, h + 6);
   fillRounded(l.page, MARGIN, l.y - h, CONTENT_W, h, 9, LIGHT_PURPLE);
-  l.page.drawText(sanitize(kicker).toUpperCase(), { x: MARGIN + 14, y: l.y - 16, size: 7.5, font: l.bold, color: PURPLE });
+  drawIconGlyph(l.page, "chat", MARGIN + 14, l.y - 9, 10, GREY);
+  l.page.drawText(sanitize(kicker).toUpperCase(), { x: MARGIN + 28, y: l.y - 16, size: 7.5, font: l.bold, color: PURPLE });
   lines.forEach((line, i) => {
     l.page.drawText(line, { x: MARGIN + 14, y: l.y - 30 - i * (size * 1.45), size, font: l.font, color: NAVY });
   });
@@ -519,7 +569,7 @@ function drawContentCard(l: Layout, blocks: CardBlock[], accent?: RGB, badge?: {
     // Too tall for a single card — fall back to flowing paragraphs.
     if (badge) {
       ensureSpace(l, 20);
-      pill(l.page, MARGIN, l.y - 13, badge.text, l.bold, 7.5, badge.color, WHITE);
+      pill(l.page, MARGIN, l.y - 13, badge.text, l.bold, 7.5, badge.color, pillFg(badge.color));
       l.y -= 20;
     }
     for (const b of measured) {
@@ -534,7 +584,7 @@ function drawContentCard(l: Layout, blocks: CardBlock[], accent?: RGB, badge?: {
   const tx = MARGIN + padX + (accent ? 4 : 0);
   let cy = l.y - padY;
   if (badge) {
-    pill(l.page, tx, cy - 13, badge.text, l.bold, 7.5, badge.color, WHITE);
+    pill(l.page, tx, cy - 13, badge.text, l.bold, 7.5, badge.color, pillFg(badge.color));
     cy -= badgeH;
   }
   for (const b of measured) {
@@ -550,9 +600,9 @@ function drawContentCard(l: Layout, blocks: CardBlock[], accent?: RGB, badge?: {
 function drawSentimentBars(l: Layout, s: AiSections): void {
   const se = s.sentiment;
   const rows: Array<[string, number, RGB]> = [
-    ["Positive", se.positive, GREEN],
-    ["Neutral", se.neutral, ORANGE],
-    ["Negative", se.negative, RED],
+    ["Positive", se.positive, rgb(0.067, 0.094, 0.153)],
+    ["Neutral", se.neutral, rgb(0.61, 0.64, 0.69)],
+    ["Negative", se.negative, rgb(0.29, 0.33, 0.39)],
   ];
   const labelW = 58;
   const pctW = 34;
@@ -628,9 +678,9 @@ function drawMetricBar(
 }
 
 const TREND_COLORS: Record<string, RGB> = {
-  Improving: GREEN,
-  Stable: PURPLE,
-  Declining: RED,
+  Improving: PILL_HIGH,
+  Stable: PILL_MED,
+  Declining: PILL_MED,
 };
 
 /** Section 1: Reputation Analytics — 8 dashboard widgets (deterministic + AI-estimated). */
@@ -655,7 +705,7 @@ function drawAnalytics(l: Layout, report: BusinessReport): void {
   const dir = noHistory ? "Not enough historical data" : dirRaw;
   const trendColor = TREND_COLORS[dir] || GREY;
   ensureSpace(l, 22);
-  pill(l.page, MARGIN, l.y - 15, dir, l.bold, 9, trendColor, WHITE);
+  pill(l.page, MARGIN, l.y - 15, dir, l.bold, 9, trendColor, pillFg(trendColor));
   l.y -= 24;
   if (noHistory) {
     drawParagraph(l, "Trend tracking will begin from this report.", { size: 9.5, gap: 8 });
@@ -752,7 +802,7 @@ function drawAnalytics(l: Layout, report: BusinessReport): void {
         { header: "Note", width: CONTENT_W - 150 - 70 },
       ],
       freq.map((c) => [c.issue, c.frequency || "-", c.note || "-"]),
-      { badgeCol: 1, badgeColors: { High: RED, Medium: ORANGE, Low: GREEN } },
+      { badgeCol: 1, badgeColors: { High: PILL_HIGH, Medium: PILL_MED, Low: PILL_LOW } },
     );
   } else {
     drawParagraph(l, "No repeated complaint themes were identified in the available review samples.", { size: 9.5, color: GREY, gap: 8 });
@@ -784,7 +834,8 @@ function drawAnalytics(l: Layout, report: BusinessReport): void {
   if (lcr.level || lcr.factors.length) {
     if (lcr.level) {
       ensureSpace(l, 22);
-      pill(l.page, MARGIN, l.y - 15, `${lcr.level} risk`, l.bold, 9, riskColor(lcr.level), WHITE);
+      const lcrBg = riskColor(lcr.level);
+      pill(l.page, MARGIN, l.y - 15, `${lcr.level} risk`, l.bold, 9, lcrBg, pillFg(lcrBg));
       l.y -= 24;
     }
     for (const f of lcr.factors) {
@@ -803,9 +854,9 @@ function drawAnalytics(l: Layout, report: BusinessReport): void {
     go.level ||
     (go.score !== null ? (go.score >= 70 ? "High" : go.score >= 40 ? "Medium" : "Low") : "");
   if (goLevel) {
-    const goColor = goLevel === "High" ? GREEN : goLevel === "Medium" ? ORANGE : GREY;
+    const goColor = goLevel === "High" ? PILL_HIGH : goLevel === "Medium" ? PILL_MED : PILL_LOW;
     ensureSpace(l, 22);
-    pill(l.page, MARGIN, l.y - 15, `${goLevel} opportunity`, l.bold, 9, goColor, WHITE);
+    pill(l.page, MARGIN, l.y - 15, `${goLevel} opportunity`, l.bold, 9, goColor, pillFg(goColor));
     l.y -= 24;
     if (go.score !== null) drawMetricBar(l, "Opportunity", go.score / 100, `${Math.round(go.score)}%`, PURPLE);
     if (go.focusAreas.length) drawChipsRow(l, "Fastest improvement areas", go.focusAreas, PURPLE);
@@ -932,8 +983,7 @@ function drawCustomerVoice(l: Layout, s: AiSections): void {
   if (prios.length) {
     drawSubHeading(l, "Improvement Priorities");
     prios.forEach((p, i) => {
-      const pc =
-        p.level === "High" ? RED : p.level === "Medium" ? ORANGE : p.level === "Low" ? GREEN : PURPLE;
+      const pc = p.level ? riskColor(p.level) : PILL_MED;
       drawContentCard(
         l,
         [
@@ -1087,7 +1137,7 @@ function drawOfferCard(l: Layout, offer: string, why: string, exampleCopy: strin
   ensureSpace(l, h + 6);
   fillRounded(l.page, MARGIN, l.y - h, CONTENT_W, h, 11, PURPLE);
   // Lighter sheen strip at the top for a gradient feel.
-  fillRounded(l.page, MARGIN, l.y - h / 2, CONTENT_W, h / 2, 11, PURPLE_LIGHT, 0.35);
+  fillRounded(l.page, MARGIN, l.y - h / 2, CONTENT_W, h / 2, 11, WHITE, 0.08);
   let cy = l.y - 16;
   l.page.drawText("RECOMMENDED OFFER", { x: MARGIN + padX, y: cy - 7, size: 7, font: l.bold, color: LAVENDER });
   cy -= 19;
@@ -1130,8 +1180,8 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   // ---- Premium header band (vertical gradient deep navy -> lighter navy) ----
   const bandH = 158;
   const steps = 32;
-  const c0 = { r: 0x03 / 255, g: 0x12 / 255, b: 0x2e / 255 };
-  const c1 = { r: 0x12 / 255, g: 0x23 / 255, b: 0x5c / 255 };
+  const c0 = { r: 0.04, g: 0.04, b: 0.04 };
+  const c1 = { r: 0.13, g: 0.13, b: 0.13 };
   for (let i = 0; i < steps; i++) {
     const t = i / (steps - 1);
     const stripW = PAGE_W / steps + 1;
@@ -1144,11 +1194,11 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
     });
   }
   // Purple accent line at the base of the band.
-  l.page.drawRectangle({ x: 0, y: PAGE_H - bandH, width: PAGE_W, height: 3, color: PURPLE });
+  l.page.drawRectangle({ x: 0, y: PAGE_H - bandH, width: PAGE_W, height: 3, color: rgb(0.85, 0.85, 0.85) });
 
   // Brand row: our logo (report provider brand) + top label + paid pill.
   try {
-    const brandLogo = await doc.embedPng(BRAND_LOGO_PNG_BASE64);
+    const brandLogo = await doc.embedPng(BRAND_LOGO_MONO_PNG_BASE64);
     const logoH = 20;
     const logoW = (brandLogo.width / brandLogo.height) * logoH;
     l.page.drawImage(brandLogo, { x: MARGIN, y: PAGE_H - 42, width: logoW, height: logoH });
@@ -1158,8 +1208,8 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   }
   const paidText = "PAID REPORT";
   const paidW = bold.widthOfTextAtSize(paidText, 8) + 18;
-  fillRounded(l.page, PAGE_W - MARGIN - paidW, PAGE_H - 40, paidW, 17, 8.5, PURPLE);
-  l.page.drawText(paidText, { x: PAGE_W - MARGIN - paidW + 9, y: PAGE_H - 35, size: 8, font: bold, color: WHITE });
+  fillRounded(l.page, PAGE_W - MARGIN - paidW, PAGE_H - 40, paidW, 17, 8.5, WHITE);
+  l.page.drawText(paidText, { x: PAGE_W - MARGIN - paidW + 9, y: PAGE_H - 35, size: 8, font: bold, color: BLACK });
 
   // Title + client business branding tile (logo when trusted, else initials).
   l.page.drawText("AI Customer Review Sentiment Report", { x: MARGIN, y: PAGE_H - 66, size: 23, font: bold, color: WHITE });
@@ -1217,7 +1267,7 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   if (dateStr) metaChip(`Generated ${dateStr}`);
   metaChip(
     `Data quality: ${m.dataQuality}`,
-    m.dataQuality === "High" ? GREEN : m.dataQuality === "Medium" ? ORANGE : RED,
+    m.dataQuality === "High" ? WHITE : m.dataQuality === "Medium" ? rgb(0.61, 0.64, 0.69) : rgb(0.42, 0.45, 0.5),
   );
   metaChip("Platforms: Google, Yelp, TripAdvisor");
 
@@ -1472,7 +1522,7 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   const pages = doc.getPages();
   pages.forEach((pg, i) => {
     pg.drawRectangle({ x: 0, y: 0, width: PAGE_W, height: FOOTER_H, color: DEEP_NAVY });
-    pg.drawRectangle({ x: 0, y: FOOTER_H, width: PAGE_W, height: 1.5, color: PURPLE });
+    pg.drawRectangle({ x: 0, y: FOOTER_H, width: PAGE_W, height: 1.5, color: rgb(0.85, 0.85, 0.85) });
     pg.drawText("Find Business Reviews - AI Customer Review Sentiment Report", {
       x: MARGIN,
       y: 11,

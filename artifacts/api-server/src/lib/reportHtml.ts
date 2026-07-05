@@ -7,7 +7,8 @@ import {
   type ReportMetrics,
   type DataQuality,
 } from "./reportContent";
-import { BRAND_LOGO_PNG_BASE64 } from "./brandLogo";
+import { BRAND_LOGO_MONO_PNG_BASE64 } from "./brandLogoMono";
+import { ICON_PATHS, SECTION_ICON_NAMES } from "./reportIcons";
 
 /** HTML-escape a value for safe insertion into markup. */
 function esc(value: unknown): string {
@@ -19,18 +20,26 @@ function esc(value: unknown): string {
     .replace(/'/g, "&#39;");
 }
 
+/* Monochrome accent colours for card border accents (High → darkest). */
 const RISK_COLORS: Record<string, string> = {
-  Low: "#16A34A",
-  Medium: "#F97316",
-  High: "#DC2626",
+  High: "#111111",
+  Medium: "#6B7280",
+  Low: "#D1D5DB",
 };
 
-const PRIORITY_COLORS: Record<string, string> = {
-  High: "#7B3CFF",
-  Medium: "#F97316",
-  Low: "#5F6368",
-  "Not relevant": "#9CA3AF",
+/* Monochrome pill styles: High = black/white, Medium = dark grey/white,
+   Low = light grey/black, Not relevant = lightest grey/muted. */
+const MONO_PILLS: Record<string, string> = {
+  High: "background:#111111;color:#FFFFFF",
+  Medium: "background:#4B5563;color:#FFFFFF",
+  Low: "background:#E5E7EB;color:#111111",
+  Rare: "background:#E5E7EB;color:#111111",
+  "Not relevant": "background:#F3F4F6;color:#6B7280",
 };
+
+function pillStyle(level: string): string {
+  return MONO_PILLS[level] || "background:#6B7280;color:#FFFFFF";
+}
 
 /** Initials for the client tile fallback (max 2 letters). */
 function businessInitials(name: string): string {
@@ -58,10 +67,11 @@ function clientTile(report: BusinessReport): string {
   return `<div class="client-tile">${initials}</div>`;
 }
 
+/* Dot colour on the dark header band — light shades so it stays visible. */
 function qualityColor(q: DataQuality): string {
-  if (q === "High") return "#16A34A";
-  if (q === "Medium") return "#F97316";
-  return "#DC2626";
+  if (q === "High") return "#FFFFFF";
+  if (q === "Medium") return "#9CA3AF";
+  return "#6B7280";
 }
 
 function safeArr<T>(v: T[] | undefined | null): T[] {
@@ -78,41 +88,17 @@ function trustLabel(score: number | null): string {
   return "Needs attention";
 }
 
-/* Small inline SVG icon set (stroke inherits currentColor). */
-const ICONS: Record<string, string> = {
-  doc: '<path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M13 2v6h6"/>',
-  scale: '<path d="M3 6h18"/><path d="M12 3v18"/><path d="M5 6l-2 6a3.5 3.5 0 0 0 7 0L8 6"/><path d="M19 6l-2 6a3.5 3.5 0 0 0 7 0l-2-6" transform="translate(-3 0)"/>',
-  check: '<path d="M20 6L9 17l-5-5"/>',
-  chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
-  star: '<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
-  alert: '<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
-  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
-  speech: '<path d="M8 12h8"/><path d="M8 8h8"/><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
-  chart: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
-  gift: '<rect x="3" y="8" width="18" height="4"/><path d="M12 8v13"/><path d="M5 12v9h14v-9"/><path d="M12 8c-2 0-4-1-4-3a2 2 0 0 1 4 0"/><path d="M12 8c2 0 4-1 4-3a2 2 0 0 0-4 0"/>',
-  up: '<path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>',
-  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
-  reply: '<path d="M9 17l-5-5 5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>',
-  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
-  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
-  gauge: '<path d="M12 15l4-6"/><circle cx="12" cy="15" r="1.5"/><path d="M3.5 19a10 10 0 1 1 17 0"/>',
-  reviews: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/>',
-};
-
 function icon(name: string, size = 16): string {
-  const body = ICONS[name] || ICONS["doc"];
+  const paths = ICON_PATHS[name] || ICON_PATHS["doc"];
+  const body = paths.map((d) => `<path d="${d}"/>`).join("");
   return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
 }
 
-/* Platform brand tiles (real brand colours are allowed for platform marks). */
+/* Platform tiles — monochrome letter marks (report UI stays black/white/grey). */
 function platformTile(key: string, name: string): string {
-  const marks: Record<string, [string, string]> = {
-    google: ["#4285F4", "G"],
-    yelp: ["#D32323", "Y"],
-    tripadvisor: ["#34E0A1", "T"],
-  };
-  const m = marks[key] || ["#071A3D", (name[0] || "?").toUpperCase()];
-  return `<span class="pf-cell"><span class="pf-tile" style="color:${m[0]};border-color:${m[0]}33">${esc(m[1])}</span><span class="strong">${esc(name)}</span></span>`;
+  const marks: Record<string, string> = { google: "G", yelp: "Y", tripadvisor: "T" };
+  const mark = marks[key] || (name[0] || "?").toUpperCase();
+  return `<span class="pf-cell"><span class="pf-tile">${esc(mark)}</span><span class="strong">${esc(name)}</span></span>`;
 }
 
 function kpiCards(m: ReportMetrics, s: AiSections): string {
@@ -169,7 +155,7 @@ function socialSnapshot(report: BusinessReport): string {
   );
   if (g) {
     rows.push(
-      socialRow("#4285F4", "G", "Google",
+      socialRow("G", "Google",
         `${esc(g.rating)} from ${esc(g.reviews)} reviews`, ""),
     );
   }
@@ -183,7 +169,7 @@ function socialSnapshot(report: BusinessReport): string {
     if (fb.reviews !== null) parts.push(`${fb.reviews.toLocaleString("en-AU")} reviews`);
     if (parts.length > 0 || fb.profileUrl) {
       rows.push(
-        socialRow("#1877F2", "f", "Facebook",
+        socialRow("f", "Facebook",
           esc(parts.join(" · ") || "Public business page"), fb.profileUrl),
       );
     }
@@ -197,7 +183,7 @@ function socialSnapshot(report: BusinessReport): string {
     if (ig.verified) parts.push("Verified");
     if (parts.length > 0 || ig.profileUrl) {
       rows.push(
-        socialRow("#E1306C", "I", "Instagram",
+        socialRow("I", "Instagram",
           esc(parts.join(" · ") || "Public business profile"), ig.profileUrl),
       );
     }
@@ -211,7 +197,6 @@ function socialSnapshot(report: BusinessReport): string {
 }
 
 function socialRow(
-  color: string,
   mark: string,
   label: string,
   detailHtml: string,
@@ -222,7 +207,7 @@ function socialRow(
     ? `<a class="social-link" href="${esc(safe)}" target="_blank" rel="noopener noreferrer">View profile</a>`
     : "";
   return `<div class="social-row">
-    <span class="pf-tile" style="color:${color};border-color:${color}33">${esc(mark)}</span>
+    <span class="pf-tile">${esc(mark)}</span>
     <span class="social-name">${esc(label)}</span>
     <span class="social-detail">${detailHtml}</span>
     ${link}
@@ -290,13 +275,12 @@ function checklistSection(s: AiSections): string {
       <p class="muted">${esc(TRUST_SCORE_EXPLANATION)}</p>`;
   const rows = items
     .map((c) => {
-      const color = PRIORITY_COLORS[c.priority] || "#5F6368";
       return `<tr>
         <td class="strong">${esc(c.platform)}</td>
         <td>${esc(c.relevant || "—")}</td>
         <td>${esc(c.currentStatus || "Not checked yet")}</td>
         <td>${esc(c.recommendedAction || "—")}</td>
-        <td><span class="prio-badge" style="background:${color}">${esc(c.priority || "—")}</span></td>
+        <td><span class="prio-badge" style="${pillStyle(c.priority)}">${esc(c.priority || "—")}</span></td>
       </tr>`;
     })
     .join("");
@@ -332,14 +316,14 @@ function sentimentSection(s: AiSections): string {
       : "";
   return `
     <div class="bars">
-      ${bar("Positive", se.positive, "#16A34A")}
-      ${bar("Neutral", se.neutral, "#F97316")}
-      ${bar("Negative", se.negative, "#DC2626")}
+      ${bar("Positive", se.positive, "#111827")}
+      ${bar("Neutral", se.neutral, "#9CA3AF")}
+      ${bar("Negative", se.negative, "#4B5563")}
     </div>
     ${se.estimated ? `<p class="est-note">Estimated from available review samples.</p>` : ""}
     <div class="theme-grid">
-      ${themes("Positive themes", safeArr(se.positiveThemes), "#16A34A")}
-      ${themes("Negative themes", safeArr(se.negativeThemes), "#DC2626")}
+      ${themes("Positive themes", safeArr(se.positiveThemes), "#1F2937")}
+      ${themes("Negative themes", safeArr(se.negativeThemes), "#4B5563")}
     </div>
     ${se.insight ? `<div class="insight"><span class="insight-tag">${icon("chat", 13)} AI insight</span>${esc(se.insight)}</div>` : ""}`;
 }
@@ -418,11 +402,11 @@ function customerVoiceSection(s: AiSections): string {
   const concernCards = concerns.length
     ? `<div class="card-grid">${concerns
         .map((c) => {
-          const color = RISK_COLORS[c.riskLevel as keyof typeof RISK_COLORS] || "#F97316";
+          const color = RISK_COLORS[c.riskLevel as keyof typeof RISK_COLORS] || "#6B7280";
           return `<div class="mini-card" style="border-top:3px solid ${color}">
             <div class="mini-head">
               <div class="mini-title">${esc(c.theme)}</div>
-              ${c.riskLevel ? `<span class="risk-badge" style="background:${color}">${esc(c.riskLevel)} risk</span>` : ""}
+              ${c.riskLevel ? `<span class="risk-badge" style="${pillStyle(c.riskLevel)}">${esc(c.riskLevel)} risk</span>` : ""}
             </div>
             <div class="mini-body">${esc(c.explanation)}</div>
             ${c.recommendedFix ? `<div class="mini-fix"><strong>Recommended fix:</strong> ${esc(c.recommendedFix)}</div>` : ""}
@@ -436,7 +420,7 @@ function customerVoiceSection(s: AiSections): string {
   // 4. Client expectation map
   const expectChips = expects.length
     ? `<div class="chips">${expects
-        .map((e) => `<span class="chip" style="border-color:#7B3CFF55;color:#7B3CFF">${esc(e)}</span>`)
+        .map((e) => `<span class="chip" style="border-color:#11111155;color:#111111">${esc(e)}</span>`)
         .join("")}</div>`
     : "";
 
@@ -444,12 +428,12 @@ function customerVoiceSection(s: AiSections): string {
   const prioRows = prios.length
     ? `<div class="risk-list">${prios
         .map((p, i) => {
-          const color = RISK_COLORS[p.level as keyof typeof RISK_COLORS] || "#7B3CFF";
+          const color = RISK_COLORS[p.level as keyof typeof RISK_COLORS] || "#111111";
           return `<div class="cv-prio">
             <div class="cv-prio-head">
               <span class="sec-num" style="width:26px;height:26px;font-size:13px;border-radius:8px">${i + 1}</span>
               <span class="mini-title" style="flex:1">${esc(p.priority)}</span>
-              ${p.level ? `<span class="prio-badge" style="background:${color}">${esc(p.level)}</span>` : ""}
+              ${p.level ? `<span class="prio-badge" style="${pillStyle(p.level)}">${esc(p.level)}</span>` : ""}
             </div>
             ${p.whyItMatters ? `<div class="cv-prio-line"><strong>Why:</strong> ${esc(p.whyItMatters)}</div>` : ""}
             ${p.action ? `<div class="cv-prio-line"><strong>Action:</strong> ${esc(p.action)}</div>` : ""}
@@ -489,9 +473,9 @@ function customerVoiceSection(s: AiSections): string {
       : "";
   const langBody = hasLang
     ? `<div class="lang-grid">
-        ${langGroup("Words customers use", li.wordsCustomersUse, "#7B3CFF")}
-        ${langGroup("Marketing phrases to use", li.phrasesToUseInMarketing, "#16A34A")}
-        ${langGroup("Phrases to avoid", li.phrasesToAvoid, "#DC2626")}
+        ${langGroup("Words customers use", li.wordsCustomersUse, "#111111")}
+        ${langGroup("Marketing phrases to use", li.phrasesToUseInMarketing, "#1F2937")}
+        ${langGroup("Phrases to avoid", li.phrasesToAvoid, "#4B5563")}
       </div>`
     : "";
 
@@ -528,11 +512,11 @@ function complaintsSection(s: AiSections): string {
     return `<p class="muted">No notable complaint themes were evident from the available review data.</p>`;
   return `<div class="card-grid">${items
     .map((c) => {
-      const color = RISK_COLORS[c.riskLevel] || "#F97316";
+      const color = RISK_COLORS[c.riskLevel] || "#6B7280";
       return `<div class="mini-card" style="border-top:3px solid ${color}">
         <div class="mini-head">
           <div class="mini-title">${esc(c.theme)}</div>
-          <span class="risk-badge" style="background:${color}">${esc(c.riskLevel)} risk</span>
+          <span class="risk-badge" style="${pillStyle(c.riskLevel)}">${esc(c.riskLevel)} risk</span>
         </div>
         <div class="mini-body">${esc(c.explanation)}</div>
         ${c.fix ? `<div class="mini-fix"><strong>Recommended fix:</strong> ${esc(c.fix)}</div>` : ""}
@@ -569,9 +553,9 @@ function languageSection(s: AiSections): string {
       }</div>
     </div>`;
   return `<div class="lang-grid">
-    ${group("Words customers use", cl.words, "#7B3CFF")}
-    ${group("Phrases to use in marketing", cl.marketingPhrases, "#16A34A")}
-    ${group("Phrases / issues to avoid", cl.avoidPhrases, "#DC2626")}
+    ${group("Words customers use", cl.words, "#111111")}
+    ${group("Phrases to use in marketing", cl.marketingPhrases, "#1F2937")}
+    ${group("Phrases / issues to avoid", cl.avoidPhrases, "#4B5563")}
   </div>`;
 }
 
@@ -613,9 +597,8 @@ function offerSection(s: AiSections): string {
 
 function improvementSection(s: AiSections): string {
   const r = s.reviewImprovement;
-  const color = RISK_COLORS[r.priority] || "#7B3CFF";
   return `<div class="improve">
-    <span class="risk-badge" style="background:${color}">Priority: ${esc(r.priority)}</span>
+    <span class="risk-badge" style="${pillStyle(r.priority)}">Priority: ${esc(r.priority)}</span>
     ${r.why ? `<p><strong>Why it matters:</strong> ${esc(r.why)}</p>` : ""}
     ${r.action ? `<p><strong>Recommended action:</strong> ${esc(r.action)}</p>` : ""}
   </div>`;
@@ -657,8 +640,8 @@ function templatesSection(s: AiSections): string {
           <div class="tpl-body">${esc(body)}</div>
         </div>`
       : "";
-  const positive = block("Positive review response", t.positive, "#16A34A");
-  const negative = block("Critical review response", t.negative, "#DC2626");
+  const positive = block("Positive review response", t.positive, "#1F2937");
+  const negative = block("Critical review response", t.negative, "#4B5563");
   if (!positive && !negative)
     return `<p class="muted">No response templates were generated.</p>`;
   return `<div class="tpl-grid">${positive}${negative}</div>`;
@@ -685,15 +668,15 @@ function finalSection(s: AiSections): string {
 /* ===== Business Analytics (8 dashboard widgets) ===== */
 
 const TREND_STYLES: Record<string, [string, string]> = {
-  Improving: ["#16A34A", "&#8599;"],
-  Stable: ["#7B3CFF", "&#8594;"],
-  Declining: ["#DC2626", "&#8600;"],
+  Improving: ["#1F2937", "&#8599;"],
+  Stable: ["#111111", "&#8594;"],
+  Declining: ["#4B5563", "&#8600;"],
 };
 
 const CONFIDENCE_COLORS: Record<string, string> = {
-  High: "#16A34A",
-  Medium: "#F97316",
-  Low: "#DC2626",
+  High: "#1F2937",
+  Medium: "#6B7280",
+  Low: "#4B5563",
 };
 
 function analyticsSection(report: BusinessReport): string {
@@ -748,10 +731,10 @@ function analyticsSection(report: BusinessReport): string {
         ? `<div class="ana-note"><strong>~${rv.reviewGap.toLocaleString("en-AU")} more reviews</strong> estimated to match the top nearby competitor (${esc(rv.topCompetitor.name)}). Increasing recent review volume may improve trust and conversion.</div>`
         : `<div class="ana-note">This business has as many public reviews as the top nearby competitor.</div>`;
     volBody = `<div class="bars" style="margin-bottom:8px">
-        ${volBar("This business", rv.own, "#7B3CFF")}
-        ${volBar("Top competitor", rv.topCompetitor.reviews, "#C9BEEF")}
+        ${volBar("This business", rv.own, "#111111")}
+        ${volBar("Top competitor", rv.topCompetitor.reviews, "#D1D5DB")}
       </div>
-      <div class="ana-big ana-mid" style="color:${rv.comparison === "Below" ? "#DC2626" : rv.comparison === "Above" ? "#16A34A" : "#071A3D"}">${rv.own.toLocaleString("en-AU")} reviews analysed — ${esc(volLabel.toLowerCase())}</div>
+      <div class="ana-big ana-mid" style="color:${rv.comparison === "Below" ? "#4B5563" : rv.comparison === "Above" ? "#1F2937" : "#111111"}">${rv.own.toLocaleString("en-AU")} reviews analysed — ${esc(volLabel.toLowerCase())}</div>
       ${gapLine}
       ${note(a.reviewVolumeInsight)}`;
   } else {
@@ -771,7 +754,7 @@ function analyticsSection(report: BusinessReport): string {
       const has = v.rating !== null;
       return `<div class="bar-row">
         <div class="bar-label" style="width:86px">${esc(v.platform)}</div>
-        <div class="bar-track"><div class="bar-fill" style="width:${has ? Math.round((v.rating! / 5) * 100) : 0}%;background:#7B3CFF"></div></div>
+        <div class="bar-track"><div class="bar-fill" style="width:${has ? Math.round((v.rating! / 5) * 100) : 0}%;background:#111111"></div></div>
         <div class="bar-val" style="width:52px">${has ? v.rating!.toFixed(1) : "—"}</div>
       </div>`;
     })
@@ -782,7 +765,7 @@ function analyticsSection(report: BusinessReport): string {
           <span>Highest: <strong>${esc(rg.highest.platform)} ${rg.highest.rating.toFixed(1)}/5</strong></span>
           <span>Lowest: <strong>${esc(rg.lowest.platform)} ${rg.lowest.rating.toFixed(1)}/5</strong></span>
         </div>
-        <div class="ana-big ana-mid" style="color:${rg.gap >= 0.5 ? "#F97316" : "#16A34A"}">Rating gap: ${rg.gap.toFixed(1)} points${rg.gap < 0.5 ? " — consistent across platforms" : ""}</div>
+        <div class="ana-big ana-mid" style="color:${rg.gap >= 0.5 ? "#6B7280" : "#1F2937"}">Rating gap: ${rg.gap.toFixed(1)} points${rg.gap < 0.5 ? " — consistent across platforms" : ""}</div>
         ${rg.gap >= 0.5 ? `<div class="ana-note">A larger rating gap may cause customers to hesitate when comparing platforms.</div>` : ""}`
       : `<div class="ana-big ana-mid muted">Fewer than 2 platforms have ratings</div>`;
   const gapW = widget(
@@ -805,9 +788,9 @@ function analyticsSection(report: BusinessReport): string {
     "chat",
     hasSent
       ? `<div class="bars" style="margin-bottom:4px">
-          ${sentBar("Positive", se.positive, "#16A34A")}
-          ${sentBar("Neutral", se.neutral, "#F97316")}
-          ${sentBar("Negative", se.negative, "#DC2626")}
+          ${sentBar("Positive", se.positive, "#111827")}
+          ${sentBar("Neutral", se.neutral, "#9CA3AF")}
+          ${sentBar("Negative", se.negative, "#4B5563")}
         </div>
         <div class="ana-hilo" style="margin-top:6px"><span>Confidence: <strong style="color:${CONFIDENCE_COLORS[calc.sentimentConfidence]}">${esc(calc.sentimentConfidence)}</strong></span></div>
         ${se.estimated ? `<div class="ana-est">Estimated from available public review samples.</div>` : ""}`
@@ -822,10 +805,9 @@ function analyticsSection(report: BusinessReport): string {
     freq.length
       ? `<div class="ana-rows">${freq
           .map((c) => {
-            const color = RISK_COLORS[c.frequency] || "#5F6368";
             return `<div class="ana-row">
               <span class="ana-row-text">${esc(c.issue)}${c.note ? `<span class="muted"> — ${esc(c.note)}</span>` : ""}</span>
-              <span class="risk-badge" style="background:${color}">${esc(c.frequency || "—")}</span>
+              <span class="risk-badge" style="${pillStyle(c.frequency)}">${esc(c.frequency || "—")}</span>
             </div>`;
           })
           .join("")}</div>`
@@ -845,10 +827,10 @@ function analyticsSection(report: BusinessReport): string {
       </div>`;
     const ahead = cg.gap <= 0;
     cgBody = `<div class="bars" style="margin-bottom:8px">
-        ${cgBar("Your Trust Score", cg.ownTrustScore, "#7B3CFF")}
-        ${cgBar("Top competitor", cg.topCompetitor.trustScore, "#C9BEEF")}
+        ${cgBar("Your Trust Score", cg.ownTrustScore, "#111111")}
+        ${cgBar("Top competitor", cg.topCompetitor.trustScore, "#D1D5DB")}
       </div>
-      <div class="ana-big ana-mid" style="color:${ahead ? "#16A34A" : "#F97316"}">${ahead ? `You lead ${esc(cg.topCompetitor.name)} by ${Math.abs(cg.gap)} points` : `Gap to ${esc(cg.topCompetitor.name)}: ${cg.gap} points`}</div>
+      <div class="ana-big ana-mid" style="color:${ahead ? "#1F2937" : "#6B7280"}">${ahead ? `You lead ${esc(cg.topCompetitor.name)} by ${Math.abs(cg.gap)} points` : `Gap to ${esc(cg.topCompetitor.name)}: ${cg.gap} points`}</div>
       <div class="ana-est">Sentiment comparison is not available for competitors from public data.</div>`;
   } else {
     cgBody = na(
@@ -876,14 +858,14 @@ function analyticsSection(report: BusinessReport): string {
     go.level ||
     (go.score !== null ? (go.score >= 70 ? "High" : go.score >= 40 ? "Medium" : "Low") : "");
   const goColor =
-    goLevel === "High" ? "#16A34A" : goLevel === "Medium" ? "#F97316" : "#5F6368";
+    goLevel === "High" ? "#1F2937" : goLevel === "Medium" ? "#6B7280" : "#5F6368";
   const growth = widget(
     "Growth Opportunity Score",
     "gauge",
     goLevel
       ? `<div class="ana-big" style="color:${goColor}">${esc(goLevel)} opportunity</div>
-        ${go.score !== null ? `<div class="bar-track" style="margin:6px 0 10px"><div class="bar-fill" style="width:${Math.max(0, Math.min(100, go.score))}%;background:linear-gradient(90deg,#7B3CFF,#9A5CFF)"></div></div>` : ""}
-        ${go.focusAreas.length ? `<div class="chips" style="margin-bottom:8px">${go.focusAreas.map((f) => `<span class="chip" style="border-color:#7B3CFF55;color:#7B3CFF">${esc(f)}</span>`).join("")}</div>` : ""}
+        ${go.score !== null ? `<div class="bar-track" style="margin:6px 0 10px"><div class="bar-fill" style="width:${Math.max(0, Math.min(100, go.score))}%;background:linear-gradient(90deg,#111111,#333333)"></div></div>` : ""}
+        ${go.focusAreas.length ? `<div class="chips" style="margin-bottom:8px">${go.focusAreas.map((f) => `<span class="chip" style="border-color:#11111155;color:#111111">${esc(f)}</span>`).join("")}</div>` : ""}
         ${note(go.rationale)}
         <div class="ana-est">AI estimated from available review data</div>`
       : na("Not enough data to estimate a growth opportunity level yet."),
@@ -893,32 +875,12 @@ function analyticsSection(report: BusinessReport): string {
     <div class="ana-grid">${trend}${volume}${gapW}${sentiment}${complaint}${competitor}${lost}${growth}</div>`;
 }
 
-const SECTION_ICONS: Record<number, string> = {
-  1: "chart",
-  2: "doc",
-  3: "scale",
-  4: "check",
-  5: "chat",
-  6: "speech",
-  7: "star",
-  8: "alert",
-  9: "users",
-  10: "speech",
-  11: "chart",
-  12: "gift",
-  13: "up",
-  14: "calendar",
-  15: "flag",
-  16: "reply",
-  17: "shield",
-};
-
 function section(num: number, title: string, body: string): string {
   return `<section class="sec">
     <h2>
       <span class="sec-num">${num}</span>
       <span class="sec-title">${esc(title)}</span>
-      <span class="sec-ico">${icon(SECTION_ICONS[num] || "doc", 17)}</span>
+      <span class="sec-ico">${icon(SECTION_ICON_NAMES[num] || "doc", 17)}</span>
     </h2>
     ${body}
   </section>`;
@@ -951,109 +913,109 @@ export function buildReportHtml(report: BusinessReport): string {
   .wrap { max-width:940px; margin:0 auto; padding:0 22px 30px; }
 
   /* ===== Premium header ===== */
-  .report-header { background:linear-gradient(135deg,#03122E 0%,#071A3D 60%,#12235C 100%); color:#fff; padding:44px 22px 40px; position:relative; overflow:hidden; }
-  .report-header::before { content:""; position:absolute; top:-120px; right:-80px; width:420px; height:420px; border-radius:50%; background:radial-gradient(circle,rgba(123,60,255,.35) 0%,rgba(123,60,255,0) 70%); pointer-events:none; }
-  .report-header::after { content:""; position:absolute; bottom:-160px; left:-100px; width:380px; height:380px; border-radius:50%; background:radial-gradient(circle,rgba(154,92,255,.18) 0%,rgba(154,92,255,0) 70%); pointer-events:none; }
+  .report-header { background:linear-gradient(135deg,#0A0A0A 0%,#111111 60%,#1F1F1F 100%); color:#fff; padding:44px 22px 40px; position:relative; overflow:hidden; }
+  .report-header::before { content:""; position:absolute; top:-120px; right:-80px; width:420px; height:420px; border-radius:50%; background:radial-gradient(circle,rgba(255,255,255,.07) 0%,rgba(255,255,255,0) 70%); pointer-events:none; }
+  .report-header::after { content:""; position:absolute; bottom:-160px; left:-100px; width:380px; height:380px; border-radius:50%; background:radial-gradient(circle,rgba(255,255,255,.05) 0%,rgba(255,255,255,0) 70%); pointer-events:none; }
   .report-header .inner { max-width:940px; margin:0 auto; position:relative; }
   .brand-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px; }
-  .brand-name { font-size:14px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#E8E3FA; }
+  .brand-name { font-size:14px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#E5E7EB; }
   .brand-logo { height:36px; width:auto; display:block; }
   .client-row { display:flex; align-items:center; gap:13px; margin-bottom:20px; }
-  .client-tile { width:48px; height:48px; border-radius:12px; background:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:19px; color:#071A3D; flex:0 0 auto; overflow:hidden; box-shadow:0 6px 18px rgba(0,0,0,.28); }
+  .client-tile { width:48px; height:48px; border-radius:12px; background:#fff; display:flex; align-items:center; justify-content:center; font-weight:900; font-size:19px; color:#111111; flex:0 0 auto; overflow:hidden; box-shadow:0 6px 18px rgba(0,0,0,.28); }
   .client-tile img { width:100%; height:100%; object-fit:contain; padding:5px; box-sizing:border-box; background:#fff; display:block; }
   .client-meta .sub { margin-bottom:2px; }
   .client-meta .addr { margin-bottom:0; }
-  .paid-badge { background:linear-gradient(135deg,#7B3CFF,#9A5CFF); color:#fff; border-radius:999px; padding:6px 16px; font-size:12px; font-weight:800; letter-spacing:.02em; box-shadow:0 4px 14px rgba(123,60,255,.4); }
+  .paid-badge { background:#FFFFFF; color:#111111; border-radius:999px; padding:6px 16px; font-size:12px; font-weight:800; letter-spacing:.02em; box-shadow:0 4px 14px rgba(0,0,0,.35); }
   .report-header h1 { margin:0 0 10px; font-size:38px; font-weight:900; letter-spacing:-.02em; line-height:1.12; }
-  .report-header .sub { color:#E8E3FA; font-size:17px; font-weight:700; margin-bottom:4px; }
-  .report-header .addr { color:#9A8FC7; font-size:13.5px; margin-bottom:20px; }
+  .report-header .sub { color:#E5E7EB; font-size:17px; font-weight:700; margin-bottom:4px; }
+  .report-header .addr { color:#9CA3AF; font-size:13.5px; margin-bottom:20px; }
   .meta { display:flex; flex-wrap:wrap; gap:8px; }
-  .meta-chip { display:inline-flex; align-items:center; gap:7px; border:1px solid rgba(255,255,255,.28); color:#E8E3FA; border-radius:999px; padding:5px 13px; font-size:12px; font-weight:600; }
+  .meta-chip { display:inline-flex; align-items:center; gap:7px; border:1px solid rgba(255,255,255,.28); color:#E5E7EB; border-radius:999px; padding:5px 13px; font-size:12px; font-weight:600; }
   .dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
 
   /* ===== KPI cards ===== */
   .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:26px 0 8px; }
-  .kpi { background:#fff; border:1px solid #E5E5E5; border-radius:16px; padding:18px 16px; box-shadow:0 2px 8px rgba(7,26,61,.05); }
-  .kpi-icon { width:34px; height:34px; border-radius:10px; background:#F1E8FF; color:#7B3CFF; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
+  .kpi { background:#fff; border:1px solid #E5E5E5; border-radius:16px; padding:18px 16px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+  .kpi-icon { width:34px; height:34px; border-radius:10px; background:#F3F4F6; color:#111111; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
   .kpi-label { font-size:11px; color:#5F6368; margin-bottom:6px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
-  .kpi-value { font-size:30px; font-weight:900; color:#071A3D; line-height:1.05; letter-spacing:-.02em; }
+  .kpi-value { font-size:30px; font-weight:900; color:#111111; line-height:1.05; letter-spacing:-.02em; }
   .kpi-denom { font-size:15px; font-weight:700; color:#5F6368; margin-left:2px; }
   .kpi-small { font-size:19px; }
-  .kpi-sub { font-size:12px; color:#7B3CFF; margin-top:7px; font-weight:700; }
-  .social-snap { background:#fff; border:1px solid #E5E5E5; border-radius:16px; padding:16px 18px; margin:16px 0 8px; box-shadow:0 2px 8px rgba(7,26,61,.05); }
+  .kpi-sub { font-size:12px; color:#111111; margin-top:7px; font-weight:700; }
+  .social-snap { background:#fff; border:1px solid #E5E5E5; border-radius:16px; padding:16px 18px; margin:16px 0 8px; box-shadow:0 2px 8px rgba(0,0,0,.05); }
   .social-snap-title { font-size:11px; color:#5F6368; text-transform:uppercase; letter-spacing:.08em; font-weight:800; margin-bottom:10px; }
   .social-snap-rows { display:flex; flex-direction:column; gap:8px; }
   .social-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13.5px; }
-  .social-name { font-weight:800; color:#071A3D; min-width:82px; }
+  .social-name { font-weight:800; color:#111111; min-width:82px; }
   .social-detail { color:#333; }
-  .social-link { margin-left:auto; font-size:12px; font-weight:700; color:#7B3CFF; text-decoration:none; border:1px solid #E4D6FF; border-radius:999px; padding:3px 10px; }
+  .social-link { margin-left:auto; font-size:12px; font-weight:700; color:#111111; text-decoration:none; border:1px solid #E5E7EB; border-radius:999px; padding:3px 10px; }
 
   /* ===== Section cards ===== */
-  .sec { background:#fff; border:1px solid #E5E5E5; border-radius:18px; padding:26px 28px; margin-top:20px; box-shadow:0 2px 8px rgba(7,26,61,.05); page-break-inside:avoid; }
-  .sec h2 { font-size:22px; font-weight:850; color:#071A3D; margin:0 0 18px; display:flex; align-items:center; gap:12px; letter-spacing:-.01em; }
-  .sec-num { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; background:linear-gradient(135deg,#7B3CFF,#9A5CFF); color:#fff; border-radius:9px; font-size:15px; font-weight:800; flex:none; box-shadow:0 3px 8px rgba(123,60,255,.3); }
+  .sec { background:#fff; border:1px solid #E5E5E5; border-radius:18px; padding:26px 28px; margin-top:20px; box-shadow:0 2px 8px rgba(0,0,0,.05); page-break-inside:avoid; }
+  .sec h2 { font-size:22px; font-weight:850; color:#111111; margin:0 0 18px; display:flex; align-items:center; gap:12px; letter-spacing:-.01em; }
+  .sec-num { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; background:linear-gradient(135deg,#111111,#333333); color:#fff; border-radius:9px; font-size:15px; font-weight:800; flex:none; box-shadow:0 3px 8px rgba(0,0,0,.3); }
   .sec-title { flex:1; }
-  .sec-ico { color:#C9BEEF; flex:none; display:inline-flex; }
+  .sec-ico { color:#D1D5DB; flex:none; display:inline-flex; }
   .sec p { margin:0 0 10px; }
   .lede { font-size:15px; }
   .muted { color:#5F6368; }
-  .strong { font-weight:700; color:#071A3D; }
-  .callout { background:#F1E8FF; border-radius:12px; padding:14px 16px; margin-top:14px; font-size:13.5px; color:#071A3D; }
-  .callout-title { display:flex; align-items:center; gap:7px; font-weight:800; color:#7B3CFF; font-size:12px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+  .strong { font-weight:700; color:#111111; }
+  .callout { background:#F3F4F6; border-radius:12px; padding:14px 16px; margin-top:14px; font-size:13.5px; color:#111111; }
+  .callout-title { display:flex; align-items:center; gap:7px; font-weight:800; color:#111111; font-size:12px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
 
   /* ===== Tables ===== */
   .tbl { width:100%; border-collapse:collapse; font-size:13.5px; }
-  .tbl th { text-align:left; background:#F1E8FF; color:#071A3D; padding:10px 12px; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; font-weight:800; }
+  .tbl th { text-align:left; background:#F3F4F6; color:#111111; padding:10px 12px; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; font-weight:800; }
   .tbl th:first-child { border-radius:8px 0 0 8px; }
   .tbl th:last-child { border-radius:0 8px 8px 0; }
   .tbl td { padding:12px; border-bottom:1px solid #EEE; vertical-align:top; }
   .tbl tr:last-child td { border-bottom:none; }
   .pf-cell { display:flex; align-items:center; gap:9px; }
-  .pf-tile { width:26px; height:26px; border-radius:8px; border:1.5px solid; display:inline-flex; align-items:center; justify-content:center; font-weight:900; font-size:13px; background:#fff; flex:none; }
+  .pf-tile { width:26px; height:26px; border-radius:8px; border:1.5px solid #D1D5DB; color:#111111; display:inline-flex; align-items:center; justify-content:center; font-weight:900; font-size:13px; background:#fff; flex:none; }
   .pill { display:inline-block; border-radius:999px; padding:3px 11px; font-size:11px; font-weight:800; white-space:nowrap; }
-  .pill-ok { background:rgba(22,163,74,.12); color:#16A34A; }
+  .pill-ok { background:rgba(31,41,55,.12); color:#1F2937; }
   .pill-na { background:rgba(95,99,104,.1); color:#5F6368; }
 
   /* ===== Sentiment ===== */
   .bars { margin-bottom:10px; }
   .bar-row { display:flex; align-items:center; gap:12px; margin-bottom:9px; }
-  .bar-label { width:72px; font-size:13px; color:#071A3D; font-weight:700; }
-  .bar-track { flex:1; height:12px; background:#F1E8FF; border-radius:999px; overflow:hidden; }
+  .bar-label { width:72px; font-size:13px; color:#111111; font-weight:700; }
+  .bar-track { flex:1; height:12px; background:#F3F4F6; border-radius:999px; overflow:hidden; }
   .bar-fill { height:100%; border-radius:999px; }
-  .bar-val { width:44px; text-align:right; font-size:13px; font-weight:800; color:#071A3D; }
+  .bar-val { width:44px; text-align:right; font-size:13px; font-weight:800; color:#111111; }
   .est-note { font-size:12px; color:#5F6368; font-style:italic; margin:0 0 12px; }
   .theme-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:8px; }
-  .theme-title { font-size:12.5px; font-weight:800; color:#071A3D; margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em; }
+  .theme-title { font-size:12.5px; font-weight:800; color:#111111; margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em; }
   .chips { display:flex; flex-wrap:wrap; gap:6px; }
   .chip { border:1px solid; border-radius:999px; padding:4px 11px; font-size:12px; background:#fff; font-weight:600; }
-  .insight { background:#F1E8FF; border-radius:12px; padding:14px 16px; margin-top:14px; font-size:13.5px; color:#071A3D; }
-  .insight-tag { display:inline-flex; align-items:center; gap:6px; font-weight:800; color:#7B3CFF; font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin-right:8px; }
+  .insight { background:#F3F4F6; border-radius:12px; padding:14px 16px; margin-top:14px; font-size:13.5px; color:#111111; }
+  .insight-tag { display:inline-flex; align-items:center; gap:6px; font-weight:800; color:#111111; font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin-right:8px; }
 
   /* ===== Cards ===== */
   .card-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
-  .mini-card { border:1px solid #E5E5E5; border-radius:14px; padding:16px; background:#fff; box-shadow:0 1px 4px rgba(7,26,61,.04); }
+  .mini-card { border:1px solid #E5E5E5; border-radius:14px; padding:16px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.04); }
   .mini-icon { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
-  .mini-icon.ok { background:rgba(22,163,74,.1); color:#16A34A; }
+  .mini-icon.ok { background:rgba(31,41,55,.1); color:#1F2937; }
   .mini-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:8px; }
-  .mini-title { font-weight:800; color:#071A3D; margin-bottom:6px; font-size:14.5px; }
+  .mini-title { font-weight:800; color:#111111; margin-bottom:6px; font-size:14.5px; }
   .mini-head .mini-title { margin-bottom:0; }
   .mini-body { font-size:13.5px; color:#050505; }
   .mini-evi { font-size:12.5px; color:#5F6368; margin-top:8px; font-style:italic; }
-  .mini-fix { font-size:13px; color:#071A3D; margin-top:10px; background:#F7F7F4; border-radius:9px; padding:9px 11px; }
+  .mini-fix { font-size:13px; color:#111111; margin-top:10px; background:#F7F7F4; border-radius:9px; padding:9px 11px; }
   .risk-badge { display:inline-block; color:#fff; border-radius:999px; padding:3px 11px; font-size:11px; font-weight:800; white-space:nowrap; flex:none; }
   .prio-badge { display:inline-block; color:#fff; border-radius:999px; padding:3px 11px; font-size:11px; font-weight:800; white-space:nowrap; }
 
   .risk-list { display:flex; flex-direction:column; gap:10px; }
   .risk-item { display:flex; gap:11px; align-items:flex-start; background:#FAFAF8; border:1px solid #EEE; border-radius:11px; padding:12px 14px; font-size:13.5px; }
-  .risk-ico { color:#F97316; flex:none; margin-top:2px; display:inline-flex; }
+  .risk-ico { color:#6B7280; flex:none; margin-top:2px; display:inline-flex; }
 
   /* ===== Business Analytics ===== */
   .ana-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
-  .ana-card { border:1px solid #E5E5E5; border-radius:14px; padding:16px 18px; background:#fff; box-shadow:0 1px 4px rgba(7,26,61,.04); }
+  .ana-card { border:1px solid #E5E5E5; border-radius:14px; padding:16px 18px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.04); }
   .ana-head { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
-  .ana-ico { width:28px; height:28px; border-radius:8px; background:#F1E8FF; color:#7B3CFF; display:inline-flex; align-items:center; justify-content:center; flex:none; }
-  .ana-title { font-weight:800; color:#071A3D; font-size:14px; }
-  .ana-big { font-size:22px; font-weight:900; color:#071A3D; letter-spacing:-.01em; margin-bottom:6px; }
+  .ana-ico { width:28px; height:28px; border-radius:8px; background:#F3F4F6; color:#111111; display:inline-flex; align-items:center; justify-content:center; flex:none; }
+  .ana-title { font-weight:800; color:#111111; font-size:14px; }
+  .ana-big { font-size:22px; font-weight:900; color:#111111; letter-spacing:-.01em; margin-bottom:6px; }
   .ana-mid { font-size:15px; }
   .ana-arrow { margin-right:6px; }
   .ana-denom { font-size:14px; font-weight:700; color:#5F6368; }
@@ -1071,40 +1033,40 @@ export function buildReportHtml(report: BusinessReport): string {
 
   /* ===== Customer Voice Analysis ===== */
   .cv-block { margin-top:20px; }
-  .cv-sub { font-size:14px; font-weight:850; color:#071A3D; margin-bottom:10px; padding-left:10px; border-left:3px solid #7B3CFF; }
+  .cv-sub { font-size:14px; font-weight:850; color:#111111; margin-bottom:10px; padding-left:10px; border-left:3px solid #111111; }
   .cv-prio { background:#FAFAF8; border:1px solid #EEE; border-radius:11px; padding:12px 14px; }
   .cv-prio-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
   .cv-prio-line { font-size:13px; margin-bottom:4px; }
   .cv-action-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
-  .conclusion { display:flex; gap:10px; align-items:flex-start; background:linear-gradient(135deg,#03122E,#071A3D); color:#fff; border-radius:12px; padding:15px 17px; margin-top:14px; font-weight:600; font-size:13.5px; }
-  .conclusion svg { flex:none; margin-top:2px; color:#9A5CFF; }
+  .conclusion { display:flex; gap:10px; align-items:flex-start; background:linear-gradient(135deg,#0A0A0A,#111111); color:#fff; border-radius:12px; padding:15px 17px; margin-top:14px; font-weight:600; font-size:13.5px; }
+  .conclusion svg { flex:none; margin-top:2px; color:#9CA3AF; }
   .demo-tag { font-size:10px; color:#5F6368; border:1px solid #E5E5E5; border-radius:6px; padding:1px 6px; font-weight:500; }
 
   /* ===== Offer ===== */
-  .offer-card { background:linear-gradient(135deg,#7B3CFF,#9A5CFF); border-radius:16px; padding:22px 24px; color:#fff; box-shadow:0 8px 22px rgba(123,60,255,.3); }
-  .offer-kicker { display:inline-flex; align-items:center; gap:7px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#F1E8FF; margin-bottom:10px; }
+  .offer-card { background:linear-gradient(135deg,#111111,#333333); border-radius:16px; padding:22px 24px; color:#fff; box-shadow:0 8px 22px rgba(0,0,0,.3); }
+  .offer-kicker { display:inline-flex; align-items:center; gap:7px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#F3F4F6; margin-bottom:10px; }
   .offer-head { font-weight:900; font-size:18px; margin-bottom:10px; letter-spacing:-.01em; }
-  .offer-why { font-size:13.5px; margin-bottom:12px; color:#F1E8FF; }
+  .offer-why { font-size:13.5px; margin-bottom:12px; color:#F3F4F6; }
   .offer-why strong { color:#fff; }
-  .offer-copy { font-size:13.5px; color:#071A3D; background:#fff; border-radius:10px; padding:13px 15px; }
+  .offer-copy { font-size:13.5px; color:#111111; background:#fff; border-radius:10px; padding:13px 15px; }
 
   .improve p { font-size:13.5px; margin:10px 0 0; }
 
   /* ===== 7-day timeline ===== */
   .timeline { display:flex; flex-direction:column; }
   .tl-row { display:grid; grid-template-columns:64px 26px 1fr; align-items:stretch; }
-  .tl-day { font-weight:900; color:#7B3CFF; font-size:13px; padding:12px 0; white-space:nowrap; }
+  .tl-day { font-weight:900; color:#111111; font-size:13px; padding:12px 0; white-space:nowrap; }
   .tl-line { position:relative; }
-  .tl-line::before { content:""; position:absolute; left:50%; top:0; bottom:0; width:2px; background:#F1E8FF; transform:translateX(-50%); }
+  .tl-line::before { content:""; position:absolute; left:50%; top:0; bottom:0; width:2px; background:#F3F4F6; transform:translateX(-50%); }
   .tl-row:first-child .tl-line::before { top:18px; }
   .tl-row:last-child .tl-line::before { bottom:calc(100% - 26px); }
-  .tl-dot { position:absolute; left:50%; top:18px; width:10px; height:10px; border-radius:50%; background:linear-gradient(135deg,#7B3CFF,#9A5CFF); transform:translate(-50%,-50%); box-shadow:0 0 0 3px #F1E8FF; }
+  .tl-dot { position:absolute; left:50%; top:18px; width:10px; height:10px; border-radius:50%; background:linear-gradient(135deg,#111111,#333333); transform:translate(-50%,-50%); box-shadow:0 0 0 3px #F3F4F6; }
   .tl-card { background:#FAFAF8; border:1px solid #EEE; border-radius:11px; padding:11px 14px; margin:5px 0; font-size:13.5px; }
 
   /* ===== 30-day weeks ===== */
   .week-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
-  .week-card { border:1px solid #E5E5E5; border-left:4px solid #7B3CFF; border-radius:12px; padding:15px 16px; background:#fff; box-shadow:0 1px 4px rgba(7,26,61,.04); }
-  .week-label { display:flex; align-items:center; gap:7px; font-weight:900; color:#7B3CFF; margin-bottom:6px; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; }
+  .week-card { border:1px solid #E5E5E5; border-left:4px solid #111111; border-radius:12px; padding:15px 16px; background:#fff; box-shadow:0 1px 4px rgba(0,0,0,.04); }
+  .week-label { display:flex; align-items:center; gap:7px; font-weight:900; color:#111111; margin-bottom:6px; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; }
   .week-focus { font-size:13.5px; color:#050505; }
 
   /* ===== Templates ===== */
@@ -1114,17 +1076,17 @@ export function buildReportHtml(report: BusinessReport): string {
   .tpl-body { font-size:13px; color:#050505; white-space:pre-wrap; }
 
   /* ===== Final recommendation ===== */
-  .final-card { background:linear-gradient(135deg,#03122E,#071A3D); border-radius:14px; padding:6px 20px; color:#fff; }
+  .final-card { background:linear-gradient(135deg,#0A0A0A,#111111); border-radius:14px; padding:6px 20px; color:#fff; }
   .final-row { display:grid; grid-template-columns:170px 1fr; gap:14px; padding:14px 0; border-bottom:1px solid rgba(255,255,255,.1); }
   .final-row:last-child { border-bottom:none; }
-  .final-label { font-weight:900; color:#9A5CFF; font-size:12px; text-transform:uppercase; letter-spacing:.05em; padding-top:2px; }
-  .final-val { font-size:14px; color:#F1E8FF; }
+  .final-label { font-weight:900; color:#9CA3AF; font-size:12px; text-transform:uppercase; letter-spacing:.05em; padding-top:2px; }
+  .final-val { font-size:14px; color:#F3F4F6; }
 
   .disclaimer { font-size:12px; color:#5F6368; margin-top:20px; padding:16px 18px; background:#fff; border:1px solid #E5E5E5; border-radius:12px; }
 
   /* ===== Footer ===== */
-  .report-footer { background:#03122E; color:#9A8FC7; margin-top:34px; padding:22px; text-align:center; font-size:12px; }
-  .report-footer .fb { color:#E8E3FA; font-weight:800; margin-bottom:4px; font-size:13px; }
+  .report-footer { background:#0A0A0A; color:#9CA3AF; margin-top:34px; padding:22px; text-align:center; font-size:12px; }
+  .report-footer .fb { color:#E5E7EB; font-weight:800; margin-bottom:4px; font-size:13px; }
 
   @media print {
     body { background:#fff; }
@@ -1144,7 +1106,7 @@ export function buildReportHtml(report: BusinessReport): string {
 <body>
   <header class="report-header"><div class="inner">
     <div class="brand-row">
-      <img class="brand-logo" src="data:image/png;base64,${BRAND_LOGO_PNG_BASE64}" alt="Find Business Reviews" />
+      <img class="brand-logo" src="data:image/png;base64,${BRAND_LOGO_MONO_PNG_BASE64}" alt="Find Business Reviews" />
       <div class="paid-badge">Paid Report</div>
     </div>
     <h1>AI Customer Review Sentiment Report</h1>
