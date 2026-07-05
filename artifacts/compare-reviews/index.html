@@ -57,6 +57,9 @@
       }
       .topbar-inner { display: flex; align-items: center; gap: 12px; height: 64px; }
       .brand-name { font-weight: 800; font-size: 18px; letter-spacing: -.3px; }
+      .brand-logo-link { display: inline-flex; align-items: center; }
+      .brand-logo { height: 38px; width: auto; display: block; }
+      @media (max-width: 560px) { .brand-logo { height: 32px; } }
       .brand-tag { color: var(--text-2); font-size: 14px; margin-left: auto; }
       @media (max-width: 560px) { .brand-tag { display: none; } }
 
@@ -681,7 +684,7 @@
   <body>
     <header class="topbar">
       <div class="page-shell topbar-inner">
-        <div class="brand-name">Find Business Reviews</div>
+        <a class="brand-logo-link" href="./"><img class="brand-logo" src="./logo.png" alt="Find Business Reviews" /></a>
         <div class="brand-tag">Trust before you buy</div>
       </div>
     </header>
