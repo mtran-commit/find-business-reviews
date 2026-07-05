@@ -496,7 +496,7 @@ const TREND_COLORS: Record<string, RGB> = {
   Declining: RED,
 };
 
-/** Section 4: Business Analytics — 8 dashboard widgets (deterministic + AI-estimated). */
+/** Section 1: Reputation Analytics — 8 dashboard widgets (deterministic + AI-estimated). */
 function drawAnalytics(l: Layout, report: BusinessReport): void {
   const m = report.metrics;
   const s = report.sections;
@@ -513,36 +513,50 @@ function drawAnalytics(l: Layout, report: BusinessReport): void {
 
   // 1. Trust Score Trend
   drawSubHeading(l, "Trust Score Trend");
-  const dir = a.trustScoreTrend.direction || "Unknown";
+  const dirRaw = a.trustScoreTrend.direction || "Unknown";
+  const noHistory = dirRaw === "Unknown" || dirRaw === "Not enough historical data";
+  const dir = noHistory ? "Not enough historical data" : dirRaw;
   const trendColor = TREND_COLORS[dir] || GREY;
   ensureSpace(l, 22);
   pill(l.page, MARGIN, l.y - 15, dir, l.bold, 9, trendColor, WHITE);
   l.y -= 24;
-  const trendExpl =
-    a.trustScoreTrend.explanation ||
-    (dir === "Unknown" ? "Not enough review history to judge a trend yet." : "");
-  if (trendExpl) drawParagraph(l, trendExpl, { size: 9.5, gap: 4 });
-  estNote("AI estimated from available review data.");
+  if (noHistory) {
+    drawParagraph(l, "Trend tracking will begin from this report.", { size: 9.5, gap: 8 });
+  } else {
+    if (a.trustScoreTrend.explanation) drawParagraph(l, a.trustScoreTrend.explanation, { size: 9.5, gap: 4 });
+    estNote("AI estimated from available review data.");
+  }
 
-  // 2. Review Volume Trend
-  drawSubHeading(l, "Review Volume Trend");
+  // 2. Review Volume Analytics
+  drawSubHeading(l, "Review Volume Analytics");
   const rv = calc.reviewVolume;
-  if (rv.competitorAverage !== null) {
-    const maxN = Math.max(rv.own, rv.competitorAverage, 1);
+  if (rv.topCompetitor !== null) {
+    const maxN = Math.max(rv.own, rv.topCompetitor.reviews, 1);
     drawMetricBar(l, "This business", rv.own / maxN, rv.own.toLocaleString("en-AU"), PURPLE, 110);
-    drawMetricBar(l, "Competitor avg", rv.competitorAverage / maxN, rv.competitorAverage.toLocaleString("en-AU"), LAVENDER_DIM, 110);
+    drawMetricBar(l, "Top competitor", rv.topCompetitor.reviews / maxN, rv.topCompetitor.reviews.toLocaleString("en-AU"), LAVENDER_DIM, 110);
     const volLabel =
       rv.comparison === "Above"
-        ? "Above nearby competitor average"
+        ? "above nearby competitor average"
         : rv.comparison === "Below"
-          ? "Below nearby competitor average"
-          : "In line with nearby competitors";
+          ? "below nearby competitor average"
+          : rv.comparison === "Similar"
+            ? "in line with nearby competitors"
+            : "comparison not available";
     const volColor = rv.comparison === "Below" ? RED : rv.comparison === "Above" ? GREEN : NAVY;
-    drawParagraph(l, volLabel, { size: 10, color: volColor, bold: true, gap: 4 });
+    drawParagraph(l, `${rv.own.toLocaleString("en-AU")} reviews analysed - ${volLabel}`, { size: 10, color: volColor, bold: true, gap: 4 });
+    if (rv.reviewGap !== null && rv.reviewGap > 0) {
+      drawParagraph(
+        l,
+        `~${rv.reviewGap.toLocaleString("en-AU")} more reviews estimated to match the top nearby competitor (${rv.topCompetitor.name}). Increasing recent review volume may improve trust and conversion.`,
+        { size: 9.5, gap: 4 },
+      );
+    } else {
+      drawParagraph(l, "This business has as many public reviews as the top nearby competitor.", { size: 9.5, gap: 4 });
+    }
     if (a.reviewVolumeInsight) drawParagraph(l, a.reviewVolumeInsight, { size: 9.5, gap: 8 });
     else l.y -= 4;
   } else {
-    drawParagraph(l, `${rv.own.toLocaleString("en-AU")} reviews counted.`, { size: 10, bold: true, color: NAVY, gap: 4 });
+    drawParagraph(l, `${rv.own.toLocaleString("en-AU")} reviews analysed.`, { size: 10, bold: true, color: NAVY, gap: 4 });
     drawParagraph(
       l,
       a.reviewVolumeInsight || "No competitor review counts were available to compare against.",
@@ -550,18 +564,26 @@ function drawAnalytics(l: Layout, report: BusinessReport): void {
     );
   }
 
-  // 3. Rating Gap Analysis
-  drawSubHeading(l, "Rating Gap Analysis");
+  // 3. Platform Rating Gap
+  drawSubHeading(l, "Platform Rating Gap");
   const rg = calc.ratingGap;
   for (const v of rg.values) {
     drawMetricBar(l, v.platform, v.rating !== null ? v.rating / 5 : 0, v.rating !== null ? `${v.rating.toFixed(1)} / 5` : "-", PURPLE, 86);
   }
   if (rg.gap !== null && rg.highest && rg.lowest) {
+    drawParagraph(
+      l,
+      `Highest: ${rg.highest.platform} ${rg.highest.rating.toFixed(1)}/5   Lowest: ${rg.lowest.platform} ${rg.lowest.rating.toFixed(1)}/5`,
+      { size: 9.5, gap: 3 },
+    );
     const gapText =
       rg.gap >= 0.5
-        ? `${rg.gap.toFixed(1)}-star gap (${rg.highest.platform} vs ${rg.lowest.platform})`
-        : `${rg.gap.toFixed(1)}-star gap - consistent across platforms`;
+        ? `Rating gap: ${rg.gap.toFixed(1)} points`
+        : `Rating gap: ${rg.gap.toFixed(1)} points - consistent across platforms`;
     drawParagraph(l, gapText, { size: 10, bold: true, color: rg.gap >= 0.5 ? ORANGE : GREEN, gap: 4 });
+    if (rg.gap >= 0.5) {
+      drawParagraph(l, "A larger rating gap may cause customers to hesitate when comparing platforms.", { size: 9.5, gap: 4 });
+    }
   } else {
     drawParagraph(l, "Fewer than 2 platforms have ratings.", { size: 9.5, color: GREY, gap: 4 });
   }
@@ -573,7 +595,10 @@ function drawAnalytics(l: Layout, report: BusinessReport): void {
   const se = s.sentiment;
   if (se.positive + se.neutral + se.negative > 0) {
     drawSentimentBars(l, s);
-    if (se.estimated) estNote("Estimated from available review text.");
+    const confColor =
+      calc.sentimentConfidence === "High" ? GREEN : calc.sentimentConfidence === "Medium" ? ORANGE : RED;
+    drawParagraph(l, `Confidence: ${calc.sentimentConfidence}`, { size: 9.5, bold: true, color: confColor, gap: 3 });
+    if (se.estimated) estNote("Estimated from available public review samples.");
   } else {
     drawParagraph(l, "Not enough review text to estimate sentiment.", { size: 9.5, color: GREY, gap: 8 });
   }
@@ -596,29 +621,24 @@ function drawAnalytics(l: Layout, report: BusinessReport): void {
     drawParagraph(l, "No repeated complaint themes were identified in the available review samples.", { size: 9.5, color: GREY, gap: 8 });
   }
 
-  // 6. Competitor Analytics
-  drawSubHeading(l, "Competitor Analytics");
-  if (m.competitors.length) {
-    drawTable(
+  // 6. Competitor Gap
+  drawSubHeading(l, "Competitor Gap");
+  const cg = calc.competitorGap;
+  if (cg.ownTrustScore !== null && cg.topCompetitor && cg.gap !== null) {
+    const maxScore = Math.max(cg.ownTrustScore, cg.topCompetitor.trustScore, 1);
+    drawMetricBar(l, "Your Trust Score", cg.ownTrustScore / maxScore, `${cg.ownTrustScore}/100`, PURPLE, 110);
+    drawMetricBar(l, "Top competitor", cg.topCompetitor.trustScore / maxScore, `${cg.topCompetitor.trustScore}/100`, LAVENDER_DIM, 110);
+    const ahead = cg.gap <= 0;
+    drawParagraph(
       l,
-      [
-        { header: "Competitor", width: 170 },
-        { header: "Trust", width: 58 },
-        { header: "Rating", width: 62 },
-        { header: "Reviews", width: 62 },
-        { header: "Position", width: CONTENT_W - 170 - 58 - 62 - 62 },
-      ],
-      m.competitors.map((c) => [
-        c.name + (c.demo ? " (illustrative)" : ""),
-        c.trustScore !== null ? `${c.trustScore}/100` : "-",
-        c.averageRating,
-        c.reviews,
-        c.comparison,
-      ]),
+      ahead
+        ? `You lead ${cg.topCompetitor.name} by ${Math.abs(cg.gap)} points.`
+        : `Gap to ${cg.topCompetitor.name}: ${cg.gap} points.`,
+      { size: 10, bold: true, color: ahead ? GREEN : ORANGE, gap: 4 },
     );
     estNote("Sentiment comparison is not available for competitors from public data.");
   } else {
-    drawParagraph(l, "No nearby competitor data was available for this report.", { size: 9.5, color: GREY, gap: 8 });
+    drawParagraph(l, "No competitor Trust Scores were available to compare against for this report.", { size: 9.5, color: GREY, gap: 8 });
   }
 
   // 7. Lost Customer Risk
@@ -642,19 +662,20 @@ function drawAnalytics(l: Layout, report: BusinessReport): void {
   // 8. Growth Opportunity Score
   drawSubHeading(l, "Growth Opportunity Score");
   const go = a.growthOpportunity;
-  if (go.score !== null) {
-    const scoreStr = String(Math.round(go.score));
-    ensureSpace(l, 30);
-    l.page.drawText(scoreStr, { x: MARGIN, y: l.y - 20, size: 20, font: l.bold, color: PURPLE });
-    const sw = l.bold.widthOfTextAtSize(scoreStr, 20);
-    l.page.drawText("/100", { x: MARGIN + sw + 3, y: l.y - 20, size: 10, font: l.bold, color: GREY });
-    l.y -= 28;
-    drawMetricBar(l, "Opportunity", go.score / 100, `${Math.round(go.score)}%`, PURPLE);
+  const goLevel =
+    go.level ||
+    (go.score !== null ? (go.score >= 70 ? "High" : go.score >= 40 ? "Medium" : "Low") : "");
+  if (goLevel) {
+    const goColor = goLevel === "High" ? GREEN : goLevel === "Medium" ? ORANGE : GREY;
+    ensureSpace(l, 22);
+    pill(l.page, MARGIN, l.y - 15, `${goLevel} opportunity`, l.bold, 9, goColor, WHITE);
+    l.y -= 24;
+    if (go.score !== null) drawMetricBar(l, "Opportunity", go.score / 100, `${Math.round(go.score)}%`, PURPLE);
     if (go.focusAreas.length) drawChipsRow(l, "Fastest improvement areas", go.focusAreas, PURPLE);
     if (go.rationale) drawParagraph(l, go.rationale, { size: 9.5, gap: 4 });
-    estNote("AI estimated - higher means more untapped opportunity.");
+    estNote("AI estimated from available review data.");
   } else {
-    drawParagraph(l, "Not enough data to estimate a growth opportunity score yet.", { size: 9.5, color: GREY, gap: 8 });
+    drawParagraph(l, "Not enough data to estimate a growth opportunity level yet.", { size: 9.5, color: GREY, gap: 8 });
   }
 }
 
@@ -872,7 +893,11 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   // ---- KPI cards ----
   drawKpiCards(l, m, s);
 
-  // 1. Executive Summary
+  // 1. Reputation Analytics
+  drawSectionHeading(l, "Reputation Analytics");
+  drawAnalytics(l, report);
+
+  // 2. Executive Summary
   drawSectionHeading(l, "Executive Summary");
   drawParagraph(l, s.executiveSummary);
   const meaning =
@@ -942,10 +967,6 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
     drawParagraph(l, "No platform checklist was generated for this report.", { color: GREY });
   }
   drawCallout(l, "How the Trust Score treats this", TRUST_SCORE_EXPLANATION);
-
-  // 4. Business Analytics
-  drawSectionHeading(l, "Business Analytics");
-  drawAnalytics(l, report);
 
   // 5. Sentiment
   drawSectionHeading(l, "AI Customer Sentiment Analysis");

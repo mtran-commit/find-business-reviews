@@ -209,11 +209,12 @@ const AiSectionsSchema = z.object({
         .default({ level: "", factors: [] }),
       growthOpportunity: z
         .object({
+          level: z.string().trim().default(""),
           score: z.number().min(0).max(100).nullable().default(null),
           focusAreas: z.array(z.string().trim().min(1)).max(4).default([]),
           rationale: z.string().trim().default(""),
         })
-        .default({ score: null, focusAreas: [], rationale: "" }),
+        .default({ level: "", score: null, focusAreas: [], rationale: "" }),
     })
     .default({
       trustScoreTrend: { direction: "Unknown", explanation: "" },
@@ -221,7 +222,7 @@ const AiSectionsSchema = z.object({
       ratingGapInsight: "",
       complaintFrequency: [],
       lostCustomerRisk: { level: "", factors: [] },
-      growthOpportunity: { score: null, focusAreas: [], rationale: "" },
+      growthOpportunity: { level: "", score: null, focusAreas: [], rationale: "" },
     }),
 });
 
@@ -431,7 +432,18 @@ export interface ReportAnalytics {
     own: number;
     competitorAverage: number | null;
     comparison: "Above" | "Similar" | "Below" | "Unknown";
+    topCompetitor: { name: string; reviews: number } | null;
+    /** Extra reviews needed to match the top nearby competitor (0 when ahead). */
+    reviewGap: number | null;
   };
+  competitorGap: {
+    ownTrustScore: number | null;
+    topCompetitor: { name: string; trustScore: number } | null;
+    /** topCompetitor.trustScore - ownTrustScore (negative when ahead). */
+    gap: number | null;
+  };
+  /** Deterministic confidence label derived from data quality. */
+  sentimentConfidence: "High" | "Medium" | "Low";
 }
 
 function parseRating(s: string): number | null {
@@ -475,9 +487,15 @@ export function computeAnalytics(m: ReportMetrics): ReportAnalytics {
     };
   }
 
-  const realCompetitorCounts = m.competitors
+  const realCompetitors = m.competitors
     .filter((c) => !c.demo)
-    .map((c) => parseCount(c.reviews))
+    .map((c) => ({
+      name: c.name,
+      reviews: parseCount(c.reviews),
+      trustScore: c.trustScore,
+    }));
+  const realCompetitorCounts = realCompetitors
+    .map((c) => c.reviews)
     .filter((n): n is number => n !== null && n > 0);
   const competitorAverage =
     realCompetitorCounts.length > 0
@@ -493,9 +511,59 @@ export function computeAnalytics(m: ReportMetrics): ReportAnalytics {
     else comparison = "Similar";
   }
 
+  // Top nearby competitor by review count (real competitors only).
+  let topCompetitor: ReportAnalytics["reviewVolume"]["topCompetitor"] = null;
+  for (const c of realCompetitors) {
+    if (
+      c.reviews !== null &&
+      c.reviews > 0 &&
+      (!topCompetitor || c.reviews > topCompetitor.reviews)
+    ) {
+      topCompetitor = { name: c.name, reviews: c.reviews };
+    }
+  }
+  const reviewGap =
+    topCompetitor !== null
+      ? Math.max(0, topCompetitor.reviews - m.totalReviews)
+      : null;
+
+  // Trust Score gap vs the highest-scoring real competitor.
+  let topByScore: ReportAnalytics["competitorGap"]["topCompetitor"] = null;
+  for (const c of realCompetitors) {
+    if (
+      c.trustScore !== null &&
+      (!topByScore || c.trustScore > topByScore.trustScore)
+    ) {
+      topByScore = { name: c.name, trustScore: c.trustScore };
+    }
+  }
+  const competitorGap: ReportAnalytics["competitorGap"] = {
+    ownTrustScore: m.trustScore,
+    topCompetitor: topByScore,
+    gap:
+      m.trustScore !== null && topByScore !== null
+        ? topByScore.trustScore - m.trustScore
+        : null,
+  };
+
+  const sentimentConfidence: ReportAnalytics["sentimentConfidence"] =
+    m.dataQuality === "High"
+      ? "High"
+      : m.dataQuality === "Medium"
+        ? "Medium"
+        : "Low";
+
   return {
     ratingGap: gap,
-    reviewVolume: { own: m.totalReviews, competitorAverage, comparison },
+    reviewVolume: {
+      own: m.totalReviews,
+      competitorAverage,
+      comparison,
+      topCompetitor,
+      reviewGap,
+    },
+    competitorGap,
+    sentimentConfidence,
   };
 }
 
@@ -565,9 +633,11 @@ const SYSTEM_PROMPT =
   "analytics (object with EXACTLY these keys — all estimates must come ONLY " +
   "from the data provided, never invented: " +
   "trustScoreTrend (object {direction, explanation}: direction is 'Improving', " +
-  "'Stable', 'Declining' or 'Unknown' — judge cautiously from the balance of " +
-  "recent positive vs negative review snippet themes; if snippets are limited " +
-  "use 'Unknown' and say why in explanation (1-2 sentences)); " +
+  "'Stable', 'Declining' or 'Not enough historical data' — judge cautiously " +
+  "from the balance of recent positive vs negative review snippet themes; " +
+  "NEVER invent a trend: if there is no clear historical signal use 'Not " +
+  "enough historical data' with explanation exactly 'Trend tracking will " +
+  "begin from this report.'; otherwise explain in 1-2 sentences); " +
   "reviewVolumeInsight (string, 1-2 sentences: whether the business appears to " +
   "be getting enough new reviews compared with the competitor review counts " +
   "given — if no competitor data, say the comparison is not available); " +
@@ -583,12 +653,14 @@ const SYSTEM_PROMPT =
   "factors is 1-4 short statements on what may be stopping customers from " +
   "choosing the business, worded carefully like 'may be costing'; use level " +
   "'Low' with a cautious factor when data is limited); " +
-  "growthOpportunity (object {score, focusAreas, rationale}: score is an " +
-  "integer 0-100 estimating how much room there is to improve fastest (higher " +
-  "= more untapped opportunity, e.g. missing platforms, low review volume, " +
-  "fixable complaints), focusAreas is 1-4 short phrases naming the fastest " +
-  "improvement areas, rationale is 1-2 sentences; score null if there is no " +
-  "meaningful data)).";
+  "growthOpportunity (object {level, score, focusAreas, rationale}: level is " +
+  "'High', 'Medium' or 'Low' — how much room there is to improve fastest " +
+  "(e.g. 'High' when ratings are strong but review volume is lower than " +
+  "competitors, platforms are missing, or complaints are easily fixable), " +
+  "score is a matching integer 0-100 (higher = more untapped opportunity), " +
+  "focusAreas is 1-4 short phrases naming the fastest improvement areas, " +
+  "rationale is 1-2 sentences explaining the level; level '' and score null " +
+  "if there is no meaningful data)).";
 
 function snippetBlock(label: string, items: string[]): string {
   const clean = items

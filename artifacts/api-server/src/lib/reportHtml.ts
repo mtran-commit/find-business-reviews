@@ -426,6 +426,12 @@ const TREND_STYLES: Record<string, [string, string]> = {
   Declining: ["#DC2626", "&#8600;"],
 };
 
+const CONFIDENCE_COLORS: Record<string, string> = {
+  High: "#16A34A",
+  Medium: "#F97316",
+  Low: "#DC2626",
+};
+
 function analyticsSection(report: BusinessReport): string {
   const m = report.metrics;
   const s = report.sections;
@@ -442,21 +448,23 @@ function analyticsSection(report: BusinessReport): string {
     text ? `<div class="ana-note">${esc(text)}</div>` : "";
 
   /* 1. Trust Score Trend */
-  const dir = a.trustScoreTrend.direction || "Unknown";
+  const dirRaw = a.trustScoreTrend.direction || "Unknown";
+  const noHistory = dirRaw === "Unknown" || dirRaw === "Not enough historical data";
+  const dir = noHistory ? "Not enough historical data" : dirRaw;
   const [trendColor, trendArrow] = TREND_STYLES[dir] || ["#5F6368", "&#8226;"];
   const trend = widget(
     "Trust Score Trend",
     "up",
-    `<div class="ana-big" style="color:${trendColor}"><span class="ana-arrow">${trendArrow}</span>${esc(dir)}</div>
-     ${note(a.trustScoreTrend.explanation || (dir === "Unknown" ? "Not enough review history to judge a trend yet." : ""))}
-     <div class="ana-est">AI estimated from available review data</div>`,
+    `<div class="ana-big${noHistory ? " ana-mid" : ""}" style="color:${trendColor}"><span class="ana-arrow">${trendArrow}</span>${esc(dir)}</div>
+     ${note(noHistory ? "Trend tracking will begin from this report." : a.trustScoreTrend.explanation)}
+     ${noHistory ? "" : `<div class="ana-est">AI estimated from available review data</div>`}`,
   );
 
-  /* 2. Review Volume Trend */
+  /* 2. Review Volume Analytics */
   const rv = calc.reviewVolume;
   let volBody: string;
-  if (rv.competitorAverage !== null) {
-    const maxN = Math.max(rv.own, rv.competitorAverage, 1);
+  if (rv.topCompetitor !== null) {
+    const maxN = Math.max(rv.own, rv.topCompetitor.reviews, 1);
     const volBar = (label: string, val: number, color: string) => `
       <div class="bar-row">
         <div class="bar-label" style="width:110px">${esc(label)}</div>
@@ -468,22 +476,29 @@ function analyticsSection(report: BusinessReport): string {
         ? "Above nearby competitor average"
         : rv.comparison === "Below"
           ? "Below nearby competitor average"
-          : "In line with nearby competitors";
+          : rv.comparison === "Similar"
+            ? "In line with nearby competitors"
+            : "Comparison not available";
+    const gapLine =
+      rv.reviewGap !== null && rv.reviewGap > 0
+        ? `<div class="ana-note"><strong>~${rv.reviewGap.toLocaleString("en-AU")} more reviews</strong> estimated to match the top nearby competitor (${esc(rv.topCompetitor.name)}). Increasing recent review volume may improve trust and conversion.</div>`
+        : `<div class="ana-note">This business has as many public reviews as the top nearby competitor.</div>`;
     volBody = `<div class="bars" style="margin-bottom:8px">
         ${volBar("This business", rv.own, "#7B3CFF")}
-        ${volBar("Competitor avg", rv.competitorAverage, "#C9BEEF")}
+        ${volBar("Top competitor", rv.topCompetitor.reviews, "#C9BEEF")}
       </div>
-      <div class="ana-big ana-mid" style="color:${rv.comparison === "Below" ? "#DC2626" : rv.comparison === "Above" ? "#16A34A" : "#071A3D"}">${esc(volLabel)}</div>
+      <div class="ana-big ana-mid" style="color:${rv.comparison === "Below" ? "#DC2626" : rv.comparison === "Above" ? "#16A34A" : "#071A3D"}">${rv.own.toLocaleString("en-AU")} reviews analysed — ${esc(volLabel.toLowerCase())}</div>
+      ${gapLine}
       ${note(a.reviewVolumeInsight)}`;
   } else {
     volBody =
-      `<div class="ana-big ana-mid">${rv.own.toLocaleString("en-AU")} reviews counted</div>` +
+      `<div class="ana-big ana-mid">${rv.own.toLocaleString("en-AU")} reviews analysed</div>` +
       note(
         a.reviewVolumeInsight ||
           "No competitor review counts were available to compare against.",
       );
   }
-  const volume = widget("Review Volume Trend", "reviews", volBody);
+  const volume = widget("Review Volume Analytics", "reviews", volBody);
 
   /* 3. Rating Gap Analysis */
   const rg = calc.ratingGap;
@@ -499,10 +514,15 @@ function analyticsSection(report: BusinessReport): string {
     .join("");
   const gapLine =
     rg.gap !== null && rg.highest && rg.lowest
-      ? `<div class="ana-big ana-mid" style="color:${rg.gap >= 0.5 ? "#F97316" : "#16A34A"}">${rg.gap.toFixed(1)}-star gap${rg.gap >= 0.5 ? ` (${esc(rg.highest.platform)} vs ${esc(rg.lowest.platform)})` : " — consistent across platforms"}</div>`
+      ? `<div class="ana-hilo">
+          <span>Highest: <strong>${esc(rg.highest.platform)} ${rg.highest.rating.toFixed(1)}/5</strong></span>
+          <span>Lowest: <strong>${esc(rg.lowest.platform)} ${rg.lowest.rating.toFixed(1)}/5</strong></span>
+        </div>
+        <div class="ana-big ana-mid" style="color:${rg.gap >= 0.5 ? "#F97316" : "#16A34A"}">Rating gap: ${rg.gap.toFixed(1)} points${rg.gap < 0.5 ? " — consistent across platforms" : ""}</div>
+        ${rg.gap >= 0.5 ? `<div class="ana-note">A larger rating gap may cause customers to hesitate when comparing platforms.</div>` : ""}`
       : `<div class="ana-big ana-mid muted">Fewer than 2 platforms have ratings</div>`;
   const gapW = widget(
-    "Rating Gap Analysis",
+    "Platform Rating Gap",
     "scale",
     `<div class="bars" style="margin-bottom:8px">${gapBars}</div>${gapLine}${note(a.ratingGapInsight)}`,
   );
@@ -524,7 +544,9 @@ function analyticsSection(report: BusinessReport): string {
           ${sentBar("Positive", se.positive, "#16A34A")}
           ${sentBar("Neutral", se.neutral, "#F97316")}
           ${sentBar("Negative", se.negative, "#DC2626")}
-        </div>${se.estimated ? `<div class="ana-est">Estimated from available review text</div>` : ""}`
+        </div>
+        <div class="ana-hilo" style="margin-top:6px"><span>Confidence: <strong style="color:${CONFIDENCE_COLORS[calc.sentimentConfidence]}">${esc(calc.sentimentConfidence)}</strong></span></div>
+        ${se.estimated ? `<div class="ana-est">Estimated from available public review samples.</div>` : ""}`
       : na("Not enough review text to estimate sentiment."),
   );
 
@@ -546,29 +568,30 @@ function analyticsSection(report: BusinessReport): string {
       : na("No repeated complaint themes were identified in the available review samples."),
   );
 
-  /* 6. Competitor Analytics */
-  const comps = m.competitors;
-  const competitor = widget(
-    "Competitor Analytics",
-    "chart",
-    comps.length
-      ? `<table class="tbl ana-tbl">
-          <thead><tr><th>Competitor</th><th>Trust</th><th>Rating</th><th>Reviews</th><th>Position</th></tr></thead>
-          <tbody>${comps
-            .map(
-              (c) => `<tr>
-                <td class="strong">${esc(c.name)}${c.demo ? ` <span class="demo-tag">Illustrative</span>` : ""}</td>
-                <td>${c.trustScore !== null ? `${esc(c.trustScore)}/100` : "—"}</td>
-                <td>${esc(c.averageRating)}</td>
-                <td>${esc(c.reviews)}</td>
-                <td class="muted">${esc(c.comparison)}</td>
-              </tr>`,
-            )
-            .join("")}</tbody>
-        </table>
-        <div class="ana-est">Sentiment comparison is not available for competitors from public data.</div>`
-      : na("No nearby competitor data was available for this report."),
-  );
+  /* 6. Competitor Gap */
+  const cg = calc.competitorGap;
+  let cgBody: string;
+  if (cg.ownTrustScore !== null && cg.topCompetitor && cg.gap !== null) {
+    const maxScore = Math.max(cg.ownTrustScore, cg.topCompetitor.trustScore, 1);
+    const cgBar = (label: string, val: number, color: string) => `
+      <div class="bar-row">
+        <div class="bar-label" style="width:110px">${esc(label)}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${Math.max(3, Math.round((val / maxScore) * 100))}%;background:${color}"></div></div>
+        <div class="bar-val" style="width:52px">${val}</div>
+      </div>`;
+    const ahead = cg.gap <= 0;
+    cgBody = `<div class="bars" style="margin-bottom:8px">
+        ${cgBar("Your Trust Score", cg.ownTrustScore, "#7B3CFF")}
+        ${cgBar("Top competitor", cg.topCompetitor.trustScore, "#C9BEEF")}
+      </div>
+      <div class="ana-big ana-mid" style="color:${ahead ? "#16A34A" : "#F97316"}">${ahead ? `You lead ${esc(cg.topCompetitor.name)} by ${Math.abs(cg.gap)} points` : `Gap to ${esc(cg.topCompetitor.name)}: ${cg.gap} points`}</div>
+      <div class="ana-est">Sentiment comparison is not available for competitors from public data.</div>`;
+  } else {
+    cgBody = na(
+      "No competitor Trust Scores were available to compare against for this report.",
+    );
+  }
+  const competitor = widget("Competitor Gap", "chart", cgBody);
 
   /* 7. Lost Customer Risk */
   const lcr = a.lostCustomerRisk;
@@ -585,16 +608,21 @@ function analyticsSection(report: BusinessReport): string {
 
   /* 8. Growth Opportunity Score */
   const go = a.growthOpportunity;
+  const goLevel =
+    go.level ||
+    (go.score !== null ? (go.score >= 70 ? "High" : go.score >= 40 ? "Medium" : "Low") : "");
+  const goColor =
+    goLevel === "High" ? "#16A34A" : goLevel === "Medium" ? "#F97316" : "#5F6368";
   const growth = widget(
     "Growth Opportunity Score",
     "gauge",
-    go.score !== null
-      ? `<div class="ana-big" style="color:#7B3CFF">${Math.round(go.score)}<span class="ana-denom">/100</span></div>
-        <div class="bar-track" style="margin:6px 0 10px"><div class="bar-fill" style="width:${Math.max(0, Math.min(100, go.score))}%;background:linear-gradient(90deg,#7B3CFF,#9A5CFF)"></div></div>
+    goLevel
+      ? `<div class="ana-big" style="color:${goColor}">${esc(goLevel)} opportunity</div>
+        ${go.score !== null ? `<div class="bar-track" style="margin:6px 0 10px"><div class="bar-fill" style="width:${Math.max(0, Math.min(100, go.score))}%;background:linear-gradient(90deg,#7B3CFF,#9A5CFF)"></div></div>` : ""}
         ${go.focusAreas.length ? `<div class="chips" style="margin-bottom:8px">${go.focusAreas.map((f) => `<span class="chip" style="border-color:#7B3CFF55;color:#7B3CFF">${esc(f)}</span>`).join("")}</div>` : ""}
         ${note(go.rationale)}
-        <div class="ana-est">AI estimated — higher means more untapped opportunity</div>`
-      : na("Not enough data to estimate a growth opportunity score yet."),
+        <div class="ana-est">AI estimated from available review data</div>`
+      : na("Not enough data to estimate a growth opportunity level yet."),
   );
 
   return `<p class="muted" style="margin-top:0">A dashboard view of the key reputation analytics behind this report. Estimated items are based only on the public review data available.</p>
@@ -602,10 +630,10 @@ function analyticsSection(report: BusinessReport): string {
 }
 
 const SECTION_ICONS: Record<number, string> = {
-  1: "doc",
-  2: "scale",
-  3: "check",
-  4: "chart",
+  1: "chart",
+  2: "doc",
+  3: "scale",
+  4: "check",
   5: "chat",
   6: "star",
   7: "alert",
@@ -752,6 +780,7 @@ export function buildReportHtml(report: BusinessReport): string {
   .ana-arrow { margin-right:6px; }
   .ana-denom { font-size:14px; font-weight:700; color:#5F6368; }
   .ana-note { font-size:12.5px; color:#050505; background:#F7F7F4; border-radius:9px; padding:9px 11px; margin-top:8px; }
+  .ana-hilo { display:flex; gap:16px; flex-wrap:wrap; font-size:12.5px; color:#050505; margin-bottom:6px; }
   .ana-est { font-size:11px; color:#5F6368; font-style:italic; margin-top:8px; }
   .ana-rows { display:flex; flex-direction:column; gap:8px; }
   .ana-row { display:flex; align-items:flex-start; justify-content:space-between; gap:10px; background:#FAFAF8; border:1px solid #EEE; border-radius:10px; padding:9px 12px; font-size:13px; }
@@ -839,10 +868,10 @@ export function buildReportHtml(report: BusinessReport): string {
   </div></header>
   <div class="wrap">
     ${kpiCards(m, s)}
-    ${section(1, "Executive Summary", execSummary(report))}
-    ${section(2, "Platform-by-Platform Comparison", platformTable(m, s))}
-    ${section(3, "Platform Checklist", checklistSection(s))}
-    ${section(4, "Business Analytics", analyticsSection(report))}
+    ${section(1, "Reputation Analytics", analyticsSection(report))}
+    ${section(2, "Executive Summary", execSummary(report))}
+    ${section(3, "Platform-by-Platform Comparison", platformTable(m, s))}
+    ${section(4, "Platform Checklist", checklistSection(s))}
     ${section(5, "AI Customer Sentiment Analysis", sentimentSection(s))}
     ${section(6, "Top Strengths Customers Mention", strengthsSection(s))}
     ${section(7, "Main Complaints and Risk Level", complaintsSection(s))}
