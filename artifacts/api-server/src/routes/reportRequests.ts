@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
@@ -150,7 +150,18 @@ router.patch("/report-requests/:id", async (req, res): Promise<void> => {
   try {
     const [row] = await db
       .update(reportRequestsTable)
-      .set(parsed.data)
+      .set({
+        ...parsed.data,
+        // Preserve original event timestamps on repeated updates.
+        ...(parsed.data.status === "paid"
+          ? { paidAt: sql`COALESCE(${reportRequestsTable.paidAt}, now())` }
+          : {}),
+        ...(parsed.data.reportStatus === "sent"
+          ? {
+              reportSentAt: sql`COALESCE(${reportRequestsTable.reportSentAt}, now())`,
+            }
+          : {}),
+      })
       .where(eq(reportRequestsTable.id, idParsed.data))
       .returning();
 
@@ -179,7 +190,7 @@ router.post(
     try {
       const [updated] = await db
         .update(reportRequestsTable)
-        .set({ status: "paid" })
+        .set({ status: "paid", paidAt: row.paidAt ?? new Date() })
         .where(eq(reportRequestsTable.id, row.id))
         .returning();
       res.json(updated);
@@ -208,7 +219,7 @@ router.post(
     try {
       const [updated] = await db
         .update(reportRequestsTable)
-        .set({ reportStatus: "sent", reportSentAt: new Date() })
+        .set({ reportStatus: "sent", reportSentAt: row.reportSentAt ?? new Date() })
         .where(eq(reportRequestsTable.id, row.id))
         .returning();
       res.json(updated);

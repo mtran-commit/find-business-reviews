@@ -629,6 +629,7 @@
       .admin-table tr:hover td { background: #FCFCFB; }
       .admin-cell-strong { font-weight: 800; }
       .admin-cell-sub { color: var(--text-2); font-size: 12px; }
+      .admin-badge-date { color: var(--text-2); font-size: 11px; margin-top: 4px; white-space: nowrap; }
       .admin-id { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; color: var(--text-2); }
       .admin-link { color: var(--rp-blue); text-decoration: none; word-break: break-all; }
       .admin-link:hover { text-decoration: underline; }
@@ -1643,8 +1644,16 @@
         const d = new Date(iso);
         if (isNaN(d.getTime())) return '—';
         return d.toLocaleString('en-AU', {
-          day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit'
+          day: '2-digit', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true
         });
+      }
+
+      // Small "Label: date" line shown under a status badge, or '' when unset.
+      function badgeDate(label, iso) {
+        if (!iso) return '';
+        const txt = fmtDate(iso);
+        if (txt === '—') return '';
+        return '<div class="admin-badge-date">' + escapeHtml(label + ': ' + txt) + '</div>';
       }
 
       function paymentBadge(status) {
@@ -1764,7 +1773,7 @@
           body = '' +
             '<p class="admin-count">' + rows.length + ' request' + (rows.length === 1 ? '' : 's') + '</p>' +
             '<div class="admin-table-wrap"><table class="admin-table"><thead><tr>' +
-              '<th>Request date</th><th>Name</th><th>Email</th><th>Phone</th>' +
+              '<th>Date received</th><th>Name</th><th>Email</th><th>Phone</th>' +
               '<th>Business</th><th>Address</th><th>Website / link</th>' +
               '<th>Payment</th><th>Report</th><th>Request ID</th><th>Actions</th>' +
             '</tr></thead><tbody>' +
@@ -1830,8 +1839,10 @@
             '<td class="admin-cell-strong">' + escapeHtml(r.businessName || '—') + '</td>' +
             '<td class="admin-cell-sub">' + escapeHtml(r.businessAddress || '—') + '</td>' +
             '<td>' + link + '</td>' +
-            '<td>' + paymentBadge(r.status) + '</td>' +
-            '<td>' + reportBadge(r.reportStatus) + '</td>' +
+            '<td>' + paymentBadge(r.status) + badgeDate('Paid', r.paidAt) + '</td>' +
+            '<td>' + reportBadge(r.reportStatus) +
+              badgeDate('Generated', r.reportGeneratedAt) +
+              badgeDate('Sent', r.reportSentAt) + '</td>' +
             '<td class="admin-id">' + escapeHtml(r.id || '') + '</td>' +
             '<td><div class="admin-row-actions">' + actions + '</div></td>' +
           '</tr>';

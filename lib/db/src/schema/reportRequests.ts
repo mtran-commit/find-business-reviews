@@ -25,6 +25,7 @@ export const reportRequestsTable = pgTable("report_requests", {
   reportPdfUrl: text("report_pdf_url"),
   /** Structured AI report content, regenerated into the PDF on download. */
   reportJson: jsonb("report_json"),
+  paidAt: timestamp("paid_at", { withTimezone: true }),
   reportGeneratedAt: timestamp("report_generated_at", { withTimezone: true }),
   reportSentAt: timestamp("report_sent_at", { withTimezone: true }),
   /** Optional Stripe payment reference for manual reconciliation. */
