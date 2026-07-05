@@ -54,11 +54,19 @@ export interface ReportMetrics {
   snippetCount: number;
 }
 
+/** A Google review topic chip: a customer theme + how many reviews mention it. */
+export interface ReviewTag {
+  tag: string;
+  count: number;
+}
+
 /** Short, paraphrase-friendly review snippets collected per platform. */
 export interface ReviewSnippets {
   google: string[];
   yelp: string[];
   tripadvisor: string[];
+  /** Google review topic chips (e.g. "auction — 34 mentions"); [] when none. */
+  googleTopics: ReviewTag[];
 }
 
 const RiskEnum = z.enum(["Low", "Medium", "High"]);
@@ -223,6 +231,105 @@ const AiSectionsSchema = z.object({
       complaintFrequency: [],
       lostCustomerRisk: { level: "", factors: [] },
       growthOpportunity: { level: "", score: null, focusAreas: [], rationale: "" },
+    }),
+  customerVoiceAnalysis: z
+    .object({
+      reviewTags: z
+        .array(
+          z.object({
+            tag: z.string().trim().min(1),
+            count: z.number().min(0).default(0),
+            customerMeaning: z.string().trim().default(""),
+            businessAction: z.string().trim().default(""),
+          }),
+        )
+        .max(15)
+        .default([]),
+      whatCustomersLove: z
+        .array(
+          z.object({
+            theme: z.string().trim().min(1),
+            explanation: z.string().trim().default(""),
+            evidence: z.string().trim().default(""),
+            opportunity: z.string().trim().default(""),
+          }),
+        )
+        .max(6)
+        .default([]),
+      customerConcerns: z
+        .array(
+          z.object({
+            theme: z.string().trim().min(1),
+            riskLevel: z.string().trim().default(""),
+            explanation: z.string().trim().default(""),
+            recommendedFix: z.string().trim().default(""),
+          }),
+        )
+        .max(6)
+        .default([]),
+      concernsNote: z.string().trim().default(""),
+      clientExpectationMap: z.array(z.string().trim().min(1)).max(8).default([]),
+      improvementPriorities: z
+        .array(
+          z.object({
+            priority: z.string().trim().min(1),
+            level: z.string().trim().default(""),
+            whyItMatters: z.string().trim().default(""),
+            action: z.string().trim().default(""),
+            expectedImpact: z.string().trim().default(""),
+          }),
+        )
+        .max(6)
+        .default([]),
+      actionRecommendations: z
+        .object({
+          websiteChanges: z.array(z.string().trim().min(1)).max(5).default([]),
+          reviewProcess: z.array(z.string().trim().min(1)).max(5).default([]),
+          staffCommunication: z.array(z.string().trim().min(1)).max(5).default([]),
+          marketingActions: z.array(z.string().trim().min(1)).max(5).default([]),
+          competitorMonitoring: z.array(z.string().trim().min(1)).max(5).default([]),
+        })
+        .default({
+          websiteChanges: [],
+          reviewProcess: [],
+          staffCommunication: [],
+          marketingActions: [],
+          competitorMonitoring: [],
+        }),
+      customerLanguageInsights: z
+        .object({
+          wordsCustomersUse: z.array(z.string().trim().min(1)).max(12).default([]),
+          phrasesToUseInMarketing: z
+            .array(z.string().trim().min(1))
+            .max(8)
+            .default([]),
+          phrasesToAvoid: z.array(z.string().trim().min(1)).max(8).default([]),
+        })
+        .default({
+          wordsCustomersUse: [],
+          phrasesToUseInMarketing: [],
+          phrasesToAvoid: [],
+        }),
+    })
+    .default({
+      reviewTags: [],
+      whatCustomersLove: [],
+      customerConcerns: [],
+      concernsNote: "",
+      clientExpectationMap: [],
+      improvementPriorities: [],
+      actionRecommendations: {
+        websiteChanges: [],
+        reviewProcess: [],
+        staffCommunication: [],
+        marketingActions: [],
+        competitorMonitoring: [],
+      },
+      customerLanguageInsights: {
+        wordsCustomersUse: [],
+        phrasesToUseInMarketing: [],
+        phrasesToAvoid: [],
+      },
     }),
 });
 
@@ -569,6 +676,13 @@ export function computeAnalytics(m: ReportMetrics): ReportAnalytics {
 
 const SYSTEM_PROMPT =
   "You are generating a paid AI Business Reputation Report for a business owner. " +
+  "You are analysing customer reviews for that owner: your job is to explain " +
+  "what clients actually think, using the review text, Google review tags/topic " +
+  "chips (with mention counts), repeated customer words and phrases, ratings, " +
+  "review dates, review volume and competitor signals provided. Focus on " +
+  "practical business insight: what customers love, what may concern them, what " +
+  "needs improvement, and what actions the business should take. Do not invent " +
+  "complaints. If data is limited, clearly say so. " +
   "Analyse the available Google, Yelp and TripAdvisor ratings, review counts, " +
   "review snippets, customer sentiment themes and competitor signals provided. " +
   "Provide practical, specific, business-friendly recommendations for an " +
@@ -581,8 +695,10 @@ const SYSTEM_PROMPT =
   "the business potential customers' rather than 'this business is losing " +
   "customers'; write 'some available review samples suggest' rather than " +
   "'customers hate'. Return structured JSON ONLY with EXACTLY these keys:\n" +
-  "executiveSummary (string: 3-5 sentences on overall reputation, main " +
-  "strengths, main weaknesses, focus areas, and local competitiveness); " +
+  "executiveSummary (string: 4-6 sentences that answer, in plain language: what " +
+  "clients think about this business, what they like most, what concerns or " +
+  "risks appear, what the business needs to improve, what the owner should do " +
+  "this week, and what to monitor over the next 30 days); " +
   "customerSentimentLabel (string: e.g. 'Mostly Positive', 'Positive', 'Mixed'); " +
   "platformMeanings (object {google, yelp, tripadvisor}: each a one-sentence " +
   "business meaning, '' if no listing); " +
@@ -660,7 +776,51 @@ const SYSTEM_PROMPT =
   "score is a matching integer 0-100 (higher = more untapped opportunity), " +
   "focusAreas is 1-4 short phrases naming the fastest improvement areas, " +
   "rationale is 1-2 sentences explaining the level; level '' and score null " +
-  "if there is no meaningful data)).";
+  "if there is no meaningful data)); " +
+  "customerVoiceAnalysis (object explaining what customers are actually " +
+  "saying, with EXACTLY these keys: " +
+  "reviewTags (array of objects {tag, count, customerMeaning, businessAction} " +
+  "— one entry per Google review tag/topic chip PROVIDED in the input, keeping " +
+  "the exact tag text and mention count given (count 0 if no count was given); " +
+  "customerMeaning explains in 1-2 sentences what the tag says about customer " +
+  "priorities, businessAction is one practical action; EMPTY ARRAY if no tags " +
+  "were provided — NEVER invent tags or counts); " +
+  "whatCustomersLove (array of 3-5 objects {theme, explanation, evidence, " +
+  "opportunity}: positive themes drawn from the review text and tags; evidence " +
+  "cites paraphrased review/tag signals like 'mentioned in the auction tag (34 " +
+  "mentions)' — never invented quotes; opportunity is how the business can use " +
+  "the theme; fewer or empty if data is limited); " +
+  "customerConcerns (array of 0-4 objects {theme, riskLevel, explanation, " +
+  "recommendedFix}: concerns from low-rated reviews, negative snippets and " +
+  "platform rating gaps; riskLevel 'Low', 'Medium' or 'High'; do NOT invent " +
+  "complaints — empty array if no negative signals exist); " +
+  "concernsNote (string: '' normally, but when there is not enough negative " +
+  "review text set it exactly to 'Limited negative review text was available. " +
+  "Risks are inferred from rating gaps and available public review signals.'); " +
+  "clientExpectationMap (array of 4-6 short phrases describing what customers " +
+  "appear to expect from THIS business given its industry and the review " +
+  "themes, e.g. for real estate: fast communication, honest market advice, " +
+  "clear explanation of the selling process, emotional support, strong auction " +
+  "strategy, regular updates; for restaurants: consistent food quality, " +
+  "friendly service, good value; for trades: arrive on time, clear pricing, " +
+  "good workmanship); " +
+  "improvementPriorities (array of 2-4 objects {priority, level, whyItMatters, " +
+  "action, expectedImpact}: a RANKED list of what to improve first; priority " +
+  "is a short title like 'Increase recent review volume', level is 'High', " +
+  "'Medium' or 'Low', whyItMatters/action/expectedImpact are one sentence " +
+  "each, grounded only in the data given); " +
+  "actionRecommendations (object {websiteChanges, reviewProcess, " +
+  "staffCommunication, marketingActions, competitorMonitoring} — each an array " +
+  "of 1-3 short practical actions; marketing should reuse the customers' own " +
+  "words/tags; reviewProcess should say when to ask for reviews for this " +
+  "industry); " +
+  "customerLanguageInsights (object {wordsCustomersUse, " +
+  "phrasesToUseInMarketing, phrasesToAvoid}: wordsCustomersUse is 4-10 single " +
+  "words/short phrases that ACTUALLY appear in the review snippets/tags given; " +
+  "phrasesToUseInMarketing is 2-4 marketing phrases built from those words; " +
+  "phrasesToAvoid is 2-4 phrases to avoid such as generic claims with no " +
+  "proof, guaranteed-outcome language, overpromising, or saying 'best' " +
+  "without evidence)).";
 
 function snippetBlock(label: string, items: string[]): string {
   const clean = items
@@ -710,6 +870,14 @@ export async function generateAiSections(
     snippetBlock("Yelp", snippets.yelp) +
     snippetBlock("TripAdvisor", snippets.tripadvisor);
 
+  const tagLines = (snippets.googleTopics ?? [])
+    .map((t) => `- ${t.tag} — ${t.count > 0 ? `${t.count} mentions` : "mention count not available"}`)
+    .join("\n");
+  const tagText = tagLines
+    ? `Google review tags / topic chips (customer themes — use these in ` +
+      `customerVoiceAnalysis.reviewTags with the exact tags and counts):\n${tagLines}\n`
+    : "No Google review tags/topic chips were available — customerVoiceAnalysis.reviewTags must be an empty array.\n";
+
   const { openai } = await import("@workspace/integrations-openai-ai-server");
   const completion = await openai.chat.completions.create({
     model: "gpt-5-mini",
@@ -728,6 +896,7 @@ export async function generateAiSections(
           `Data quality: ${metrics.dataQuality} (${metrics.snippetCount} review snippets available)\n` +
           `Platform ratings:\n${ratingLines}\n` +
           `Nearby competitors:\n${competitorLines}\n` +
+          tagText +
           (snippetText
             ? `\nReview snippets to base themes on:\n${snippetText}`
             : "\nNo review snippet text was available; base themes cautiously on the ratings only and set sentiment.estimated to true."),
@@ -742,5 +911,49 @@ export async function generateAiSections(
   if (!parsed.success) {
     throw new Error("AI report failed validation.");
   }
-  return parsed.data;
+  return groundCustomerVoice(parsed.data, snippets.googleTopics ?? [], metrics.snippetCount);
+}
+
+const LIMITED_CONCERNS_NOTE =
+  "Limited negative review text was available. Risks are inferred from rating gaps and available public review signals.";
+
+/**
+ * Deterministic anti-invention guardrails for customerVoiceAnalysis.
+ * - reviewTags may ONLY contain tags that actually came from Google review topics,
+ *   with the real mention counts (AI keeps only its interpretation columns).
+ * - When no review snippet text exists, concerns cannot be grounded in customer
+ *   words, so they are cleared and replaced with the fixed limited-data note.
+ */
+function groundCustomerVoice(
+  sections: AiSections,
+  realTags: ReviewTag[],
+  snippetCount: number,
+): AiSections {
+  const cv = sections.customerVoiceAnalysis;
+
+  if (realTags.length === 0) {
+    cv.reviewTags = [];
+  } else {
+    const byTag = new Map(
+      cv.reviewTags.map((t) => [t.tag.trim().toLowerCase(), t] as const),
+    );
+    cv.reviewTags = realTags.map((rt) => {
+      const ai = byTag.get(rt.tag.trim().toLowerCase());
+      return {
+        tag: rt.tag,
+        count: rt.count,
+        customerMeaning: ai?.customerMeaning ?? "",
+        businessAction: ai?.businessAction ?? "",
+      };
+    });
+  }
+
+  if (snippetCount === 0) {
+    cv.customerConcerns = [];
+    cv.concernsNote = LIMITED_CONCERNS_NOTE;
+  } else if (cv.customerConcerns.length === 0 && !cv.concernsNote) {
+    cv.concernsNote = LIMITED_CONCERNS_NOTE;
+  }
+
+  return sections;
 }

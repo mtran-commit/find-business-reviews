@@ -679,6 +679,164 @@ function drawAnalytics(l: Layout, report: BusinessReport): void {
   }
 }
 
+/** Customer Voice Analysis — what customers actually say (tags, love, concerns, priorities, actions). */
+function drawCustomerVoice(l: Layout, s: AiSections): void {
+  const cv = s.customerVoiceAnalysis;
+  const tags = cv.reviewTags || [];
+  const love = cv.whatCustomersLove || [];
+  const concerns = cv.customerConcerns || [];
+  const expects = cv.clientExpectationMap || [];
+  const prios = cv.improvementPriorities || [];
+  const ar = cv.actionRecommendations;
+  const li = cv.customerLanguageInsights;
+  const hasActions =
+    (ar.websiteChanges?.length || 0) +
+      (ar.reviewProcess?.length || 0) +
+      (ar.staffCommunication?.length || 0) +
+      (ar.marketingActions?.length || 0) +
+      (ar.competitorMonitoring?.length || 0) >
+    0;
+  const hasLang =
+    (li.wordsCustomersUse?.length || 0) +
+      (li.phrasesToUseInMarketing?.length || 0) +
+      (li.phrasesToAvoid?.length || 0) >
+    0;
+
+  if (
+    !tags.length &&
+    !love.length &&
+    !concerns.length &&
+    !expects.length &&
+    !prios.length &&
+    !hasActions &&
+    !hasLang
+  ) {
+    drawParagraph(
+      l,
+      "Customer voice analysis was not available for this report. It is generated from public review text and Google review topic tags when the report is created.",
+      { size: 9.5, color: GREY, gap: 8 },
+    );
+    return;
+  }
+
+  drawParagraph(
+    l,
+    "What customers are actually saying - built from public review text, Google review topic tags and repeated customer language.",
+    { size: 9.5, color: GREY, gap: 8 },
+  );
+
+  // 1. Review tag analysis table
+  if (tags.length) {
+    drawSubHeading(l, "Most Mentioned Customer Themes");
+    drawParagraph(
+      l,
+      "Google review topic tags - themes customers repeat in their reviews, with how many reviews mention each one.",
+      { size: 8.5, color: GREY, gap: 6 },
+    );
+    drawTable(
+      l,
+      [
+        { header: "TAG / TOPIC", width: CONTENT_W * 0.2 },
+        { header: "MENTIONS", width: CONTENT_W * 0.11 },
+        { header: "CUSTOMER MEANING", width: CONTENT_W * 0.39 },
+        { header: "BUSINESS ACTION", width: CONTENT_W * 0.3 },
+      ],
+      tags.map((t) => [
+        t.tag,
+        t.count > 0 ? String(t.count) : "-",
+        t.customerMeaning || "-",
+        t.businessAction || "-",
+      ]),
+    );
+  }
+
+  // 2. What customers love most
+  if (love.length) {
+    drawSubHeading(l, "What Customers Love Most");
+    for (const lv of love) {
+      drawContentCard(
+        l,
+        [
+          { text: lv.theme, size: 11, color: NAVY, bold: true, gapAfter: 3 },
+          { text: lv.explanation, size: 9.5 },
+          { text: lv.evidence || "", size: 8.5, color: GREY },
+          { text: lv.opportunity ? "Opportunity: " + lv.opportunity : "", size: 9, color: NAVY },
+        ],
+        GREEN,
+      );
+    }
+  }
+
+  // 3. Concerns (never invented)
+  if (concerns.length || cv.concernsNote) {
+    drawSubHeading(l, "What Customers May Be Concerned About");
+    for (const c of concerns) {
+      drawContentCard(
+        l,
+        [
+          { text: c.theme, size: 11, color: NAVY, bold: true, gapAfter: 3 },
+          { text: c.explanation, size: 9.5 },
+          { text: c.recommendedFix ? "Recommended fix: " + c.recommendedFix : "", size: 9, color: NAVY },
+        ],
+        riskColor(c.riskLevel),
+        c.riskLevel ? { text: `${c.riskLevel} risk`, color: riskColor(c.riskLevel) } : undefined,
+      );
+    }
+    if (cv.concernsNote) drawParagraph(l, cv.concernsNote, { size: 8.5, color: GREY, gap: 8 });
+  }
+
+  // 4. Client expectation map
+  if (expects.length) {
+    drawSubHeading(l, "Client Expectation Map");
+    drawChipsRow(l, "What customers appear to expect", expects, PURPLE);
+  }
+
+  // 5. Improvement priorities (ranked)
+  if (prios.length) {
+    drawSubHeading(l, "Improvement Priorities");
+    prios.forEach((p, i) => {
+      const pc =
+        p.level === "High" ? RED : p.level === "Medium" ? ORANGE : p.level === "Low" ? GREEN : PURPLE;
+      drawContentCard(
+        l,
+        [
+          { text: `Priority ${i + 1}: ${p.priority}`, size: 10.5, color: NAVY, bold: true, gapAfter: 3 },
+          { text: p.whyItMatters ? "Why: " + p.whyItMatters : "", size: 9.5 },
+          { text: p.action ? "Action: " + p.action : "", size: 9.5 },
+          { text: p.expectedImpact ? "Impact: " + p.expectedImpact : "", size: 9, color: GREY },
+        ],
+        pc,
+        p.level ? { text: p.level, color: pc } : undefined,
+      );
+    });
+  }
+
+  // 6. Action recommendations
+  if (hasActions) {
+    drawSubHeading(l, "Action Recommendations");
+    const group = (label: string, items: string[] | undefined) => {
+      if (!items?.length) return;
+      drawContentCard(l, [
+        { text: label, size: 9.5, color: NAVY, bold: true, gapAfter: 3 },
+        ...items.map((it) => ({ text: "- " + it, size: 9.5 })),
+      ]);
+    };
+    group("Website changes", ar.websiteChanges);
+    group("Review request process", ar.reviewProcess);
+    group("Staff communication", ar.staffCommunication);
+    group("Marketing actions", ar.marketingActions);
+    group("Competitor monitoring", ar.competitorMonitoring);
+  }
+
+  // 7. Customer language insights
+  if (hasLang) {
+    drawSubHeading(l, "Customer Language Insights");
+    drawChipsRow(l, "Words customers use", li.wordsCustomersUse || [], PURPLE);
+    drawChipsRow(l, "Marketing phrases to use", li.phrasesToUseInMarketing || [], GREEN);
+    drawChipsRow(l, "Phrases to avoid", li.phrasesToAvoid || [], RED);
+  }
+}
+
 /** Dark navy card with label/value rows (Final Recommendation, competitor conclusion). */
 function drawNavyCard(l: Layout, rows: Array<{ label?: string; text: string }>): void {
   const padX = 16;
@@ -977,7 +1135,11 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   drawChipsRow(l, "Negative themes", se.negativeThemes || [], RED);
   if (se.insight) drawCallout(l, "AI insight", se.insight);
 
-  // 5. Strengths
+  // 6. Customer Voice Analysis
+  drawSectionHeading(l, "Customer Voice Analysis");
+  drawCustomerVoice(l, s);
+
+  // 7. Strengths
   drawSectionHeading(l, "Top Strengths Customers Mention");
   if (s.topStrengths?.length) {
     for (const st of s.topStrengths) {

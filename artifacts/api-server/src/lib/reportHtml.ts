@@ -242,6 +242,168 @@ function sentimentSection(s: AiSections): string {
     ${se.insight ? `<div class="insight"><span class="insight-tag">${icon("chat", 13)} AI insight</span>${esc(se.insight)}</div>` : ""}`;
 }
 
+function customerVoiceSection(s: AiSections): string {
+  const cv = s.customerVoiceAnalysis;
+  const tags = safeArr(cv.reviewTags);
+  const love = safeArr(cv.whatCustomersLove);
+  const concerns = safeArr(cv.customerConcerns);
+  const expects = safeArr(cv.clientExpectationMap);
+  const prios = safeArr(cv.improvementPriorities);
+  const ar = cv.actionRecommendations;
+  const li = cv.customerLanguageInsights;
+  const hasActions =
+    safeArr(ar.websiteChanges).length +
+      safeArr(ar.reviewProcess).length +
+      safeArr(ar.staffCommunication).length +
+      safeArr(ar.marketingActions).length +
+      safeArr(ar.competitorMonitoring).length >
+    0;
+  const hasLang =
+    safeArr(li.wordsCustomersUse).length +
+      safeArr(li.phrasesToUseInMarketing).length +
+      safeArr(li.phrasesToAvoid).length >
+    0;
+
+  if (
+    !tags.length &&
+    !love.length &&
+    !concerns.length &&
+    !expects.length &&
+    !prios.length &&
+    !hasActions &&
+    !hasLang
+  ) {
+    return `<p class="muted">Customer voice analysis was not available for this report. It is generated from public review text and Google review topic tags when the report is created.</p>`;
+  }
+
+  const block = (title: string, body: string) =>
+    body ? `<div class="cv-block"><div class="cv-sub">${esc(title)}</div>${body}</div>` : "";
+
+  // 1. Review tag analysis table (Google topic chips)
+  const tagTable = tags.length
+    ? `<p class="muted" style="font-size:13px;margin-bottom:10px">These are Google review topic tags — themes customers repeat in their reviews, with how many reviews mention each one.</p>
+      <table class="tbl">
+        <thead><tr><th>Tag / Topic</th><th>Mentions</th><th>Customer Meaning</th><th>Business Action</th></tr></thead>
+        <tbody>${tags
+          .map(
+            (t) => `<tr>
+              <td class="strong">${esc(t.tag)}</td>
+              <td>${t.count > 0 ? esc(t.count) : "—"}</td>
+              <td>${esc(t.customerMeaning)}</td>
+              <td class="muted">${esc(t.businessAction)}</td>
+            </tr>`,
+          )
+          .join("")}</tbody>
+      </table>`
+    : "";
+
+  // 2. What customers love most
+  const loveCards = love.length
+    ? `<div class="card-grid">${love
+        .map(
+          (l) => `<div class="mini-card strength-card">
+            <div class="mini-icon ok">${icon("star", 15)}</div>
+            <div class="mini-title">${esc(l.theme)}</div>
+            <div class="mini-body">${esc(l.explanation)}</div>
+            ${l.evidence ? `<div class="mini-evi">${esc(l.evidence)}</div>` : ""}
+            ${l.opportunity ? `<div class="mini-fix"><strong>Opportunity:</strong> ${esc(l.opportunity)}</div>` : ""}
+          </div>`,
+        )
+        .join("")}</div>`
+    : "";
+
+  // 3. Concerns (never invented; honest note when limited)
+  const concernCards = concerns.length
+    ? `<div class="card-grid">${concerns
+        .map((c) => {
+          const color = RISK_COLORS[c.riskLevel as keyof typeof RISK_COLORS] || "#F97316";
+          return `<div class="mini-card" style="border-top:3px solid ${color}">
+            <div class="mini-head">
+              <div class="mini-title">${esc(c.theme)}</div>
+              ${c.riskLevel ? `<span class="risk-badge" style="background:${color}">${esc(c.riskLevel)} risk</span>` : ""}
+            </div>
+            <div class="mini-body">${esc(c.explanation)}</div>
+            ${c.recommendedFix ? `<div class="mini-fix"><strong>Recommended fix:</strong> ${esc(c.recommendedFix)}</div>` : ""}
+          </div>`;
+        })
+        .join("")}</div>`
+    : "";
+  const concernsBody =
+    concernCards + (cv.concernsNote ? `<p class="est-note" style="margin-top:10px">${esc(cv.concernsNote)}</p>` : "");
+
+  // 4. Client expectation map
+  const expectChips = expects.length
+    ? `<div class="chips">${expects
+        .map((e) => `<span class="chip" style="border-color:#7B3CFF55;color:#7B3CFF">${esc(e)}</span>`)
+        .join("")}</div>`
+    : "";
+
+  // 5. Improvement priorities (ranked)
+  const prioRows = prios.length
+    ? `<div class="risk-list">${prios
+        .map((p, i) => {
+          const color = RISK_COLORS[p.level as keyof typeof RISK_COLORS] || "#7B3CFF";
+          return `<div class="cv-prio">
+            <div class="cv-prio-head">
+              <span class="sec-num" style="width:26px;height:26px;font-size:13px;border-radius:8px">${i + 1}</span>
+              <span class="mini-title" style="flex:1">${esc(p.priority)}</span>
+              ${p.level ? `<span class="prio-badge" style="background:${color}">${esc(p.level)}</span>` : ""}
+            </div>
+            ${p.whyItMatters ? `<div class="cv-prio-line"><strong>Why:</strong> ${esc(p.whyItMatters)}</div>` : ""}
+            ${p.action ? `<div class="cv-prio-line"><strong>Action:</strong> ${esc(p.action)}</div>` : ""}
+            ${p.expectedImpact ? `<div class="cv-prio-line"><strong>Impact:</strong> ${esc(p.expectedImpact)}</div>` : ""}
+          </div>`;
+        })
+        .join("")}</div>`
+    : "";
+
+  // 6. Action recommendations
+  const arGroup = (title: string, items: string[]) =>
+    safeArr(items).length
+      ? `<div class="mini-card">
+          <div class="mini-title" style="font-size:13px">${esc(title)}</div>
+          <ul class="ana-list">${safeArr(items).map((i) => `<li>${esc(i)}</li>`).join("")}</ul>
+        </div>`
+      : "";
+  const actionCards = hasActions
+    ? `<div class="cv-action-grid">
+        ${arGroup("Website changes", ar.websiteChanges)}
+        ${arGroup("Review request process", ar.reviewProcess)}
+        ${arGroup("Staff communication", ar.staffCommunication)}
+        ${arGroup("Marketing actions", ar.marketingActions)}
+        ${arGroup("Competitor monitoring", ar.competitorMonitoring)}
+      </div>`
+    : "";
+
+  // 7. Customer language insights
+  const langGroup = (title: string, items: string[], color: string) =>
+    safeArr(items).length
+      ? `<div class="lang-col">
+          <div class="theme-title">${esc(title)}</div>
+          <div class="chips">${safeArr(items)
+            .map((w) => `<span class="chip" style="border-color:${color}55;color:${color}">${esc(w)}</span>`)
+            .join("")}</div>
+        </div>`
+      : "";
+  const langBody = hasLang
+    ? `<div class="lang-grid">
+        ${langGroup("Words customers use", li.wordsCustomersUse, "#7B3CFF")}
+        ${langGroup("Marketing phrases to use", li.phrasesToUseInMarketing, "#16A34A")}
+        ${langGroup("Phrases to avoid", li.phrasesToAvoid, "#DC2626")}
+      </div>`
+    : "";
+
+  return `
+    <p class="lede">What customers are actually saying — built from public review text, Google review topic tags and repeated customer language.</p>
+    ${block("Most Mentioned Customer Themes", tagTable)}
+    ${block("What Customers Love Most", loveCards)}
+    ${block("What Customers May Be Concerned About", concernsBody)}
+    ${block("Client Expectation Map", expectChips)}
+    ${block("Improvement Priorities", prioRows)}
+    ${block("Action Recommendations", actionCards)}
+    ${block("Customer Language Insights", langBody)}`;
+}
+
 function strengthsSection(s: AiSections): string {
   const items = safeArr(s.topStrengths);
   if (!items.length)
@@ -635,17 +797,18 @@ const SECTION_ICONS: Record<number, string> = {
   3: "scale",
   4: "check",
   5: "chat",
-  6: "star",
-  7: "alert",
-  8: "users",
-  9: "speech",
-  10: "chart",
-  11: "gift",
-  12: "up",
-  13: "calendar",
-  14: "flag",
-  15: "reply",
-  16: "shield",
+  6: "speech",
+  7: "star",
+  8: "alert",
+  9: "users",
+  10: "speech",
+  11: "chart",
+  12: "gift",
+  13: "up",
+  14: "calendar",
+  15: "flag",
+  16: "reply",
+  17: "shield",
 };
 
 function section(num: number, title: string, body: string): string {
@@ -790,6 +953,14 @@ export function buildReportHtml(report: BusinessReport): string {
   .ana-tbl th, .ana-tbl td { padding:8px 9px; font-size:12.5px; }
 
   .lang-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+
+  /* ===== Customer Voice Analysis ===== */
+  .cv-block { margin-top:20px; }
+  .cv-sub { font-size:14px; font-weight:850; color:#071A3D; margin-bottom:10px; padding-left:10px; border-left:3px solid #7B3CFF; }
+  .cv-prio { background:#FAFAF8; border:1px solid #EEE; border-radius:11px; padding:12px 14px; }
+  .cv-prio-head { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+  .cv-prio-line { font-size:13px; margin-bottom:4px; }
+  .cv-action-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
   .conclusion { display:flex; gap:10px; align-items:flex-start; background:linear-gradient(135deg,#03122E,#071A3D); color:#fff; border-radius:12px; padding:15px 17px; margin-top:14px; font-weight:600; font-size:13.5px; }
   .conclusion svg { flex:none; margin-top:2px; color:#9A5CFF; }
   .demo-tag { font-size:10px; color:#5F6368; border:1px solid #E5E5E5; border-radius:6px; padding:1px 6px; font-weight:500; }
@@ -873,17 +1044,18 @@ export function buildReportHtml(report: BusinessReport): string {
     ${section(3, "Platform-by-Platform Comparison", platformTable(m, s))}
     ${section(4, "Platform Checklist", checklistSection(s))}
     ${section(5, "AI Customer Sentiment Analysis", sentimentSection(s))}
-    ${section(6, "Top Strengths Customers Mention", strengthsSection(s))}
-    ${section(7, "Main Complaints and Risk Level", complaintsSection(s))}
-    ${section(8, "What May Be Costing You Customers", costingSection(s.costingYouCustomers))}
-    ${section(9, "Customer Language Insights", languageSection(s))}
-    ${section(10, "Competitor Snapshot", competitorSection(m, s))}
-    ${section(11, "Recommended Offer to Win More Bookings", offerSection(s))}
-    ${section(12, "Review Improvement Opportunity", improvementSection(s))}
-    ${section(13, "7-Day Reputation Action Plan", sevenDaySection(s))}
-    ${section(14, "30-Day Reputation Plan", thirtyDaySection(s))}
-    ${section(15, "Suggested Response Templates", templatesSection(s))}
-    ${section(16, "Final Recommendation", finalSection(s))}
+    ${section(6, "Customer Voice Analysis", customerVoiceSection(s))}
+    ${section(7, "Top Strengths Customers Mention", strengthsSection(s))}
+    ${section(8, "Main Complaints and Risk Level", complaintsSection(s))}
+    ${section(9, "What May Be Costing You Customers", costingSection(s.costingYouCustomers))}
+    ${section(10, "Customer Language Insights", languageSection(s))}
+    ${section(11, "Competitor Snapshot", competitorSection(m, s))}
+    ${section(12, "Recommended Offer to Win More Bookings", offerSection(s))}
+    ${section(13, "Review Improvement Opportunity", improvementSection(s))}
+    ${section(14, "7-Day Reputation Action Plan", sevenDaySection(s))}
+    ${section(15, "30-Day Reputation Plan", thirtyDaySection(s))}
+    ${section(16, "Suggested Response Templates", templatesSection(s))}
+    ${section(17, "Final Recommendation", finalSection(s))}
     <div class="disclaimer">${esc(report.disclaimer)}</div>
   </div>
   <footer class="report-footer">

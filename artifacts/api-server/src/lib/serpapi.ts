@@ -859,11 +859,40 @@ async function fetchYelpRating(
   return { rating, reviews: totalReviews };
 }
 
+/** A Google review topic chip: a customer theme + how many reviews mention it. */
+export interface ReviewTag {
+  tag: string;
+  count: number;
+}
+
 /** Short review snippets per platform, for AI theme analysis (paraphrase only). */
 export interface ReviewSnippets {
   google: string[];
   yelp: string[];
   tripadvisor: string[];
+  /** Google review topic chips (e.g. "auction — 34 mentions"); [] when none. */
+  googleTopics: ReviewTag[];
+}
+
+/** Parse the `topics` array from a google_maps_reviews response into tags. */
+function extractReviewTopics(raw: unknown): ReviewTag[] {
+  if (!Array.isArray(raw)) return [];
+  const out: ReviewTag[] = [];
+  for (const t of raw) {
+    if (!t || typeof t !== "object") continue;
+    const r = t as Record<string, unknown>;
+    const keyword = r["keyword"];
+    const mentions = r["mentions"];
+    if (typeof keyword !== "string" || !keyword.trim()) continue;
+    const count =
+      typeof mentions === "number" && Number.isFinite(mentions) && mentions > 0
+        ? Math.round(mentions)
+        : 0;
+    out.push({ tag: keyword.trim().slice(0, 60), count });
+  }
+  // Most-mentioned first so the report leads with the strongest themes; cap after sorting
+  // so we always keep the true top 15 even if SerpApi returns topics unsorted.
+  return out.sort((a, b) => b.count - a.count).slice(0, 15);
 }
 
 /** Pull a review's free-text from the various shapes SerpApi engines return. */
@@ -885,8 +914,19 @@ function collectSnippets(reviews: unknown, max: number): string[] {
   if (!Array.isArray(reviews)) return [];
   const out: string[] = [];
   for (const rv of reviews) {
-    const text = extractReviewText(rv);
-    if (text) out.push(text.length > 240 ? text.slice(0, 237) + "..." : text);
+    let text = extractReviewText(rv);
+    if (text) {
+      if (text.length > 240) text = text.slice(0, 237) + "...";
+      // Prefix the relative review date (e.g. "2 months ago") when present so
+      // the AI can weigh recency without us inventing timestamps.
+      if (rv && typeof rv === "object") {
+        const d = (rv as Record<string, unknown>)["date"];
+        if (typeof d === "string" && d.trim() && d.trim().length <= 40) {
+          text = `[${d.trim()}] ${text}`;
+        }
+      }
+      out.push(text);
+    }
     if (out.length >= max) break;
   }
   return out;
@@ -904,7 +944,12 @@ export async function fetchReviewSnippets(
   apiKey: string,
   log?: Logger,
 ): Promise<ReviewSnippets> {
-  const result: ReviewSnippets = { google: [], yelp: [], tripadvisor: [] };
+  const result: ReviewSnippets = {
+    google: [],
+    yelp: [],
+    tripadvisor: [],
+    googleTopics: [],
+  };
   const name = data.name;
   const address = data.address;
   const nameTokens = distinctiveTokens(name);
@@ -936,6 +981,7 @@ export async function fetchReviewSnippets(
         api_key: apiKey,
       });
       result.google = collectSnippets(rev["reviews"], 12);
+      result.googleTopics = extractReviewTopics(rev["topics"]);
     }
   } catch (err) {
     log?.warn({ err }, "Google review snippet fetch failed");

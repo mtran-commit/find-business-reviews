@@ -306,7 +306,12 @@ router.post(
 
       // Best-effort review snippets for richer AI theme analysis. A failure here
       // just yields fewer snippets (and a lower data-quality score), never aborts.
-      let snippets: ReviewSnippets = { google: [], yelp: [], tripadvisor: [] };
+      let snippets: ReviewSnippets = {
+        google: [],
+        yelp: [],
+        tripadvisor: [],
+        googleTopics: [],
+      };
       if (apiKey) {
         try {
           snippets = await fetchReviewSnippets(data, apiKey, req.log);

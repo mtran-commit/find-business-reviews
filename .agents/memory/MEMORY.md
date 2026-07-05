@@ -4,3 +4,4 @@
 - [No Chromium on Replit](no-chromium-pdf-rendering.md) — no headless Chrome available; render PDFs with pdf-lib + a parallel inline-CSS HTML view from one normalized JSON, not Puppeteer.
 - [pnpm add dangling symlink](pnpm-add-dangling-symlink.md) — `pnpm add` can dangle a lib's peer-hashed symlink → esbuild "Could not resolve"; fix with a plain root `pnpm install`.
 - [SPA routes need redeploy](spa-routes-need-redeploy.md) — client-routed page shows public app in prod but works in dev? Suspect a stale build; republish. No server.js exists (static deploy).
+- [AI output grounding](ai-output-grounding.md) — "never invent" rules must be enforced deterministically post-parse (overwrite facts from source data), never prompt-only.
