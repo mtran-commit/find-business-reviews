@@ -1,0 +1,136 @@
+Update the landing page hero section.
+
+Add a small platform logo strip directly under the main headline:
+“Compare business ratings with one free search.”
+
+Place the platform strip above the subtitle and below the headline.
+
+The strip should show 3 small stacked or inline badges with platform logos and names:
+
+- Google
+- Yelp
+- TripAdvisor
+
+Design style:
+- dark navy card background
+- rounded corners
+- white text
+- small platform icon on the left
+- Google icon in its brand style or simple G badge
+- Yelp icon in red
+- TripAdvisor icon in green
+- clean premium SaaS style
+- match the dark AI Trust Score preview card style
+- no turquoise or aqua
+
+Layout:
+Desktop:
+- centered under the headline
+- can be horizontal in one row or vertical stacked mini-cards side by side
+- keep it compact and elegant
+
+Mobile:
+- stack neatly
+- still centered
+- no overflow
+
+Suggested HTML structure:
+
+<div class="platform-strip">
+  <div class="platform-pill google-pill">
+    <span class="platform-icon">G</span>
+    <span class="platform-name">Google</span>
+  </div>
+  <div class="platform-pill yelp-pill">
+    <span class="platform-icon">Y</span>
+    <span class="platform-name">Yelp</span>
+  </div>
+  <div class="platform-pill tripadvisor-pill">
+    <span class="platform-icon">T</span>
+    <span class="platform-name">TripAdvisor</span>
+  </div>
+</div>
+
+Suggested CSS:
+
+.platform-strip {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  margin: 18px 0 18px;
+}
+
+.platform-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  background: #071A3D;
+  color: #FFFFFF;
+  border-radius: 14px;
+  padding: 12px 16px;
+  min-width: 150px;
+  box-shadow: 0 10px 24px rgba(7, 26, 61, 0.12);
+}
+
+.platform-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  color: #FFFFFF;
+  flex-shrink: 0;
+}
+
+.google-pill .platform-icon {
+  background: #FFFFFF;
+  color: #4285F4;
+}
+
+.yelp-pill .platform-icon {
+  background: #E02424;
+  color: #FFFFFF;
+}
+
+.tripadvisor-pill .platform-icon {
+  background: #10B981;
+  color: #FFFFFF;
+}
+
+.platform-name {
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+@media (max-width: 700px) {
+  .platform-strip {
+    gap: 10px;
+    margin: 14px 0 16px;
+  }
+
+  .platform-pill {
+    min-width: 130px;
+    padding: 10px 14px;
+  }
+
+  .platform-name {
+    font-size: 16px;
+  }
+}
+
+Placement order in hero:
+1. Headline
+2. Platform logo strip
+3. Subtitle
+4. Search bar
+
+Important:
+- Do not place it above the headline.
+- Do not place it below the search bar.
+- It must sit under the headline so users instantly see which platforms are compared.
+- Keep the landing page clean and premium.
