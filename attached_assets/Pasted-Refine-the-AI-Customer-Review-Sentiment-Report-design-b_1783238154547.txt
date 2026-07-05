@@ -1,0 +1,124 @@
+Refine the AI Customer Review Sentiment Report design by adding black and white icons and making all statistics/visual analytics monochrome.
+
+Goal:
+Keep the proposal-style premium look, but improve visual communication with clean black/white/grey icons and black/white/grey statistics.
+
+1. Icons
+Add simple monochrome icons throughout the report.
+
+Style rules for icons:
+- black, white or grey only
+- clean, modern, minimal
+- no colour icons
+- no gradient icons
+- use consistent icon style throughout the whole report
+- icons should support readability, not clutter the page
+
+Suggested icons by section:
+- Trust Score = shield / badge / check icon
+- Average Rating = star icon
+- Reviews Analysed = chat bubble / review icon
+- Sentiment = smile / neutral / alert icon
+- Executive Summary = document / summary icon
+- Platform Comparison = comparison / split / list icon
+- Platform Checklist = checklist icon
+- AI Customer Sentiment Analysis = AI / graph / speech icon
+- Customer Voice Analysis = quote / speech bubble icon
+- Top Strengths = thumbs up / trophy / check icon
+- Main Complaints and Risk Level = warning / flag / alert icon
+- What May Be Costing You Customers = loss / trend-down / caution icon
+- Customer Language Insights = text / quote / tag icon
+- Competitor Snapshot = target / competitor / chart icon
+- Recommended Offer = gift / offer / megaphone icon
+- Review Improvement Opportunity = growth / up arrow / lightbulb icon
+- 7-Day Action Plan = calendar / clock / checklist icon
+- 30-Day Plan = roadmap / calendar / target icon
+- Suggested Response Templates = reply / message icon
+- Final Recommendation = checkmark / strategy / target icon
+
+2. Statistic cards
+Restyle all key statistics in monochrome only.
+
+For example on page 1:
+- Trust Score
+- Average Rating
+- Reviews Analysed
+- Sentiment
+
+Design rules:
+- use white or light grey cards
+- black headings
+- dark grey labels
+- minimal borders or subtle shadows
+- add a small black/grey icon in each stat card
+- keep the layout premium and easy to scan
+
+3. Charts and graphs
+Make all charts black/white/grey only.
+
+Requirements:
+- no purple, green, orange, red, blue
+- use only shades of grey, black, white
+- use line thickness, fill shade, pattern, or opacity to distinguish data
+- keep charts very clean and simple
+- use labels clearly so users can understand them easily
+
+Examples:
+- Positive / Neutral / Negative sentiment = three different greys
+- Platform comparison bars = dark grey / medium grey / light grey
+- Competitor comparison = grey bars only
+- Risk indicators = monochrome label blocks, not coloured badges
+
+4. Section headers
+Add a small monochrome icon next to each major section title.
+Keep the large bold section titles, but add the icon to make the section easier to identify.
+
+5. Callout boxes
+For sections like:
+- DO FIRST
+- FASTEST TRUST WIN
+- MONITOR NEXT
+- KEY INSIGHT
+- RECOMMENDED ACTION
+
+Add simple monochrome icons and keep the boxes black/white/grey only.
+
+6. Tables
+Improve table readability by:
+- adding subtle row separation
+- using grey fills only
+- keeping text black/dark grey
+- optionally adding a small icon in the first column where appropriate
+
+7. Risk / priority labels
+Replace bright colour risk labels with monochrome label styles.
+
+Example:
+- High = black filled pill with white text
+- Medium = dark grey pill with white text
+- Low = light grey pill with black text
+
+8. Social presence / platform icons
+If social presence is shown:
+- use monochrome icons for Google, Facebook, Instagram where possible
+- keep them black/grey only
+- do not introduce brand colours into the layout
+- brand colours should only appear in profile pictures or business photos if those images are displayed
+
+9. Keep images in colour only
+Important:
+- Only business photos, profile photos, logos, and business images can remain in colour
+- all icons, charts, labels, cards, and report UI elements must stay monochrome
+
+10. Design consistency
+Make sure the icons and monochrome statistics are consistent across:
+- PDF/exported report
+- on-screen report preview
+- cover page
+- internal content pages
+
+11. Do not change
+- Do not change the content structure
+- Do not add bright colours
+- Do not clutter the layout
+- Only improve the report by adding monochrome icons and monochrome statistics styling

@@ -6,6 +6,7 @@ import {
   detectBusinessCategory,
   fetchSimilarBusinesses,
 } from "../lib/serpapi";
+import { fetchBusinessBranding } from "../lib/branding";
 
 const router: IRouter = Router();
 
@@ -122,6 +123,57 @@ router.get("/similar-businesses", async (req, res): Promise<void> => {
     res
       .status(502)
       .json({ error: "Could not fetch similar businesses right now." });
+  }
+});
+
+const BrandingQuery = z.object({
+  businessName: z.string().trim().min(1).max(200),
+  suburb: z.string().trim().max(80).optional().default(""),
+  address: z.string().trim().max(300).optional().default(""),
+  website: z.string().trim().max(500).optional().default(""),
+  phone: z.string().trim().max(40).optional().default(""),
+});
+
+/**
+ * Public branding + social proof lookup (Facebook / Instagram via SerpApi,
+ * confidence-matched, cached 24h server-side). Used by the paid-report preview
+ * card. Only confidently matched public business profiles are ever returned.
+ */
+router.get("/business-branding", async (req, res): Promise<void> => {
+  const parsed = BrandingQuery.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "A businessName is required." });
+    return;
+  }
+
+  const apiKey = process.env["SERPAPI_API_KEY"];
+  if (!apiKey) {
+    req.log.error("SERPAPI_API_KEY is not configured");
+    res
+      .status(503)
+      .json({ error: "Branding service is not configured on the server." });
+    return;
+  }
+
+  const q = parsed.data;
+  try {
+    const branding = await fetchBusinessBranding(
+      {
+        businessName: q.businessName,
+        businessAddress: q.address,
+        suburb: q.suburb,
+        website: q.website,
+        phone: q.phone,
+      },
+      apiKey,
+      req.log,
+    );
+    res.json(branding);
+  } catch (err) {
+    req.log.error({ err }, "Branding lookup failed");
+    res
+      .status(502)
+      .json({ error: "Could not fetch branding right now." });
   }
 });
 

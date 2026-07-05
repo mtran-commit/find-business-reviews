@@ -335,6 +335,32 @@ const AiSectionsSchema = z.object({
 
 export type AiSections = z.infer<typeof AiSectionsSchema>;
 
+/** Confidently-matched public social profiles (persisted for the report). */
+export interface SocialPresence {
+  facebook: {
+    profileUrl: string;
+    followers: string;
+    likes: string;
+    rating: number | null;
+    reviews: number | null;
+    verified: boolean;
+  } | null;
+  instagram: {
+    profileUrl: string;
+    followers: number | null;
+    posts: number | null;
+    verified: boolean;
+  } | null;
+  /** Where the client logo came from: facebook | instagram | google | none. */
+  brandingSource: string;
+  /** Match confidence (0..1) of the best accepted social profile. */
+  confidenceScore: number;
+}
+
+export function emptySocialPresence(): SocialPresence {
+  return { facebook: null, instagram: null, brandingSource: "none", confidenceScore: 0 };
+}
+
 /** Full structured report persisted to report_json and rendered to HTML/PDF. */
 export interface BusinessReport {
   businessName: string;
@@ -345,8 +371,12 @@ export interface BusinessReport {
   phone: string;
   /** Client business logo URL ("" when no trusted logo is available). */
   businessLogo: string;
+  /** Audit trail: source URL/profile the logo came from ("" when none). */
+  businessLogoSource: string;
   /** Business photo URL (e.g. Google Maps thumbnail; "" when unavailable). */
   businessImage: string;
+  /** Confidently-matched public social profiles (empty shape when none). */
+  socialPresence: SocialPresence;
   generatedAt: string;
   metrics: ReportMetrics;
   sections: AiSections;
@@ -376,6 +406,49 @@ function coerceMetrics(raw: unknown): ReportMetrics {
       dq === "High" || dq === "Medium" || dq === "Low" ? dq : "Low",
     snippetCount: int(m["snippetCount"]),
   };
+}
+
+/** Coerce arbitrary persisted JSON into a valid SocialPresence (never throws). */
+function coerceSocialPresence(raw: unknown): SocialPresence {
+  const out = emptySocialPresence();
+  if (!raw || typeof raw !== "object") return out;
+  const sp = raw as Record<string, unknown>;
+  const str = (v: unknown): string => (typeof v === "string" ? v : "");
+  const num = (v: unknown): number | null =>
+    typeof v === "number" && Number.isFinite(v) ? v : null;
+
+  const fb = sp["facebook"];
+  if (fb && typeof fb === "object") {
+    const f = fb as Record<string, unknown>;
+    const profileUrl = str(f["profileUrl"]);
+    if (profileUrl) {
+      out.facebook = {
+        profileUrl,
+        followers: str(f["followers"]),
+        likes: str(f["likes"]),
+        rating: num(f["rating"]),
+        reviews: num(f["reviews"]),
+        verified: f["verified"] === true,
+      };
+    }
+  }
+  const ig = sp["instagram"];
+  if (ig && typeof ig === "object") {
+    const i = ig as Record<string, unknown>;
+    const profileUrl = str(i["profileUrl"]);
+    if (profileUrl) {
+      out.instagram = {
+        profileUrl,
+        followers: num(i["followers"]),
+        posts: num(i["posts"]),
+        verified: i["verified"] === true,
+      };
+    }
+  }
+  out.brandingSource = str(sp["brandingSource"]) || "none";
+  const conf = num(sp["confidenceScore"]);
+  out.confidenceScore = conf === null ? 0 : Math.min(1, Math.max(0, conf));
+  return out;
 }
 
 /**
@@ -409,7 +482,9 @@ export function normalizeReport(raw: unknown): BusinessReport {
     website: str(r["website"]),
     phone: str(r["phone"]),
     businessLogo: str(r["businessLogo"]),
+    businessLogoSource: str(r["businessLogoSource"]),
     businessImage: str(r["businessImage"]),
+    socialPresence: coerceSocialPresence(r["socialPresence"]),
     generatedAt: str(r["generatedAt"], new Date().toISOString()),
     metrics: coerceMetrics(r["metrics"]),
     sections,

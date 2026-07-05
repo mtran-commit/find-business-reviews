@@ -21,6 +21,11 @@ import {
   REPORT_DISCLAIMER,
   type BusinessReport,
 } from "../lib/reportContent";
+import {
+  emptyBranding,
+  fetchBusinessBranding,
+  type BusinessBranding,
+} from "../lib/branding";
 import { buildReportPdf } from "../lib/reportPdf";
 import { buildReportHtml } from "../lib/reportHtml";
 
@@ -325,6 +330,29 @@ router.post(
       const metrics = computeMetrics(data, snippetCount);
       const category = data.category?.label ?? "";
       const suburb = data.locality?.suburb ?? "";
+
+      // Best-effort public branding + social proof (Facebook / Instagram via
+      // SerpApi, confidence-matched). A failure just means no social section.
+      let branding: BusinessBranding = emptyBranding();
+      if (apiKey) {
+        try {
+          branding = await fetchBusinessBranding(
+            {
+              businessName: row.businessName,
+              businessAddress: row.businessAddress,
+              suburb,
+              website: data.website ?? row.businessLink ?? "",
+              phone: data.phone ?? "",
+              googleThumbnail: data.imageUrl ?? "",
+            },
+            apiKey,
+            req.log,
+          );
+        } catch (err) {
+          req.log.warn({ err }, "Branding fetch failed; continuing without it");
+        }
+      }
+
       const sections = await generateAiSections(
         row.businessName,
         metrics,
@@ -341,10 +369,41 @@ router.post(
         website: data.website ?? "",
         phone: data.phone ?? "",
         // Zero-tolerance logo rule: only a confidently matched brand mark may
-        // appear in the report; otherwise renderers show a neat initials tile.
+        // appear in the report. Priority: confidently matched social profile
+        // image (Facebook > Instagram), then a high-confidence Google logo;
+        // otherwise "" and renderers show a neat initials tile.
         businessLogo:
-          data.logoConfidence === "high" && data.logoUrl ? data.logoUrl : "",
-        businessImage: data.imageUrl ?? "",
+          branding.businessLogo ||
+          (data.logoConfidence === "high" && data.logoUrl ? data.logoUrl : ""),
+        businessLogoSource:
+          branding.businessLogo && branding.businessLogoSource
+            ? branding.businessLogoSource
+            : data.logoConfidence === "high" && data.logoUrl
+              ? "google_maps"
+              : "",
+        businessImage: data.imageUrl || branding.businessImage || "",
+        socialPresence: {
+          facebook: branding.facebook
+            ? {
+                profileUrl: branding.facebook.profileUrl,
+                followers: branding.facebook.followers,
+                likes: branding.facebook.likes,
+                rating: branding.facebook.rating,
+                reviews: branding.facebook.reviews,
+                verified: branding.facebook.verified,
+              }
+            : null,
+          instagram: branding.instagram
+            ? {
+                profileUrl: branding.instagram.profileUrl,
+                followers: branding.instagram.followers,
+                posts: branding.instagram.posts,
+                verified: branding.instagram.verified,
+              }
+            : null,
+          brandingSource: branding.brandingSource,
+          confidenceScore: branding.confidenceScore,
+        },
         generatedAt: new Date().toISOString(),
         metrics,
         sections,

@@ -315,6 +315,103 @@ function drawKpiCards(l: Layout, m: ReportMetrics, s: AiSections): void {
   l.y = top - cardH - 14;
 }
 
+/**
+ * Compact "Social Presence Snapshot" card between the KPI cards and section 1.
+ * Mirrors the HTML view: only confidently matched public profiles; skipped
+ * entirely when no Google/Facebook/Instagram data exists.
+ */
+function drawSocialSnapshot(l: Layout, report: BusinessReport): void {
+  const sp = report.socialPresence;
+  const rows: { color: RGB; mark: string; name: string; detail: string }[] = [];
+
+  const g = report.metrics.platforms.find(
+    (p) => p.key === "google" && p.rating !== "—",
+  );
+  if (g) {
+    rows.push({
+      color: rgb(0.26, 0.52, 0.96),
+      mark: "G",
+      name: "Google",
+      detail: `${g.rating} from ${g.reviews} reviews`,
+    });
+  }
+
+  if (sp.facebook) {
+    const fb = sp.facebook;
+    const parts: string[] = [];
+    if (fb.followers) parts.push(`${fb.followers} followers`);
+    if (fb.likes) parts.push(`${fb.likes} likes`);
+    if (fb.rating !== null) parts.push(`${fb.rating}/5`);
+    if (fb.reviews !== null) parts.push(`${fb.reviews.toLocaleString("en-AU")} reviews`);
+    rows.push({
+      color: rgb(0.09, 0.47, 0.95),
+      mark: "f",
+      name: "Facebook",
+      detail: parts.join(" · ") || "Public business page",
+    });
+  }
+
+  if (sp.instagram) {
+    const ig = sp.instagram;
+    const parts: string[] = [];
+    if (ig.followers !== null) parts.push(`${ig.followers.toLocaleString("en-AU")} followers`);
+    if (ig.posts !== null) parts.push(`${ig.posts.toLocaleString("en-AU")} posts`);
+    if (ig.verified) parts.push("Verified");
+    rows.push({
+      color: rgb(0.88, 0.19, 0.42),
+      mark: "I",
+      name: "Instagram",
+      detail: parts.join(" · ") || "Public business profile",
+    });
+  }
+
+  if (rows.length === 0) return;
+
+  const rowH = 17;
+  const padTop = 24;
+  const padBottom = 8;
+  const cardH = padTop + rows.length * rowH + padBottom;
+  ensureSpace(l, cardH + 10);
+  const top = l.y;
+  roundedCard(l.page, MARGIN, top - cardH, CONTENT_W, cardH, 9, WHITE, CARD_BORDER);
+  l.page.drawText("SOCIAL PRESENCE SNAPSHOT", {
+    x: MARGIN + 12,
+    y: top - 16,
+    size: 6.5,
+    font: l.bold,
+    color: GREY,
+  });
+  rows.forEach((r, i) => {
+    const y = top - padTop - i * rowH;
+    const tile = 12;
+    fillRounded(l.page, MARGIN + 12, y - tile + 2, tile, tile, 3.5, r.color);
+    const mw = l.bold.widthOfTextAtSize(r.mark, 8);
+    l.page.drawText(r.mark, {
+      x: MARGIN + 12 + (tile - mw) / 2,
+      y: y - tile + 5,
+      size: 8,
+      font: l.bold,
+      color: WHITE,
+    });
+    l.page.drawText(r.name, {
+      x: MARGIN + 12 + tile + 8,
+      y: y - 8,
+      size: 8.5,
+      font: l.bold,
+      color: NAVY,
+    });
+    const detail = wrapLines(r.detail, l.font, 8.5, CONTENT_W - 160)[0] ?? "";
+    l.page.drawText(detail, {
+      x: MARGIN + 105,
+      y: y - 8,
+      size: 8.5,
+      font: l.font,
+      color: BLACK,
+    });
+  });
+  l.y = top - cardH - 12;
+}
+
 interface Col {
   header: string;
   width: number;
@@ -1128,6 +1225,7 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
 
   // ---- KPI cards ----
   drawKpiCards(l, m, s);
+  drawSocialSnapshot(l, report);
 
   // 1. Reputation Analytics
   drawSectionHeading(l, "Reputation Analytics");

@@ -1,0 +1,203 @@
+Redesign the AI Customer Review Sentiment Report so it takes strong design inspiration from the proposal reference I provided.
+
+Main goal:
+Make the report look more like a premium modern proposal/editorial document:
+- very clean
+- easy to read
+- strong layout structure
+- lots of whitespace
+- bold typography
+- black / white / grey design
+- only photos/images can be in colour
+
+Important visual direction:
+The report should feel inspired by the proposal example in terms of:
+- page structure
+- clean editorial layout
+- bold oversized headings
+- minimal palette
+- image placement
+- easy readability
+- premium presentation
+
+Design rules:
+1. Colour palette
+- Use only:
+  - black
+  - white
+  - light grey
+  - medium grey
+  - dark grey
+- Do NOT use purple, green, orange, red, blue or multiple accent colours in the report layout.
+- The only colour allowed should be inside business photos, logos, social profile pictures, or business images.
+- All charts, dividers, labels, cards, and UI elements must be monochrome.
+
+2. Overall style
+- Minimal, modern, editorial, proposal-style layout
+- Premium and structured
+- Strong typography hierarchy
+- Spacious and uncluttered
+- Visually polished and professional
+- Easy for business owners to scan quickly
+
+3. Typography
+- Use bold, large headings similar to the reference proposal
+- Section titles should be oversized and striking
+- Keep body text smaller, clean, and readable
+- Use strong contrast between headings and paragraph text
+- Use a modern sans-serif font
+- Avoid overly decorative styles
+
+4. Page structure
+Use a structured proposal-style layout across the report:
+- strong title section
+- large headings
+- clear content blocks
+- image sections
+- summary cards
+- consistent alignment
+- lots of breathing room
+
+Take inspiration from the proposal example:
+- top horizontal label/header strip
+- large page title
+- left or side block elements
+- alternating text and image areas
+- strong visual rhythm from page to page
+
+5. Header / footer treatment
+- Add a clean top header bar on every page
+- The header can include:
+  - our company name/logo
+  - the business/client name or website
+- Add a simple footer with page number and report name
+- Keep header and footer monochrome and minimal
+
+6. Cover page redesign
+Redesign page 1 to look more like a premium proposal cover:
+- big bold title:
+  AI Customer Review Sentiment Report
+- prepared for: business name
+- business address
+- report date
+- our logo
+- client business logo
+- one strong business image or relevant visual
+- clean composition with strong typography and whitespace
+
+The cover should feel like a premium presentation document, not a generic analytics sheet.
+
+7. Content redesign
+Rebuild the internal pages so they feel more like a well-designed proposal.
+
+Apply these style principles:
+- convert dense sections into cleaner blocks
+- break content into digestible modules
+- use more spacing between sections
+- make tables simpler and easier to scan
+- reduce visual clutter
+- keep sections visually distinct without using bright colours
+
+8. Monochrome data styling
+All analytics visuals must be redesigned in monochrome:
+- bar charts in greyscale
+- score cards in white/grey with black text
+- risk labels in black/grey styles
+- sentiment visuals in monochrome only
+- no multi-colour sentiment bars
+- use shading, line weight, or fill styles instead of bright colours
+
+For example:
+- positive / neutral / negative can be shown using different shades of grey
+- priorities can be shown by label style or border weight instead of colour
+- trust score cards should use black/grey/white only
+
+9. Photos and images
+Only photos/images may remain in colour.
+This includes:
+- business images
+- storefront/team/office photos
+- business logos
+- Facebook/Instagram profile images if shown
+
+Use images intentionally:
+- one image block per page where it improves design
+- rounded corners only if it suits the layout
+- avoid cluttering pages with too many images
+
+10. Section design
+Restyle all report sections in this new proposal-inspired design, including:
+- Executive Summary
+- Reputation Analytics
+- Platform-by-Platform Comparison
+- Platform Checklist
+- AI Customer Sentiment Analysis
+- Customer Voice Analysis
+- Top Strengths
+- Main Complaints and Risk Level
+- What May Be Costing You Customers
+- Customer Language Insights
+- Competitor Snapshot
+- Recommended Offer
+- Review Improvement Opportunity
+- 7-Day Action Plan
+- 30-Day Plan
+- Suggested Response Templates
+- Final Recommendation
+
+11. Layout improvements
+Improve readability by:
+- shortening long line lengths
+- using columns where useful
+- adding whitespace around sections
+- using larger margins
+- making important statements stand out
+- converting some content into highlighted callout blocks
+- simplifying tables and visual hierarchy
+
+12. Proposal-style callout blocks
+Use monochrome callout sections for key insights, for example:
+- DO FIRST
+- FASTEST TRUST WIN
+- MONITOR NEXT
+- KEY INSIGHT
+- RECOMMENDED ACTION
+
+These should be styled like clean proposal callout panels in black/grey/white.
+
+13. Personalisation
+Keep the dynamic business personalisation:
+- business logo
+- business image
+- business name
+- address
+- report date
+- trust score
+- average rating
+- reviews analysed
+- platforms
+- social presence snapshot if available
+
+14. Keep but redesign
+Do not remove the report intelligence.
+Keep the content and insights, but redesign the presentation.
+
+15. Important restrictions
+- Do not use the old colourful style
+- Do not use purple as the main accent
+- Do not use multiple colours for charts or labels
+- Do not make it look like a dashboard UI
+- Make it feel like a premium proposal / strategy document
+
+16. Output requirement
+Update both:
+1. the PDF/exported report design
+2. the on-screen report preview if applicable
+
+The final result should feel like:
+- a premium business proposal
+- clean and monochrome
+- only photos in colour
+- easy to read
+- visually structured
+- suitable to sell as a professional paid report

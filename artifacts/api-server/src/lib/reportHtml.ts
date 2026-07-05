@@ -154,6 +154,81 @@ function kpiCards(m: ReportMetrics, s: AiSections): string {
     .join("")}</div>`;
 }
 
+/**
+ * Compact "Social Presence Snapshot" card (between the KPI cards and section 1).
+ * Shows only confidently matched public profiles; hides entirely when there is
+ * no Google/Facebook/Instagram data. Deliberately short — it supports the
+ * report, it does not dominate it.
+ */
+function socialSnapshot(report: BusinessReport): string {
+  const sp = report.socialPresence;
+  const rows: string[] = [];
+
+  const g = report.metrics.platforms.find(
+    (p) => p.key === "google" && p.rating !== "—",
+  );
+  if (g) {
+    rows.push(
+      socialRow("#4285F4", "G", "Google",
+        `${esc(g.rating)} from ${esc(g.reviews)} reviews`, ""),
+    );
+  }
+
+  const fb = sp.facebook;
+  if (fb) {
+    const parts: string[] = [];
+    if (fb.followers) parts.push(`${fb.followers} followers`);
+    if (fb.likes) parts.push(`${fb.likes} likes`);
+    if (fb.rating !== null) parts.push(`${fb.rating}/5`);
+    if (fb.reviews !== null) parts.push(`${fb.reviews.toLocaleString("en-AU")} reviews`);
+    if (parts.length > 0 || fb.profileUrl) {
+      rows.push(
+        socialRow("#1877F2", "f", "Facebook",
+          esc(parts.join(" · ") || "Public business page"), fb.profileUrl),
+      );
+    }
+  }
+
+  const ig = sp.instagram;
+  if (ig) {
+    const parts: string[] = [];
+    if (ig.followers !== null) parts.push(`${ig.followers.toLocaleString("en-AU")} followers`);
+    if (ig.posts !== null) parts.push(`${ig.posts.toLocaleString("en-AU")} posts`);
+    if (ig.verified) parts.push("Verified");
+    if (parts.length > 0 || ig.profileUrl) {
+      rows.push(
+        socialRow("#E1306C", "I", "Instagram",
+          esc(parts.join(" · ") || "Public business profile"), ig.profileUrl),
+      );
+    }
+  }
+
+  if (rows.length === 0) return "";
+  return `<div class="social-snap">
+    <div class="social-snap-title">Social Presence Snapshot</div>
+    <div class="social-snap-rows">${rows.join("")}</div>
+  </div>`;
+}
+
+function socialRow(
+  color: string,
+  mark: string,
+  label: string,
+  detailHtml: string,
+  url: string,
+): string {
+  const safe = /^https?:\/\//i.test(url) ? url : "";
+  const link = safe
+    ? `<a class="social-link" href="${esc(safe)}" target="_blank" rel="noopener noreferrer">View profile</a>`
+    : "";
+  return `<div class="social-row">
+    <span class="pf-tile" style="color:${color};border-color:${color}33">${esc(mark)}</span>
+    <span class="social-name">${esc(label)}</span>
+    <span class="social-detail">${detailHtml}</span>
+    ${link}
+  </div>`;
+}
+
 function execSummary(report: BusinessReport): string {
   const m = report.metrics;
   const s = report.sections;
@@ -905,6 +980,13 @@ export function buildReportHtml(report: BusinessReport): string {
   .kpi-denom { font-size:15px; font-weight:700; color:#5F6368; margin-left:2px; }
   .kpi-small { font-size:19px; }
   .kpi-sub { font-size:12px; color:#7B3CFF; margin-top:7px; font-weight:700; }
+  .social-snap { background:#fff; border:1px solid #E5E5E5; border-radius:16px; padding:16px 18px; margin:16px 0 8px; box-shadow:0 2px 8px rgba(7,26,61,.05); }
+  .social-snap-title { font-size:11px; color:#5F6368; text-transform:uppercase; letter-spacing:.08em; font-weight:800; margin-bottom:10px; }
+  .social-snap-rows { display:flex; flex-direction:column; gap:8px; }
+  .social-row { display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:13.5px; }
+  .social-name { font-weight:800; color:#071A3D; min-width:82px; }
+  .social-detail { color:#333; }
+  .social-link { margin-left:auto; font-size:12px; font-weight:700; color:#7B3CFF; text-decoration:none; border:1px solid #E4D6FF; border-radius:999px; padding:3px 10px; }
 
   /* ===== Section cards ===== */
   .sec { background:#fff; border:1px solid #E5E5E5; border-radius:18px; padding:26px 28px; margin-top:20px; box-shadow:0 2px 8px rgba(7,26,61,.05); page-break-inside:avoid; }
@@ -1077,6 +1159,7 @@ export function buildReportHtml(report: BusinessReport): string {
   </div></header>
   <div class="wrap">
     ${kpiCards(m, s)}
+    ${socialSnapshot(report)}
     ${section(1, "Reputation Analytics", analyticsSection(report))}
     ${section(2, "Executive Summary", execSummary(report))}
     ${section(3, "Platform-by-Platform Comparison", platformTable(m, s))}

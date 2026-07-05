@@ -555,8 +555,15 @@
         font-size: 11.5px; font-weight: 900; white-space: nowrap;
         background: var(--soft-purple, #F1E8FF); color: var(--purple, #7B3CFF);
       }
-      .paid-preview-card .ppc-biz { margin-top: 8px; font-weight: 800; font-size: 13.5px; color: var(--text); }
+      .paid-preview-card .ppc-biz-row { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+      .paid-preview-card .ppc-logo {
+        width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--border);
+        background: #fff; object-fit: contain; flex: 0 0 auto;
+      }
+      .paid-preview-card .ppc-biz { font-weight: 800; font-size: 13.5px; color: var(--text); min-width: 0; overflow-wrap: anywhere; }
       .paid-preview-card .ppc-line { margin-top: 3px; font-size: 12.5px; color: var(--text-2); }
+      .paid-preview-card .ppc-social { margin-top: 9px; display: flex; flex-direction: column; gap: 4px; }
+      .paid-preview-card .ppc-social-row { font-size: 12px; font-weight: 600; color: var(--navy); }
       .paid-report-banner {
         background: var(--navy); color: #fff; border-radius: 14px; padding: 16px;
         margin: 18px 0; display: flex; justify-content: space-between; gap: 12px; align-items: center;
@@ -1369,18 +1376,73 @@
         els.modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
 
-        let ai;
+        let ai, branding;
         try {
-          ai = await ensureAIAnalysis(data);
+          const results = await Promise.all([
+            ensureAIAnalysis(data),
+            ensureBranding(data) // never rejects; resolves null on any failure
+          ]);
+          ai = results[0];
+          branding = results[1];
         } catch (e) {
           if (token === reportToken) els.reportBody.innerHTML = reportErrorHtml();
           return;
         }
         if (token !== reportToken) return; // modal closed or replaced meanwhile
-        renderBusinessReportPreview(data, m, ai);
+        renderBusinessReportPreview(data, m, ai, branding);
       }
 
-      function renderBusinessReportPreview(data, m, ai) {
+      // Public branding + social proof (confidence-matched server-side, cached
+      // 24h on the server). Cached per business object so one open = one call.
+      function ensureBranding(data) {
+        if (data.__brandingPromise) return data.__brandingPromise;
+        const params = new URLSearchParams({ businessName: data.name || '' });
+        if (data.locality && data.locality.suburb) params.set('suburb', data.locality.suburb);
+        if (data.address) params.set('address', data.address);
+        if (data.website) params.set('website', data.website);
+        if (data.phone) params.set('phone', data.phone);
+        data.__brandingPromise = fetch(API_BASE + '/business-branding?' + params.toString())
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .catch(function () { return null; });
+        return data.__brandingPromise;
+      }
+
+      function fmtSocialCount(n) {
+        if (typeof n !== 'number' || !isFinite(n)) return '';
+        if (n >= 1000000) return (Math.round(n / 100000) / 10) + 'M';
+        if (n >= 1000) return (Math.round(n / 100) / 10) + 'k';
+        return String(n);
+      }
+
+      // "Google: 4.9 ★ from 254 reviews / Facebook: 1.2k followers / ..." rows.
+      // Only fields that actually exist are shown — nothing is invented.
+      function socialProofRows(data, branding) {
+        const rows = [];
+        const g = data.platforms && data.platforms.google;
+        if (g && typeof g.rating === 'number' && g.rating > 0) {
+          rows.push('Google: ' + g.rating.toFixed(1) + ' \u2605' +
+            (g.reviews ? ' from ' + Number(g.reviews).toLocaleString() + ' reviews' : ''));
+        }
+        if (branding && branding.facebook) {
+          const fb = branding.facebook;
+          const parts = [];
+          if (fb.followers) parts.push(fb.followers + ' followers');
+          else if (fb.likes) parts.push(fb.likes + ' likes');
+          if (typeof fb.rating === 'number') parts.push(fb.rating.toFixed(1) + ' \u2605');
+          if (typeof fb.reviews === 'number') parts.push(Number(fb.reviews).toLocaleString() + ' reviews');
+          if (parts.length) rows.push('Facebook: ' + parts.join(' \u00B7 '));
+        }
+        if (branding && branding.instagram) {
+          const ig = branding.instagram;
+          const parts = [];
+          if (typeof ig.followers === 'number' && ig.followers > 0) parts.push(fmtSocialCount(ig.followers) + ' followers');
+          if (typeof ig.posts === 'number' && ig.posts > 0) parts.push(fmtSocialCount(ig.posts) + ' posts');
+          if (parts.length) rows.push('Instagram: ' + parts.join(' \u00B7 '));
+        }
+        return rows;
+      }
+
+      function renderBusinessReportPreview(data, m, ai, branding) {
         const strengths = businessStrengths(data, m);
         const risk = businessRisk(data, m);
         const locked = [
@@ -1398,7 +1460,10 @@
           ? '<div class="report-section"><h4>AI sentiment overview</h4><p>' + escapeHtml(ai.reviewSummary) + '</p></div>'
           : '';
 
-        const previewImg = safeHttpUrl(data.imageUrl);
+        const previewImg = safeHttpUrl(data.imageUrl) ||
+          (branding ? safeHttpUrl(branding.businessImage) : '');
+        const previewLogo = branding ? safeHttpUrl(branding.businessLogo) : '';
+        const proofRows = socialProofRows(data, branding);
         const previewCard = '' +
           '<div class="paid-preview-card">' +
             (previewImg
@@ -1409,8 +1474,18 @@
                 '<div class="ppc-title"><span>AI Customer Review</span><span>Sentiment Report</span></div>' +
                 '<div class="ppc-price">$23 + GST</div>' +
               '</div>' +
-              '<div class="ppc-biz">' + escapeHtml(data.name || '') + '</div>' +
+              '<div class="ppc-biz-row">' +
+                (previewLogo
+                  ? '<img class="ppc-logo" src="' + escapeAttr(previewLogo) + '" alt="" onerror="this.style.display=\'none\'" />'
+                  : '') +
+                '<div class="ppc-biz">' + escapeHtml(data.name || '') + '</div>' +
+              '</div>' +
               '<div class="ppc-line">Personalised AI reputation insights for your business</div>' +
+              (proofRows.length
+                ? '<div class="ppc-social">' + proofRows.map(function (r) {
+                    return '<div class="ppc-social-row">' + escapeHtml(r) + '</div>';
+                  }).join('') + '</div>'
+                : '') +
             '</div>' +
           '</div>';
 

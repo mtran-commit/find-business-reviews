@@ -118,7 +118,7 @@ const MATCH_STOPWORDS = new Set([
   "store", "house", "food", "foods",
 ]);
 
-function normalizeName(s: string): string {
+export function normalizeName(s: string): string {
   return s
     .toLowerCase()
     .replace(/[^a-z0-9\s]/g, " ")
@@ -126,7 +126,7 @@ function normalizeName(s: string): string {
     .trim();
 }
 
-function distinctiveTokens(s: string): string[] {
+export function distinctiveTokens(s: string): string[] {
   return normalizeName(s)
     .split(" ")
     .filter((t) => t.length > 1 && !MATCH_STOPWORDS.has(t));
@@ -150,7 +150,7 @@ function deriveLocation(address: string): string {
   return address;
 }
 
-async function serpapiGet(
+export async function serpapiGet(
   params: Record<string, string>,
 ): Promise<Record<string, unknown>> {
   const url = new URL(SERPAPI_BASE);
