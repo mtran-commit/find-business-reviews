@@ -178,6 +178,25 @@ router.patch("/report-requests/:id", async (req, res): Promise<void> => {
 });
 
 /**
+ * Admin: delete a report request (e.g. duplicates). Permanent — gated behind
+ * the same admin token as the listing.
+ */
+router.delete("/report-requests/:id", async (req, res): Promise<void> => {
+  if (!requireAdmin(req, res)) return;
+  const row = await loadRequest(req, res);
+  if (!row) return;
+  try {
+    await db
+      .delete(reportRequestsTable)
+      .where(eq(reportRequestsTable.id, row.id));
+    res.json({ success: true, id: row.id });
+  } catch (err) {
+    req.log.error({ err }, "Failed to delete report request");
+    res.status(500).json({ error: "Could not delete report request." });
+  }
+});
+
+/**
  * Admin: mark a request as paid. Manual reconciliation step — the admin checks
  * Stripe, then flips payment status so a report can be generated.
  */

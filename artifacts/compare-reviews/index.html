@@ -637,12 +637,39 @@
         display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 11px; font-weight: 800;
         white-space: nowrap;
       }
-      .badge-pending { background: rgba(95,99,104,.12); color: var(--text-2); }
+      .badge-pending { background: rgba(202,164,40,.16); color: #8a6d1a; }
+      .badge-neutral { background: rgba(95,99,104,.12); color: var(--text-2); }
       .badge-paid { background: rgba(82,210,115,.16); color: #1a7f3c; }
-      .badge-sent { background: rgba(82,210,115,.16); color: #1a7f3c; }
+      .badge-sent { background: rgba(123,60,255,.14); color: var(--purple); }
       .badge-generating { background: rgba(123,60,255,.14); color: var(--purple); }
       .badge-generated { background: rgba(11,85,217,.12); color: var(--rp-blue); }
       .badge-failed { background: rgba(217,45,45,.12); color: #c62828; }
+      .badge-dup {
+        display: inline-block; margin-top: 4px; padding: 2px 8px; border-radius: 999px;
+        font-size: 10.5px; font-weight: 800; white-space: nowrap;
+        background: rgba(217,45,45,.1); border: 1px solid rgba(217,45,45,.3); color: #c62828;
+      }
+      .admin-btn.del { background: #fff; color: #c62828; border-color: rgba(217,45,45,.45); }
+      .admin-btn.del:hover { background: rgba(217,45,45,.06); border-color: #c62828; }
+      .admin-toolbar {
+        display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+        margin: 0 0 16px;
+      }
+      .admin-filters { display: flex; flex-wrap: wrap; gap: 6px; }
+      .admin-filter-btn {
+        border: 1px solid var(--divider); background: #fff; color: var(--text-2);
+        border-radius: 999px; padding: 6px 14px; font-size: 12.5px; font-weight: 800;
+        cursor: pointer; font-family: inherit;
+      }
+      .admin-filter-btn:hover { border-color: var(--text-2); color: var(--text); }
+      .admin-filter-btn.active { background: var(--navy); border-color: var(--navy); color: #fff; }
+      .admin-search {
+        flex: 1; min-width: 220px; max-width: 360px; margin-left: auto;
+        height: 38px; border: 1px solid var(--divider); border-radius: 10px;
+        padding: 0 12px; font-size: 13.5px; font-family: inherit; box-sizing: border-box;
+        background: #fff; color: var(--text);
+      }
+      .admin-search:focus { outline: none; border-color: var(--purple); box-shadow: 0 0 0 3px rgba(123,60,255,.15); }
       .admin-hint { font-size: 11.5px; color: var(--text-2); margin-top: 4px; line-height: 1.4; }
       .admin-hint.err { color: #c62828; }
       .admin-btn.gen { background: var(--purple); color: #fff; border-color: var(--purple); }
@@ -1659,8 +1686,8 @@
       function paymentBadge(status) {
         const map = {
           paid: ['badge-paid', 'Paid'],
-          refunded: ['badge-pending', 'Refunded'],
-          cancelled: ['badge-pending', 'Cancelled'],
+          refunded: ['badge-neutral', 'Refunded'],
+          cancelled: ['badge-neutral', 'Cancelled'],
           pending_payment: ['badge-pending', 'Pending payment']
         };
         const b = map[status] || map.pending_payment;
@@ -1764,25 +1791,108 @@
         });
       }
 
-      function renderAdminTable() {
-        const rows = adminRequests;
-        let body;
-        if (!rows.length) {
-          body = '<div class="admin-state"><h3>No requests yet</h3><p>Report requests will appear here once customers submit them.</p></div>';
-        } else {
-          body = '' +
-            '<p class="admin-count">' + rows.length + ' request' + (rows.length === 1 ? '' : 's') + '</p>' +
-            '<div class="admin-table-wrap"><table class="admin-table"><thead><tr>' +
-              '<th>Date received</th><th>Name</th><th>Email</th><th>Phone</th>' +
-              '<th>Business</th><th>Address</th><th>Website / link</th>' +
-              '<th>Payment</th><th>Report</th><th>Request ID</th><th>Actions</th>' +
-            '</tr></thead><tbody>' +
-            rows.map(adminRowHtml).join('') +
-            '</tbody></table></div>';
+      // Filter + search state for the admin table.
+      let adminFilter = 'all';
+      let adminSearch = '';
+      const ADMIN_FILTERS = [
+        ['all', 'All'],
+        ['pending_payment', 'Pending payment'],
+        ['paid', 'Paid'],
+        ['generated', 'Generated'],
+        ['sent', 'Sent']
+      ];
+
+      // Key used to spot possible duplicate requests (same email + business + address).
+      function dupKey(r) {
+        return [(r.email || ''), (r.businessName || ''), (r.businessAddress || '')]
+          .map(function (s) { return s.trim().toLowerCase(); })
+          .join('|');
+      }
+
+      // Set of duplicate keys across ALL requests (not just the filtered view).
+      function dupKeySet() {
+        const counts = {};
+        adminRequests.forEach(function (r) {
+          const k = dupKey(r);
+          counts[k] = (counts[k] || 0) + 1;
+        });
+        const dups = {};
+        Object.keys(counts).forEach(function (k) { if (counts[k] > 1) dups[k] = true; });
+        return dups;
+      }
+
+      function adminVisibleRows() {
+        let rows = adminRequests;
+        if (adminFilter === 'pending_payment') rows = rows.filter(function (r) { return r.status === 'pending_payment'; });
+        else if (adminFilter === 'paid') rows = rows.filter(function (r) { return r.status === 'paid'; });
+        else if (adminFilter === 'generated') rows = rows.filter(function (r) { return r.reportStatus === 'generated'; });
+        else if (adminFilter === 'sent') rows = rows.filter(function (r) { return r.reportStatus === 'sent'; });
+        const q = adminSearch.trim().toLowerCase();
+        if (q) {
+          rows = rows.filter(function (r) {
+            return [r.fullName, r.email, r.phone, r.businessName, r.businessAddress, r.id]
+              .some(function (v) { return (v || '').toLowerCase().indexOf(q) !== -1; });
+          });
         }
-        adminRoot.innerHTML = '<div class="admin-shell">' + adminHeaderHtml() + body + '</div>';
-        wireAdminHeader();
+        return rows;
+      }
+
+      // Re-render only the rows area (keeps the search input focused while typing).
+      function renderAdminRows() {
+        const holder = document.getElementById('adminRowsHolder');
+        if (!holder) return;
+        const rows = adminVisibleRows();
+        const dups = dupKeySet();
+        if (!rows.length) {
+          const filtered = adminRequests.length > 0;
+          holder.innerHTML = '<div class="admin-state"><h3>' +
+            (filtered ? 'No matching requests' : 'No requests yet') + '</h3><p>' +
+            (filtered ? 'Try a different filter or search.' : 'Report requests will appear here once customers submit them.') +
+            '</p></div>';
+          return;
+        }
+        holder.innerHTML = '' +
+          '<p class="admin-count">' + rows.length + ' of ' + adminRequests.length +
+            ' request' + (adminRequests.length === 1 ? '' : 's') + '</p>' +
+          '<div class="admin-table-wrap"><table class="admin-table"><thead><tr>' +
+            '<th>Date received</th><th>Name</th><th>Email</th><th>Phone</th>' +
+            '<th>Business</th><th>Address</th><th>Website / link</th>' +
+            '<th>Payment</th><th>Report</th><th>Request ID</th><th>Actions</th>' +
+          '</tr></thead><tbody>' +
+          rows.map(function (r) { return adminRowHtml(r, dups[dupKey(r)]); }).join('') +
+          '</tbody></table></div>';
         wireAdminRows();
+      }
+
+      function renderAdminTable() {
+        const filterBtns = ADMIN_FILTERS.map(function (f) {
+          return '<button class="admin-filter-btn' + (adminFilter === f[0] ? ' active' : '') +
+            '" data-admin-filter="' + f[0] + '">' + f[1] + '</button>';
+        }).join('');
+        adminRoot.innerHTML = '<div class="admin-shell">' + adminHeaderHtml() +
+          '<div class="admin-toolbar">' +
+            '<div class="admin-filters">' + filterBtns + '</div>' +
+            '<input id="adminSearchInput" class="admin-search" type="search" autocomplete="off" ' +
+              'placeholder="Search name, email, phone, business, address or ID…" value="' + escapeAttr(adminSearch) + '" />' +
+          '</div>' +
+          '<div id="adminRowsHolder"></div>' +
+        '</div>';
+        wireAdminHeader();
+        adminRoot.querySelectorAll('[data-admin-filter]').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            adminFilter = btn.getAttribute('data-admin-filter');
+            adminRoot.querySelectorAll('[data-admin-filter]').forEach(function (b) {
+              b.classList.toggle('active', b === btn);
+            });
+            renderAdminRows();
+          });
+        });
+        const search = document.getElementById('adminSearchInput');
+        if (search) search.addEventListener('input', function () {
+          adminSearch = search.value || '';
+          renderAdminRows();
+        });
+        renderAdminRows();
       }
 
       // Only treat http(s) URLs as clickable — never javascript:/data: schemes.
@@ -1795,7 +1905,7 @@
         return null;
       }
 
-      function adminRowHtml(r) {
+      function adminRowHtml(r, isDup) {
         const safeLink = safeHttpUrl(r.businessLink);
         const link = safeLink
           ? '<a class="admin-link" href="' + escapeAttr(safeLink) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(r.businessLink) + '</a>'
@@ -1830,10 +1940,12 @@
           // paid + pending
           actions += btn('generate', 'Generate report', 'gen');
         }
+        actions += btn('delete', 'Delete', 'del');
+        const dupBadge = isDup ? '<div class="badge-dup">Possible duplicate</div>' : '';
         return '' +
           '<tr>' +
             '<td class="admin-cell-sub">' + escapeHtml(fmtDate(r.createdAt)) + '</td>' +
-            '<td class="admin-cell-strong">' + escapeHtml(r.fullName || '—') + '</td>' +
+            '<td class="admin-cell-strong">' + escapeHtml(r.fullName || '—') + dupBadge + '</td>' +
             '<td>' + escapeHtml(r.email || '—') + '</td>' +
             '<td>' + escapeHtml(r.phone || '—') + '</td>' +
             '<td class="admin-cell-strong">' + escapeHtml(r.businessName || '—') + '</td>' +
@@ -1877,9 +1989,38 @@
               adminDownload(id, req, btn);
             } else if (act === 'view') {
               adminView(id, btn);
+            } else if (act === 'delete') {
+              adminDelete(id, btn);
             }
           });
         });
+      }
+
+      // Delete a request (e.g. a duplicate) after an explicit confirmation.
+      async function adminDelete(id, btn) {
+        if (!window.confirm('Are you sure you want to delete this request?')) return;
+        const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+        if (!token) { renderAdminGate(false); return; }
+        if (btn) { btn.disabled = true; btn.textContent = 'Deleting…'; }
+        try {
+          const res = await fetch(
+            API_BASE + '/report-requests/' + encodeURIComponent(id),
+            { method: 'DELETE', headers: { 'x-admin-token': token } }
+          );
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem(ADMIN_TOKEN_KEY);
+            renderAdminGate(true);
+            return;
+          }
+          const body = await res.json().catch(function () { return {}; });
+          if (!res.ok) throw new Error((body && body.error) || 'Could not delete request');
+          adminRequests = adminRequests.filter(function (r) { return r.id !== id; });
+          adminToast('Request deleted');
+          renderAdminRows();
+        } catch (err) {
+          if (btn) { btn.disabled = false; btn.textContent = 'Delete'; }
+          adminToast((err && err.message) || 'Could not delete. Please try again.');
+        }
       }
 
       // POST a state-changing admin action; refresh the row from the response.
