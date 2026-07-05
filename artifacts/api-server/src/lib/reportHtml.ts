@@ -23,6 +23,13 @@ const RISK_COLORS: Record<string, string> = {
   High: "#DC2626",
 };
 
+const PRIORITY_COLORS: Record<string, string> = {
+  High: "#7B3CFF",
+  Medium: "#F97316",
+  Low: "#5F6368",
+  "Not relevant": "#9CA3AF",
+};
+
 function qualityColor(q: DataQuality): string {
   if (q === "High") return "#16A34A";
   if (q === "Medium") return "#F97316";
@@ -33,32 +40,84 @@ function safeArr<T>(v: T[] | undefined | null): T[] {
   return Array.isArray(v) ? v : [];
 }
 
+/** Deterministic trust-range label from the real trust score (no AI). */
+function trustLabel(score: number | null): string {
+  if (score === null) return "No data";
+  if (score >= 85) return "Very Trusted";
+  if (score >= 70) return "Trusted";
+  if (score >= 55) return "Building trust";
+  if (score >= 40) return "Mixed signals";
+  return "Needs attention";
+}
+
+/* Small inline SVG icon set (stroke inherits currentColor). */
+const ICONS: Record<string, string> = {
+  doc: '<path d="M6 2h7l5 5v13a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z"/><path d="M13 2v6h6"/>',
+  scale: '<path d="M3 6h18"/><path d="M12 3v18"/><path d="M5 6l-2 6a3.5 3.5 0 0 0 7 0L8 6"/><path d="M19 6l-2 6a3.5 3.5 0 0 0 7 0l-2-6" transform="translate(-3 0)"/>',
+  check: '<path d="M20 6L9 17l-5-5"/>',
+  chat: '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  star: '<path d="M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/>',
+  alert: '<path d="M10.3 3.9L1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/>',
+  users: '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+  speech: '<path d="M8 12h8"/><path d="M8 8h8"/><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  chart: '<path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/>',
+  gift: '<rect x="3" y="8" width="18" height="4"/><path d="M12 8v13"/><path d="M5 12v9h14v-9"/><path d="M12 8c-2 0-4-1-4-3a2 2 0 0 1 4 0"/><path d="M12 8c2 0 4-1 4-3a2 2 0 0 0-4 0"/>',
+  up: '<path d="M12 19V5"/><path d="M5 12l7-7 7 7"/>',
+  calendar: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/>',
+  reply: '<path d="M9 17l-5-5 5-5"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/>',
+  flag: '<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><path d="M4 22v-7"/>',
+  shield: '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+  gauge: '<path d="M12 15l4-6"/><circle cx="12" cy="15" r="1.5"/><path d="M3.5 19a10 10 0 1 1 17 0"/>',
+  reviews: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M8 13h8"/><path d="M8 17h5"/>',
+};
+
+function icon(name: string, size = 16): string {
+  const body = ICONS[name] || ICONS["doc"];
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${body}</svg>`;
+}
+
+/* Platform brand tiles (real brand colours are allowed for platform marks). */
+function platformTile(key: string, name: string): string {
+  const marks: Record<string, [string, string]> = {
+    google: ["#4285F4", "G"],
+    yelp: ["#D32323", "Y"],
+    tripadvisor: ["#34E0A1", "T"],
+  };
+  const m = marks[key] || ["#071A3D", (name[0] || "?").toUpperCase()];
+  return `<span class="pf-cell"><span class="pf-tile" style="color:${m[0]};border-color:${m[0]}33">${esc(m[1])}</span><span class="strong">${esc(name)}</span></span>`;
+}
+
 function kpiCards(m: ReportMetrics, s: AiSections): string {
   const cards = [
     {
+      icon: "gauge",
       label: "Trust Score",
-      value: m.trustScore !== null ? `${m.trustScore}` : "—",
-      sub: m.trustScore !== null ? "/ 100" : "no data",
+      value: m.trustScore !== null ? `${m.trustScore}<span class="kpi-denom">/100</span>` : "—",
+      sub: trustLabel(m.trustScore),
     },
     {
+      icon: "star",
       label: "Average Rating",
-      value: m.averageRating !== null ? `${m.averageRating}` : "—",
-      sub: m.averageRating !== null ? "/ 5" : "no data",
+      value: m.averageRating !== null ? `${m.averageRating}<span class="kpi-denom">/5</span>` : "—",
+      sub: m.averageRating !== null ? "Across available platforms" : "No rating data",
     },
     {
-      label: "Total Reviews Analysed",
+      icon: "reviews",
+      label: "Reviews Analysed",
       value: m.totalReviews.toLocaleString("en-AU"),
-      sub: `${m.platformCount} platform${m.platformCount === 1 ? "" : "s"}`,
+      sub: `${m.platformCount} platform${m.platformCount === 1 ? "" : "s"} with data`,
     },
     {
+      icon: "users",
       label: "Customer Sentiment",
-      value: esc(s.customerSentimentLabel || "—"),
+      value: `<span class="kpi-small">${esc(s.customerSentimentLabel || "—")}</span>`,
       sub: `Data quality: ${m.dataQuality}`,
     },
   ];
   return `<div class="kpi-grid">${cards
     .map(
       (c) => `<div class="kpi">
+        <div class="kpi-icon">${icon(c.icon, 18)}</div>
         <div class="kpi-label">${esc(c.label)}</div>
         <div class="kpi-value">${c.value}</div>
         <div class="kpi-sub">${esc(c.sub)}</div>
@@ -67,40 +126,59 @@ function kpiCards(m: ReportMetrics, s: AiSections): string {
     .join("")}</div>`;
 }
 
+function execSummary(report: BusinessReport): string {
+  const m = report.metrics;
+  const s = report.sections;
+  const meaning =
+    m.trustScore !== null
+      ? `A Trust Score of ${m.trustScore}/100 places this business in the “${trustLabel(m.trustScore)}” range, based on ${m.totalReviews.toLocaleString("en-AU")} public reviews across ${m.platformCount} platform${m.platformCount === 1 ? "" : "s"}.`
+      : `No public rating data was available to compute a Trust Score for this business yet.`;
+  return `<p class="lede">${esc(s.executiveSummary)}</p>
+    <div class="callout">
+      <div class="callout-title">${icon("check", 14)} What this means</div>
+      <div>${esc(meaning)}</div>
+    </div>`;
+}
+
 function platformTable(m: ReportMetrics, s: AiSections): string {
   const meanings = s.platformMeanings || { google: "", yelp: "", tripadvisor: "" };
+  const checklist = safeArr(s.platformChecklist);
+  const actionFor = (platformName: string, hasData: boolean): string => {
+    const match = checklist.find(
+      (c) => (c.platform || "").toLowerCase().trim() === platformName.toLowerCase().trim(),
+    );
+    if (match && match.recommendedAction && match.recommendedAction !== "—")
+      return match.recommendedAction;
+    return hasData
+      ? "Keep monitoring and responding to reviews"
+      : "Not checked yet";
+  };
   const rows = m.platforms
     .map((p) => {
       const meaning =
         (meanings as Record<string, string>)[p.key] ||
         (p.rating === "—" ? "No public listing found for this platform." : "");
-      const summary =
-        p.rating === "—"
-          ? "Not available"
-          : `${p.rating} across ${p.reviews} reviews`;
+      const hasData = p.rating !== "—";
+      const status = hasData
+        ? `<span class="pill pill-ok">Active</span>`
+        : `<span class="pill pill-na">Not available</span>`;
       return `<tr>
-        <td class="strong">${esc(p.platform)}</td>
-        <td>${esc(p.rating)}</td>
+        <td>${platformTile(p.key, p.platform)}</td>
+        <td class="strong">${esc(p.rating)}</td>
         <td>${esc(p.reviews)}</td>
-        <td>${esc(summary)}</td>
+        <td>${status}</td>
         <td class="muted">${esc(meaning)}</td>
+        <td class="muted">${esc(actionFor(p.platform, hasData))}</td>
       </tr>`;
     })
     .join("");
   return `<table class="tbl">
     <thead><tr>
-      <th>Platform</th><th>Avg Rating</th><th>Reviews</th><th>Summary</th><th>Business Meaning</th>
+      <th>Platform</th><th>Rating</th><th>Reviews</th><th>Status</th><th>Business Meaning</th><th>Recommended Action</th>
     </tr></thead>
     <tbody>${rows}</tbody>
   </table>`;
 }
-
-const PRIORITY_COLORS: Record<string, string> = {
-  High: "#7B3CFF",
-  Medium: "#F97316",
-  Low: "#5F6368",
-  "Not relevant": "#9CA3AF",
-};
 
 function checklistSection(s: AiSections): string {
   const items = safeArr(s.platformChecklist);
@@ -126,7 +204,10 @@ function checklistSection(s: AiSections): string {
       </tr></thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="muted" style="margin-top:12px">${esc(TRUST_SCORE_EXPLANATION)}</p>`;
+    <div class="callout" style="margin-top:14px">
+      <div class="callout-title">${icon("shield", 14)} How the Trust Score treats this</div>
+      <div>${esc(TRUST_SCORE_EXPLANATION)}</div>
+    </div>`;
 }
 
 function sentimentSection(s: AiSections): string {
@@ -142,7 +223,7 @@ function sentimentSection(s: AiSections): string {
       ? `<div class="theme-col">
           <div class="theme-title">${esc(title)}</div>
           <div class="chips">${items
-            .map((t) => `<span class="chip" style="border-color:${color};color:${color}">${esc(t)}</span>`)
+            .map((t) => `<span class="chip" style="border-color:${color}55;color:${color}">${esc(t)}</span>`)
             .join("")}</div>
         </div>`
       : "";
@@ -157,15 +238,17 @@ function sentimentSection(s: AiSections): string {
       ${themes("Positive themes", safeArr(se.positiveThemes), "#16A34A")}
       ${themes("Negative themes", safeArr(se.negativeThemes), "#DC2626")}
     </div>
-    ${se.insight ? `<div class="insight"><strong>AI insight:</strong> ${esc(se.insight)}</div>` : ""}`;
+    ${se.insight ? `<div class="insight"><span class="insight-tag">${icon("chat", 13)} AI insight</span>${esc(se.insight)}</div>` : ""}`;
 }
 
 function strengthsSection(s: AiSections): string {
   const items = safeArr(s.topStrengths);
-  if (!items.length) return `<p class="muted">No distinct strengths could be derived from the available data.</p>`;
+  if (!items.length)
+    return `<p class="muted">No distinct strengths could be derived from the available data.</p>`;
   return `<div class="card-grid">${items
     .map(
-      (st) => `<div class="mini-card">
+      (st) => `<div class="mini-card strength-card">
+        <div class="mini-icon ok">${icon("star", 15)}</div>
         <div class="mini-title">${esc(st.theme)}</div>
         <div class="mini-body">${esc(st.explanation)}</div>
         ${st.evidence ? `<div class="mini-evi">${esc(st.evidence)}</div>` : ""}
@@ -181,9 +264,11 @@ function complaintsSection(s: AiSections): string {
   return `<div class="card-grid">${items
     .map((c) => {
       const color = RISK_COLORS[c.riskLevel] || "#F97316";
-      return `<div class="mini-card">
-        <div class="mini-title">${esc(c.theme)}</div>
-        <span class="risk-badge" style="background:${color}">${esc(c.riskLevel)} risk</span>
+      return `<div class="mini-card" style="border-top:3px solid ${color}">
+        <div class="mini-head">
+          <div class="mini-title">${esc(c.theme)}</div>
+          <span class="risk-badge" style="background:${color}">${esc(c.riskLevel)} risk</span>
+        </div>
         <div class="mini-body">${esc(c.explanation)}</div>
         ${c.fix ? `<div class="mini-fix"><strong>Recommended fix:</strong> ${esc(c.fix)}</div>` : ""}
       </div>`;
@@ -191,10 +276,18 @@ function complaintsSection(s: AiSections): string {
     .join("")}</div>`;
 }
 
-function listSection(items: string[], empty: string): string {
+function costingSection(items: string[]): string {
   const arr = safeArr(items);
-  if (!arr.length) return `<p class="muted">${esc(empty)}</p>`;
-  return `<ul class="clean-list">${arr.map((i) => `<li>${esc(i)}</li>`).join("")}</ul>`;
+  if (!arr.length)
+    return `<p class="muted">No material issues identified from the available data.</p>`;
+  return `<div class="risk-list">${arr
+    .map(
+      (i) => `<div class="risk-item">
+        <span class="risk-ico">${icon("alert", 14)}</span>
+        <span>${esc(i)}</span>
+      </div>`,
+    )
+    .join("")}</div>`;
 }
 
 function languageSection(s: AiSections): string {
@@ -205,7 +298,7 @@ function languageSection(s: AiSections): string {
       <div class="chips">${
         safeArr(items).length
           ? safeArr(items)
-              .map((w) => `<span class="chip" style="border-color:${color};color:${color}">${esc(w)}</span>`)
+              .map((w) => `<span class="chip" style="border-color:${color}55;color:${color}">${esc(w)}</span>`)
               .join("")
           : `<span class="muted">Not enough data</span>`
       }</div>
@@ -221,7 +314,7 @@ function competitorSection(m: ReportMetrics, s: AiSections): string {
   const comps = safeArr(m.competitors);
   const table = comps.length
     ? `<table class="tbl">
-        <thead><tr><th>Competitor</th><th>Trust Score</th><th>Avg Rating</th><th>Reviews</th><th>Comparison</th></tr></thead>
+        <thead><tr><th>Competitor</th><th>Trust Score</th><th>Rating</th><th>Reviews</th><th>Comparison</th></tr></thead>
         <tbody>${comps
           .map(
             (c) => `<tr>
@@ -236,7 +329,9 @@ function competitorSection(m: ReportMetrics, s: AiSections): string {
       </table>`
     : `<p class="muted">No nearby competitor data was available for comparison.</p>`;
   return `${table}${
-    s.competitorConclusion ? `<div class="conclusion">${esc(s.competitorConclusion)}</div>` : ""
+    s.competitorConclusion
+      ? `<div class="conclusion">${icon("chart", 15)}<span>${esc(s.competitorConclusion)}</span></div>`
+      : ""
   }`;
 }
 
@@ -244,6 +339,7 @@ function offerSection(s: AiSections): string {
   const o = s.recommendedOffer;
   if (!o.offer) return `<p class="muted">No specific offer recommendation available.</p>`;
   return `<div class="offer-card">
+    <div class="offer-kicker">${icon("gift", 15)} Recommended offer</div>
     <div class="offer-head">${esc(o.offer)}</div>
     ${o.why ? `<div class="offer-why"><strong>Why it works:</strong> ${esc(o.why)}</div>` : ""}
     ${o.exampleCopy ? `<div class="offer-copy">“${esc(o.exampleCopy)}”</div>` : ""}
@@ -263,11 +359,12 @@ function improvementSection(s: AiSections): string {
 function sevenDaySection(s: AiSections): string {
   const items = safeArr(s.sevenDayActionPlan);
   if (!items.length) return `<p class="muted">No 7-day plan was generated.</p>`;
-  return `<div class="plan-grid">${items
+  return `<div class="timeline">${items
     .map(
-      (d) => `<div class="plan-card">
-        <div class="plan-day">${esc(d.day)}</div>
-        <div class="plan-action">${esc(d.action)}</div>
+      (d) => `<div class="tl-row">
+        <div class="tl-day">${esc(d.day)}</div>
+        <div class="tl-line"><span class="tl-dot"></span></div>
+        <div class="tl-card">${esc(d.action)}</div>
       </div>`,
     )
     .join("")}</div>`;
@@ -279,7 +376,7 @@ function thirtyDaySection(s: AiSections): string {
   return `<div class="week-grid">${items
     .map(
       (w) => `<div class="week-card">
-        <div class="week-label">${esc(w.week)}</div>
+        <div class="week-label">${icon("calendar", 13)} ${esc(w.week)}</div>
         <div class="week-focus">${esc(w.focus)}</div>
       </div>`,
     )
@@ -290,34 +387,66 @@ function templatesSection(s: AiSections): string {
   const t = s.responseTemplates;
   const block = (title: string, body: string, color: string) =>
     body
-      ? `<div class="tpl-card">
-          <div class="tpl-title" style="color:${color}">${esc(title)}</div>
+      ? `<div class="tpl-card" style="border-top:3px solid ${color}">
+          <div class="tpl-title" style="color:${color}">${icon("reply", 14)} ${esc(title)}</div>
           <div class="tpl-body">${esc(body)}</div>
         </div>`
       : "";
   const positive = block("Positive review response", t.positive, "#16A34A");
   const negative = block("Critical review response", t.negative, "#DC2626");
-  if (!positive && !negative) return `<p class="muted">No response templates were generated.</p>`;
+  if (!positive && !negative)
+    return `<p class="muted">No response templates were generated.</p>`;
   return `<div class="tpl-grid">${positive}${negative}</div>`;
 }
 
 function finalSection(s: AiSections): string {
   const f = s.finalRecommendation;
   const row = (label: string, val: string) =>
-    val ? `<li><strong>${esc(label)}:</strong> ${esc(val)}</li>` : "";
-  const body = row("Do first", f.first) + row("Fastest trust win", f.fastest) + row("Monitor next", f.monitor);
-  if (!body) return `<p class="muted">Continue monitoring reviews and encourage satisfied customers to leave feedback.</p>`;
-  return `<ul class="final-list">${body}</ul>`;
+    val
+      ? `<div class="final-row">
+          <div class="final-label">${esc(label)}</div>
+          <div class="final-val">${esc(val)}</div>
+        </div>`
+      : "";
+  const body =
+    row("Do first", f.first) +
+    row("Fastest trust win", f.fastest) +
+    row("Monitor next", f.monitor);
+  if (!body)
+    return `<p class="muted">Continue monitoring reviews and encourage satisfied customers to leave feedback.</p>`;
+  return `<div class="final-card">${body}</div>`;
 }
+
+const SECTION_ICONS: Record<number, string> = {
+  1: "doc",
+  2: "scale",
+  3: "check",
+  4: "chat",
+  5: "star",
+  6: "alert",
+  7: "users",
+  8: "speech",
+  9: "chart",
+  10: "gift",
+  11: "up",
+  12: "calendar",
+  13: "flag",
+  14: "reply",
+  15: "shield",
+};
 
 function section(num: number, title: string, body: string): string {
   return `<section class="sec">
-    <h2><span class="sec-num">${num}</span>${esc(title)}</h2>
+    <h2>
+      <span class="sec-num">${num}</span>
+      <span class="sec-title">${esc(title)}</span>
+      <span class="sec-ico">${icon(SECTION_ICONS[num] || "doc", 17)}</span>
+    </h2>
     ${body}
   </section>`;
 }
 
-/** Render the full styled HTML dashboard report from the persisted report JSON. */
+/** Render the full premium styled HTML dashboard report from the persisted report JSON. */
 export function buildReportHtml(report: BusinessReport): string {
   const m = report.metrics;
   const s = report.sections;
@@ -328,9 +457,8 @@ export function buildReportHtml(report: BusinessReport): string {
 
   const meta = [
     dateStr ? `<span class="meta-chip">Generated ${esc(dateStr)}</span>` : "",
-    `<span class="meta-chip" style="border-color:${qualityColor(m.dataQuality)};color:${qualityColor(m.dataQuality)}">Data quality: ${esc(m.dataQuality)}</span>`,
+    `<span class="meta-chip" style="border-color:${qualityColor(m.dataQuality)}66;color:#fff"><span class="dot" style="background:${qualityColor(m.dataQuality)}"></span>Data quality: ${esc(m.dataQuality)}</span>`,
     `<span class="meta-chip">Platforms checked: Google, Yelp, TripAdvisor</span>`,
-    `<span class="meta-badge">Paid Report — $10</span>`,
   ].join("");
 
   return `<!doctype html>
@@ -340,87 +468,166 @@ export function buildReportHtml(report: BusinessReport): string {
 <title>AI Business Reputation Report — ${esc(report.businessName)}</title>
 <style>
   * { box-sizing: border-box; }
-  body { margin:0; background:#F7F7F4; color:#050505; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.5; }
-  .wrap { max-width:900px; margin:0 auto; padding:0 20px 60px; }
-  .report-header { background:#071A3D; color:#fff; padding:38px 20px; }
-  .report-header .inner { max-width:900px; margin:0 auto; }
-  .report-header h1 { margin:0 0 6px; font-size:26px; letter-spacing:-.02em; }
-  .report-header .sub { color:#C9BEEF; font-size:15px; margin-bottom:4px; }
-  .report-header .addr { color:#9A8FC7; font-size:13px; margin-bottom:16px; }
+  @page { size: A4; margin: 14mm 12mm; }
+  body { margin:0; background:#F7F7F4; color:#050505; font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif; line-height:1.5; font-size:14px; }
+  .wrap { max-width:940px; margin:0 auto; padding:0 22px 30px; }
+
+  /* ===== Premium header ===== */
+  .report-header { background:linear-gradient(135deg,#03122E 0%,#071A3D 60%,#12235C 100%); color:#fff; padding:44px 22px 40px; position:relative; overflow:hidden; }
+  .report-header::before { content:""; position:absolute; top:-120px; right:-80px; width:420px; height:420px; border-radius:50%; background:radial-gradient(circle,rgba(123,60,255,.35) 0%,rgba(123,60,255,0) 70%); pointer-events:none; }
+  .report-header::after { content:""; position:absolute; bottom:-160px; left:-100px; width:380px; height:380px; border-radius:50%; background:radial-gradient(circle,rgba(154,92,255,.18) 0%,rgba(154,92,255,0) 70%); pointer-events:none; }
+  .report-header .inner { max-width:940px; margin:0 auto; position:relative; }
+  .brand-row { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:22px; }
+  .brand-name { font-size:14px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; color:#E8E3FA; }
+  .paid-badge { background:linear-gradient(135deg,#7B3CFF,#9A5CFF); color:#fff; border-radius:999px; padding:6px 16px; font-size:12px; font-weight:800; letter-spacing:.02em; box-shadow:0 4px 14px rgba(123,60,255,.4); }
+  .report-header h1 { margin:0 0 10px; font-size:38px; font-weight:900; letter-spacing:-.02em; line-height:1.12; }
+  .report-header .sub { color:#E8E3FA; font-size:17px; font-weight:700; margin-bottom:4px; }
+  .report-header .addr { color:#9A8FC7; font-size:13.5px; margin-bottom:20px; }
   .meta { display:flex; flex-wrap:wrap; gap:8px; }
-  .meta-chip { border:1px solid rgba(255,255,255,.3); color:#E8E3FA; border-radius:999px; padding:5px 12px; font-size:12px; }
-  .meta-badge { background:#7B3CFF; color:#fff; border-radius:999px; padding:5px 14px; font-size:12px; font-weight:700; }
+  .meta-chip { display:inline-flex; align-items:center; gap:7px; border:1px solid rgba(255,255,255,.28); color:#E8E3FA; border-radius:999px; padding:5px 13px; font-size:12px; font-weight:600; }
+  .dot { width:8px; height:8px; border-radius:50%; display:inline-block; }
+
+  /* ===== KPI cards ===== */
   .kpi-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; margin:26px 0 8px; }
-  .kpi { background:#fff; border:1px solid #E5E5E5; border-radius:16px; padding:18px; text-align:center; box-shadow:0 1px 2px rgba(7,26,61,.04); }
-  .kpi-label { font-size:12px; color:#5F6368; margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em; }
-  .kpi-value { font-size:30px; font-weight:800; color:#071A3D; line-height:1; }
-  .kpi-sub { font-size:12px; color:#7B3CFF; margin-top:6px; font-weight:600; }
-  .sec { background:#fff; border:1px solid #E5E5E5; border-radius:18px; padding:24px 26px; margin-top:20px; box-shadow:0 1px 2px rgba(7,26,61,.04); }
-  .sec h2 { font-size:18px; color:#071A3D; margin:0 0 16px; display:flex; align-items:center; gap:12px; }
-  .sec-num { display:inline-flex; align-items:center; justify-content:center; width:28px; height:28px; background:#F1E8FF; color:#7B3CFF; border-radius:9px; font-size:14px; font-weight:800; }
+  .kpi { background:#fff; border:1px solid #E5E5E5; border-radius:16px; padding:18px 16px; box-shadow:0 2px 8px rgba(7,26,61,.05); }
+  .kpi-icon { width:34px; height:34px; border-radius:10px; background:#F1E8FF; color:#7B3CFF; display:flex; align-items:center; justify-content:center; margin-bottom:12px; }
+  .kpi-label { font-size:11px; color:#5F6368; margin-bottom:6px; text-transform:uppercase; letter-spacing:.06em; font-weight:700; }
+  .kpi-value { font-size:30px; font-weight:900; color:#071A3D; line-height:1.05; letter-spacing:-.02em; }
+  .kpi-denom { font-size:15px; font-weight:700; color:#5F6368; margin-left:2px; }
+  .kpi-small { font-size:19px; }
+  .kpi-sub { font-size:12px; color:#7B3CFF; margin-top:7px; font-weight:700; }
+
+  /* ===== Section cards ===== */
+  .sec { background:#fff; border:1px solid #E5E5E5; border-radius:18px; padding:26px 28px; margin-top:20px; box-shadow:0 2px 8px rgba(7,26,61,.05); page-break-inside:avoid; }
+  .sec h2 { font-size:22px; font-weight:850; color:#071A3D; margin:0 0 18px; display:flex; align-items:center; gap:12px; letter-spacing:-.01em; }
+  .sec-num { display:inline-flex; align-items:center; justify-content:center; width:32px; height:32px; background:linear-gradient(135deg,#7B3CFF,#9A5CFF); color:#fff; border-radius:9px; font-size:15px; font-weight:800; flex:none; box-shadow:0 3px 8px rgba(123,60,255,.3); }
+  .sec-title { flex:1; }
+  .sec-ico { color:#C9BEEF; flex:none; display:inline-flex; }
   .sec p { margin:0 0 10px; }
+  .lede { font-size:15px; }
   .muted { color:#5F6368; }
   .strong { font-weight:700; color:#071A3D; }
-  .tbl { width:100%; border-collapse:collapse; font-size:14px; }
-  .tbl th { text-align:left; background:#F1E8FF; color:#071A3D; padding:10px 12px; font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
+  .callout { background:#F1E8FF; border-radius:12px; padding:14px 16px; margin-top:14px; font-size:13.5px; color:#071A3D; }
+  .callout-title { display:flex; align-items:center; gap:7px; font-weight:800; color:#7B3CFF; font-size:12px; text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px; }
+
+  /* ===== Tables ===== */
+  .tbl { width:100%; border-collapse:collapse; font-size:13.5px; }
+  .tbl th { text-align:left; background:#F1E8FF; color:#071A3D; padding:10px 12px; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; font-weight:800; }
   .tbl th:first-child { border-radius:8px 0 0 8px; }
   .tbl th:last-child { border-radius:0 8px 8px 0; }
-  .tbl td { padding:11px 12px; border-bottom:1px solid #EEE; vertical-align:top; }
+  .tbl td { padding:12px; border-bottom:1px solid #EEE; vertical-align:top; }
+  .tbl tr:last-child td { border-bottom:none; }
+  .pf-cell { display:flex; align-items:center; gap:9px; }
+  .pf-tile { width:26px; height:26px; border-radius:8px; border:1.5px solid; display:inline-flex; align-items:center; justify-content:center; font-weight:900; font-size:13px; background:#fff; flex:none; }
+  .pill { display:inline-block; border-radius:999px; padding:3px 11px; font-size:11px; font-weight:800; white-space:nowrap; }
+  .pill-ok { background:rgba(22,163,74,.12); color:#16A34A; }
+  .pill-na { background:rgba(95,99,104,.1); color:#5F6368; }
+
+  /* ===== Sentiment ===== */
   .bars { margin-bottom:10px; }
-  .bar-row { display:flex; align-items:center; gap:12px; margin-bottom:8px; }
-  .bar-label { width:70px; font-size:13px; color:#071A3D; font-weight:600; }
+  .bar-row { display:flex; align-items:center; gap:12px; margin-bottom:9px; }
+  .bar-label { width:72px; font-size:13px; color:#071A3D; font-weight:700; }
   .bar-track { flex:1; height:12px; background:#F1E8FF; border-radius:999px; overflow:hidden; }
   .bar-fill { height:100%; border-radius:999px; }
-  .bar-val { width:44px; text-align:right; font-size:13px; font-weight:700; color:#071A3D; }
+  .bar-val { width:44px; text-align:right; font-size:13px; font-weight:800; color:#071A3D; }
   .est-note { font-size:12px; color:#5F6368; font-style:italic; margin:0 0 12px; }
-  .theme-grid, .lang-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:8px; }
-  .lang-grid { grid-template-columns:repeat(3,1fr); }
-  .theme-title { font-size:13px; font-weight:700; color:#071A3D; margin-bottom:8px; }
+  .theme-grid { display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:8px; }
+  .theme-title { font-size:12.5px; font-weight:800; color:#071A3D; margin-bottom:8px; text-transform:uppercase; letter-spacing:.04em; }
   .chips { display:flex; flex-wrap:wrap; gap:6px; }
-  .chip { border:1px solid #7B3CFF; color:#7B3CFF; border-radius:999px; padding:4px 10px; font-size:12px; background:#fff; }
-  .insight { background:#F1E8FF; border-radius:12px; padding:14px 16px; margin-top:14px; font-size:14px; color:#071A3D; }
+  .chip { border:1px solid; border-radius:999px; padding:4px 11px; font-size:12px; background:#fff; font-weight:600; }
+  .insight { background:#F1E8FF; border-radius:12px; padding:14px 16px; margin-top:14px; font-size:13.5px; color:#071A3D; }
+  .insight-tag { display:inline-flex; align-items:center; gap:6px; font-weight:800; color:#7B3CFF; font-size:11px; text-transform:uppercase; letter-spacing:.05em; margin-right:8px; }
+
+  /* ===== Cards ===== */
   .card-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; }
-  .mini-card { border:1px solid #E5E5E5; border-radius:14px; padding:16px; background:#fff; }
-  .mini-title { font-weight:700; color:#071A3D; margin-bottom:8px; }
-  .mini-body { font-size:14px; color:#050505; }
-  .mini-evi { font-size:13px; color:#5F6368; margin-top:8px; font-style:italic; }
-  .mini-fix { font-size:13px; color:#071A3D; margin-top:10px; }
-  .risk-badge { display:inline-block; color:#fff; border-radius:999px; padding:3px 11px; font-size:11px; font-weight:700; margin-bottom:8px; }
-  .prio-badge { display:inline-block; color:#fff; border-radius:999px; padding:3px 11px; font-size:11px; font-weight:700; white-space:nowrap; }
-  .clean-list { margin:0; padding-left:20px; }
-  .clean-list li { margin-bottom:8px; }
-  .lang-col { }
-  .conclusion { background:#071A3D; color:#fff; border-radius:12px; padding:14px 16px; margin-top:14px; font-weight:600; font-size:14px; }
+  .mini-card { border:1px solid #E5E5E5; border-radius:14px; padding:16px; background:#fff; box-shadow:0 1px 4px rgba(7,26,61,.04); }
+  .mini-icon { width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; }
+  .mini-icon.ok { background:rgba(22,163,74,.1); color:#16A34A; }
+  .mini-head { display:flex; align-items:flex-start; justify-content:space-between; gap:8px; margin-bottom:8px; }
+  .mini-title { font-weight:800; color:#071A3D; margin-bottom:6px; font-size:14.5px; }
+  .mini-head .mini-title { margin-bottom:0; }
+  .mini-body { font-size:13.5px; color:#050505; }
+  .mini-evi { font-size:12.5px; color:#5F6368; margin-top:8px; font-style:italic; }
+  .mini-fix { font-size:13px; color:#071A3D; margin-top:10px; background:#F7F7F4; border-radius:9px; padding:9px 11px; }
+  .risk-badge { display:inline-block; color:#fff; border-radius:999px; padding:3px 11px; font-size:11px; font-weight:800; white-space:nowrap; flex:none; }
+  .prio-badge { display:inline-block; color:#fff; border-radius:999px; padding:3px 11px; font-size:11px; font-weight:800; white-space:nowrap; }
+
+  .risk-list { display:flex; flex-direction:column; gap:10px; }
+  .risk-item { display:flex; gap:11px; align-items:flex-start; background:#FAFAF8; border:1px solid #EEE; border-radius:11px; padding:12px 14px; font-size:13.5px; }
+  .risk-ico { color:#F97316; flex:none; margin-top:2px; display:inline-flex; }
+
+  .lang-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:20px; }
+  .conclusion { display:flex; gap:10px; align-items:flex-start; background:linear-gradient(135deg,#03122E,#071A3D); color:#fff; border-radius:12px; padding:15px 17px; margin-top:14px; font-weight:600; font-size:13.5px; }
+  .conclusion svg { flex:none; margin-top:2px; color:#9A5CFF; }
   .demo-tag { font-size:10px; color:#5F6368; border:1px solid #E5E5E5; border-radius:6px; padding:1px 6px; font-weight:500; }
-  .offer-card { border:1.5px solid #7B3CFF; border-radius:14px; padding:18px; background:#FBF8FF; }
-  .offer-head { font-weight:800; color:#7B3CFF; font-size:16px; margin-bottom:8px; }
-  .offer-why { font-size:14px; margin-bottom:10px; }
-  .offer-copy { font-size:14px; color:#071A3D; background:#fff; border:1px solid #E5E5E5; border-radius:10px; padding:12px; }
-  .improve p { font-size:14px; margin:8px 0 0; }
-  .plan-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; }
-  .plan-card { border:1px solid #E5E5E5; border-radius:12px; padding:14px; }
-  .plan-day { font-weight:800; color:#7B3CFF; font-size:13px; margin-bottom:4px; }
-  .plan-action { font-size:14px; }
+
+  /* ===== Offer ===== */
+  .offer-card { background:linear-gradient(135deg,#7B3CFF,#9A5CFF); border-radius:16px; padding:22px 24px; color:#fff; box-shadow:0 8px 22px rgba(123,60,255,.3); }
+  .offer-kicker { display:inline-flex; align-items:center; gap:7px; font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#F1E8FF; margin-bottom:10px; }
+  .offer-head { font-weight:900; font-size:18px; margin-bottom:10px; letter-spacing:-.01em; }
+  .offer-why { font-size:13.5px; margin-bottom:12px; color:#F1E8FF; }
+  .offer-why strong { color:#fff; }
+  .offer-copy { font-size:13.5px; color:#071A3D; background:#fff; border-radius:10px; padding:13px 15px; }
+
+  .improve p { font-size:13.5px; margin:10px 0 0; }
+
+  /* ===== 7-day timeline ===== */
+  .timeline { display:flex; flex-direction:column; }
+  .tl-row { display:grid; grid-template-columns:64px 26px 1fr; align-items:stretch; }
+  .tl-day { font-weight:900; color:#7B3CFF; font-size:13px; padding:12px 0; white-space:nowrap; }
+  .tl-line { position:relative; }
+  .tl-line::before { content:""; position:absolute; left:50%; top:0; bottom:0; width:2px; background:#F1E8FF; transform:translateX(-50%); }
+  .tl-row:first-child .tl-line::before { top:18px; }
+  .tl-row:last-child .tl-line::before { bottom:calc(100% - 26px); }
+  .tl-dot { position:absolute; left:50%; top:18px; width:10px; height:10px; border-radius:50%; background:linear-gradient(135deg,#7B3CFF,#9A5CFF); transform:translate(-50%,-50%); box-shadow:0 0 0 3px #F1E8FF; }
+  .tl-card { background:#FAFAF8; border:1px solid #EEE; border-radius:11px; padding:11px 14px; margin:5px 0; font-size:13.5px; }
+
+  /* ===== 30-day weeks ===== */
   .week-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
-  .week-card { border:1px solid #E5E5E5; border-left:4px solid #7B3CFF; border-radius:12px; padding:14px; }
-  .week-label { font-weight:800; color:#071A3D; margin-bottom:4px; }
-  .week-focus { font-size:14px; color:#050505; }
+  .week-card { border:1px solid #E5E5E5; border-left:4px solid #7B3CFF; border-radius:12px; padding:15px 16px; background:#fff; box-shadow:0 1px 4px rgba(7,26,61,.04); }
+  .week-label { display:flex; align-items:center; gap:7px; font-weight:900; color:#7B3CFF; margin-bottom:6px; font-size:12.5px; text-transform:uppercase; letter-spacing:.04em; }
+  .week-focus { font-size:13.5px; color:#050505; }
+
+  /* ===== Templates ===== */
   .tpl-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
   .tpl-card { border:1px solid #E5E5E5; border-radius:12px; padding:16px; background:#FAFAF8; }
-  .tpl-title { font-weight:700; margin-bottom:8px; }
+  .tpl-title { display:flex; align-items:center; gap:7px; font-weight:800; margin-bottom:10px; font-size:13.5px; }
   .tpl-body { font-size:13px; color:#050505; white-space:pre-wrap; }
-  .final-list { margin:0; padding-left:20px; }
-  .final-list li { margin-bottom:8px; font-size:15px; }
+
+  /* ===== Final recommendation ===== */
+  .final-card { background:linear-gradient(135deg,#03122E,#071A3D); border-radius:14px; padding:6px 20px; color:#fff; }
+  .final-row { display:grid; grid-template-columns:170px 1fr; gap:14px; padding:14px 0; border-bottom:1px solid rgba(255,255,255,.1); }
+  .final-row:last-child { border-bottom:none; }
+  .final-label { font-weight:900; color:#9A5CFF; font-size:12px; text-transform:uppercase; letter-spacing:.05em; padding-top:2px; }
+  .final-val { font-size:14px; color:#F1E8FF; }
+
   .disclaimer { font-size:12px; color:#5F6368; margin-top:20px; padding:16px 18px; background:#fff; border:1px solid #E5E5E5; border-radius:12px; }
+
+  /* ===== Footer ===== */
+  .report-footer { background:#03122E; color:#9A8FC7; margin-top:34px; padding:22px; text-align:center; font-size:12px; }
+  .report-footer .fb { color:#E8E3FA; font-weight:800; margin-bottom:4px; font-size:13px; }
+
+  @media print {
+    body { background:#fff; }
+    .sec, .kpi, .mini-card, .week-card, .tpl-card { box-shadow:none; }
+    .report-header, .offer-card, .final-card, .conclusion, .report-footer, .sec-num, .paid-badge, .tl-dot { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  }
   @media (max-width:760px){
+    .report-header h1 { font-size:28px; }
     .kpi-grid{grid-template-columns:repeat(2,1fr);}
-    .card-grid,.lang-grid,.plan-grid,.week-grid,.tpl-grid,.theme-grid{grid-template-columns:1fr;}
-    .tbl{font-size:13px;}
+    .card-grid,.lang-grid,.week-grid,.tpl-grid,.theme-grid{grid-template-columns:1fr;}
+    .final-row{grid-template-columns:1fr;gap:4px;}
+    .tbl{font-size:12.5px;}
+    .tl-row{grid-template-columns:52px 22px 1fr;}
   }
 </style>
 </head>
 <body>
   <header class="report-header"><div class="inner">
+    <div class="brand-row">
+      <div class="brand-name">Find Business Reviews</div>
+      <div class="paid-badge">Paid Report</div>
+    </div>
     <h1>AI Business Reputation Report</h1>
     <div class="sub">Prepared for ${esc(report.businessName)}</div>
     ${report.businessAddress ? `<div class="addr">${esc(report.businessAddress)}</div>` : ""}
@@ -428,13 +635,13 @@ export function buildReportHtml(report: BusinessReport): string {
   </div></header>
   <div class="wrap">
     ${kpiCards(m, s)}
-    ${section(1, "Executive Summary", `<p>${esc(s.executiveSummary)}</p>`)}
+    ${section(1, "Executive Summary", execSummary(report))}
     ${section(2, "Platform-by-Platform Comparison", platformTable(m, s))}
     ${section(3, "Platform Checklist", checklistSection(s))}
     ${section(4, "AI Customer Sentiment Analysis", sentimentSection(s))}
     ${section(5, "Top Strengths Customers Mention", strengthsSection(s))}
     ${section(6, "Main Complaints and Risk Level", complaintsSection(s))}
-    ${section(7, "What May Be Costing You Customers", listSection(s.costingYouCustomers, "No material issues identified from the available data."))}
+    ${section(7, "What May Be Costing You Customers", costingSection(s.costingYouCustomers))}
     ${section(8, "Customer Language Insights", languageSection(s))}
     ${section(9, "Competitor Snapshot", competitorSection(m, s))}
     ${section(10, "Recommended Offer to Win More Bookings", offerSection(s))}
@@ -445,5 +652,9 @@ export function buildReportHtml(report: BusinessReport): string {
     ${section(15, "Final Recommendation", finalSection(s))}
     <div class="disclaimer">${esc(report.disclaimer)}</div>
   </div>
+  <footer class="report-footer">
+    <div class="fb">Find Business Reviews — AI Business Reputation Report</div>
+    <div>Prepared exclusively for ${esc(report.businessName)}. Independent. Unbiased. Built for smarter decisions.</div>
+  </footer>
 </body></html>`;
 }

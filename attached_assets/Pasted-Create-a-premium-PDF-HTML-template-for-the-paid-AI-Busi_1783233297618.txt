@@ -1,0 +1,438 @@
+Create a premium PDF/HTML template for the paid AI Business Reputation Report.
+
+Use the existing report content structure, but redesign it so it looks like a premium dashboard-style business report, not a plain PDF document.
+
+Current report already includes:
+- AI Business Reputation Report title
+- Prepared for business name
+- Business address
+- Date generated
+- Data quality
+- Platforms checked
+- Trust Score
+- Average rating
+- Review volume
+- Sentiment
+- Executive Summary
+- Platform-by-platform comparison
+- AI Customer Sentiment Analysis
+- Top strengths
+- Main complaints and risk level
+- What may be costing customers
+- Customer language insights
+- Competitor snapshot
+- Recommended offer
+- Review improvement opportunity
+- 7-day action plan
+- 30-day plan
+- Suggested response templates
+- Final recommendation
+- Disclaimer
+
+Keep all those sections, but redesign the template.
+
+PREMIUM DESIGN STYLE
+
+Use these colours:
+- Dark navy: #071A3D
+- Deep navy: #03122E
+- Purple: #7B3CFF
+- Purple gradient: linear-gradient(135deg, #7B3CFF, #9A5CFF)
+- Light purple: #F1E8FF
+- Background: #F7F7F4
+- White card: #FFFFFF
+- Border: #E5E5E5
+- Text: #050505
+- Muted text: #5F6368
+- Success green: #16A34A
+- Warning orange: #F97316
+- Risk red: #DC2626
+
+Do not use turquoise or aqua.
+
+REPORT FORMAT
+
+Create a premium report template with:
+- A4 PDF layout
+- clean margins
+- repeated footer with page number
+- header branding
+- rounded cards
+- visual KPI cards
+- icons
+- tables
+- action plan timeline
+- professional SaaS report look
+
+Use either:
+1. HTML template converted to PDF using Puppeteer/Playwright
+or
+2. PDFKit if HTML-to-PDF is not available
+
+Preferred:
+Generate styled HTML first, then export to PDF.
+
+Create:
+public/report-template.html
+or a server-side render function:
+renderPremiumReportHtml(reportData)
+
+Then generate PDF from the HTML.
+
+PAGE 1 STRUCTURE
+
+1. Premium header section
+Dark navy full-width banner with:
+- Find Business Reviews logo/name
+- Title: AI Business Reputation Report
+- Prepared for: [Business Name]
+- Address: [Business Address]
+- Generated date
+- Data quality badge
+- Platforms checked
+- Paid Report badge
+
+Header should look premium:
+- dark navy background
+- white title
+- purple badge
+- subtle pattern or gradient if possible
+
+2. KPI cards row
+Show 4 cards:
+- Trust Score
+- Average Rating
+- Reviews Analysed
+- Customer Sentiment
+
+Each card should have:
+- icon
+- small label
+- large number
+- small supporting text
+
+Example:
+Trust Score
+87/100
+Very Trusted
+
+Average Rating
+4.4/5
+Across available platforms
+
+Reviews Analysed
+280
+2 platforms
+
+Sentiment
+Mostly Positive
+Data quality: Medium
+
+3. Executive Summary card
+Large white card with:
+- Section number
+- Title: Executive Summary
+- AI-generated paragraph
+- “What this means” mini callout
+
+4. Platform-by-platform comparison
+Use a premium table with:
+Platform
+Rating
+Reviews
+Status
+Business Meaning
+Recommended Action
+
+Add platform logos/icons:
+- Google
+- Yelp
+- TripAdvisor
+
+5. Platform Checklist
+Add a new section after Platform Comparison.
+
+Title:
+Platform Checklist
+
+Intro:
+“Not every review platform matters equally. This checklist shows which platforms are most relevant for this business category and where reputation should be monitored next.”
+
+Table columns:
+Platform
+Relevant?
+Current Status
+Recommended Action
+Priority
+
+For real estate, include:
+- Google: High priority
+- Facebook: Medium priority
+- Realestate.com.au / Domain / RateMyAgent: High priority
+- Yelp: Low priority
+- TripAdvisor: Low priority / secondary signal only
+
+Important:
+Do not treat TripAdvisor as highly relevant for real estate agencies.
+Do not punish a business for missing data from irrelevant platforms.
+
+PAGE 2 STRUCTURE
+
+6. AI Customer Sentiment Analysis
+Create a card section with:
+- Sentiment breakdown: Positive / Neutral / Negative
+- Positive themes list
+- Negative themes list
+- AI insight box
+
+If using percentages, label them:
+“Estimated from available review samples.”
+
+7. Top Strengths Customers Mention
+Show 3 premium cards:
+- Strength title
+- explanation
+- evidence/snippet summary
+- icon
+
+Example:
+Market knowledge and advice
+Communication and responsiveness
+Supportive, personable team
+
+8. Main Complaints and Risk Level
+Show 2–3 risk cards:
+Each card:
+- complaint theme
+- risk level badge: Low / Medium / High
+- explanation
+- recommended fix
+
+Risk level colours:
+Low = green
+Medium = orange
+High = red
+
+PAGE 3 STRUCTURE
+
+9. What May Be Costing You Customers
+Use a card with bullet points and risk icons.
+
+10. Customer Language Insights
+Use 3-column layout:
+- Words customers use
+- Phrases to use in marketing
+- Phrases/issues to avoid
+
+11. Competitor Snapshot
+Use a premium comparison table:
+Competitor
+Trust Score
+Rating
+Reviews
+Comparison
+
+Avoid harsh wording like:
+“Ahead of you”
+
+Use softer wording:
+- Stronger review visibility
+- Higher review volume
+- Similar position
+- Lower trust signal
+- Opportunity to improve
+
+Add a short conclusion:
+“This business is competitive on service quality but can improve review volume and platform coverage.”
+
+12. Recommended Offer to Win More Bookings
+Use a highlighted purple-gradient card.
+
+For real estate example:
+Free 30-minute local market appraisal + complimentary Preparing Your Home for Auction checklist
+
+Include:
+- Recommended offer
+- Why it works
+- Example copy
+
+PAGE 4 STRUCTURE
+
+13. Review Improvement Opportunity
+Show:
+- Priority badge
+- Why it matters
+- Recommended action
+
+14. 7-Day Reputation Action Plan
+Make this visual, not plain bullets.
+
+Use 7 small timeline cards:
+Day 1
+Day 2
+Day 3
+Day 4
+Day 5
+Day 6
+Day 7
+
+Each card:
+- task
+- why it matters
+
+15. 30-Day Reputation Plan
+Use 4 weekly cards:
+Week 1
+Week 2
+Week 3
+Week 4
+
+Each card:
+- task
+- expected outcome
+
+16. Suggested Response Templates
+Use two cards:
+- Positive review response template
+- Critical review response template
+
+17. Final Recommendation
+Use a strong closing card:
+- Do first
+- Fastest trust win
+- Monitor next
+
+18. Disclaimer
+Small muted box at bottom:
+“This report is generated using available public review data and AI analysis. It is intended for business insight purposes only and should not be treated as legal, financial or professional advice. Public review data may be incomplete or change over time.”
+
+PREMIUM VISUAL REQUIREMENTS
+
+Use:
+- rounded cards
+- consistent spacing
+- section numbers in purple squares
+- icons beside headings
+- subtle shadows
+- soft purple section highlights
+- dark navy header/footer
+- no plain long blocks of text where cards/tables would be better
+- no messy text overflow
+- no cramped tables
+
+TYPOGRAPHY
+
+Use:
+font-family: Inter, Arial, sans-serif;
+
+Title:
+36–42px
+font-weight: 900
+
+Section titles:
+22–26px
+font-weight: 850
+
+Body:
+13–15px
+line-height: 1.5
+
+PDF should be easy to read and professional.
+
+HTML/CSS IMPLEMENTATION
+
+Create a reusable report template function:
+
+function renderPremiumBusinessReport(reportData) {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <style>
+          premium report CSS here
+        </style>
+      </head>
+      <body>
+        premium report HTML here
+      </body>
+    </html>
+  `;
+}
+
+Use reportData fields:
+- businessName
+- businessAddress
+- generatedAt
+- dataQuality
+- platformsChecked
+- trustScore
+- averageRating
+- totalReviews
+- sentimentLabel
+- executiveSummary
+- platformComparison
+- platformChecklist
+- sentimentAnalysis
+- strengths
+- complaints
+- customerRisks
+- languageInsights
+- competitors
+- recommendedOffer
+- reviewImprovementOpportunity
+- sevenDayPlan
+- thirtyDayPlan
+- responseTemplates
+- finalRecommendation
+- disclaimer
+
+PDF EXPORT
+
+When admin clicks Generate Report:
+1. Generate reportData JSON
+2. Render premium HTML
+3. Save HTML to public/reports/report-[requestId].html
+4. Convert HTML to PDF
+5. Save PDF to public/reports/report-[requestId].pdf
+6. Save both URLs in database:
+   report_html_url
+   report_pdf_url
+
+Admin panel:
+After report is generated, show:
+- View Premium Report
+- Download PDF
+
+QUALITY RULES
+
+If platform data is missing:
+Show “Not available” or “Not checked yet”
+Do not invent data.
+
+If review text is limited:
+Show:
+Data quality: Medium or Low
+“This analysis is based on available public ratings, review counts and review samples.”
+
+Industry-specific platform logic:
+For real estate:
+- Google is highly relevant
+- Facebook may be relevant
+- Realestate.com.au / Domain / RateMyAgent are highly relevant if available
+- TripAdvisor is low relevance
+- Yelp is low relevance in Australia
+
+For restaurants:
+- Google, TripAdvisor and Yelp are relevant
+- Facebook/Instagram may be useful
+- food platforms may be relevant
+
+For trades:
+- Google, Facebook, Hipages/Oneflare are relevant
+- TripAdvisor is not relevant
+
+FINAL RESULT
+
+The generated report should look like a premium paid business intelligence document, closer to a dashboard than a plain PDF.
+
+It should feel worth $10–$29.

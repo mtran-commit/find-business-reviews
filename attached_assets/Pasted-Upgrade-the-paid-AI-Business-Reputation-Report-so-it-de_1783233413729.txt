@@ -1,0 +1,277 @@
+Upgrade the paid AI Business Reputation Report so it deeply analyses review text, Google review tags, review themes and customer language.
+
+Current issue:
+The report is useful but still too general. Businesses need to understand what clients actually think, what they praise, what concerns they mention, what needs improvement, and what actions to take.
+
+The report must analyse:
+- Google review text
+- Google review tags / topic chips
+- Yelp review text/snippets if available
+- TripAdvisor review text/snippets if available
+- Review ratings
+- Review dates
+- Review volume
+- Competitor ratings and review volume
+- Repeated customer words and phrases
+
+Important:
+If Google returns review topic chips/tags such as:
+auction
+supportive team
+selling property
+selling process
+
+The report must use them in the analysis.
+
+Add a new section called:
+
+Customer Voice Analysis
+
+Place it after:
+AI Customer Sentiment Analysis
+
+This section should explain what customers are actually saying.
+
+Include:
+
+1. Most Mentioned Customer Themes
+Show the top review tags/topics and counts where available.
+
+Example:
+auction — 34 mentions
+selling property — 25 mentions
+selling process — 12 mentions
+supportive team — 3 mentions
+
+For each theme, explain what it means for the business.
+
+Example:
+Auction:
+Customers frequently associate the business with auction-related outcomes. This suggests auction support and guidance may be a key trust driver.
+
+Supportive team:
+Customers describe the team as supportive, compassionate and helpful, which is a strong emotional trust signal.
+
+Selling process:
+Customers mention the selling process repeatedly, suggesting that communication and guidance throughout the sales journey are important to client satisfaction.
+
+2. What Customers Love Most
+Use review text and tags to identify 3–5 positive themes.
+
+Example for real estate:
+- Professional and knowledgeable team
+- Clear communication during the selling process
+- Supportive and compassionate service
+- Strong auction guidance
+- Helpful advice around property sale decisions
+
+Each theme should include:
+- theme title
+- explanation
+- evidence from reviews/tags
+- business opportunity
+
+3. What Customers May Be Concerned About
+Analyse low-rated reviews, negative snippets and platform rating gaps.
+
+Include:
+- concern theme
+- risk level
+- explanation
+- recommended fix
+
+Do not invent complaints.
+If there is not enough negative review text, say:
+“Limited negative review text was available. Risks are inferred from rating gaps and available public review signals.”
+
+4. Client Expectation Map
+Add a new section showing what customers appear to expect from this business.
+
+For real estate, examples:
+- Fast communication
+- Honest market advice
+- Clear explanation of the selling process
+- Emotional support during sale/purchase
+- Strong auction strategy
+- Regular updates
+
+For restaurants, examples:
+- Consistent food quality
+- Friendly service
+- Fast ordering/delivery
+- Clean venue
+- Good value
+
+For trades, examples:
+- Arrive on time
+- Clear pricing
+- Good workmanship
+- Fast response
+- Clean finish
+
+5. Improvement Priorities
+Create a ranked list of what the business should improve first.
+
+Each item:
+- Priority level: High / Medium / Low
+- Why it matters
+- Action to take
+- Expected impact
+
+Example:
+Priority 1: Increase recent review volume
+Why: Competitors have more reviews and this may influence customer trust.
+Action: Ask recent satisfied clients for Google reviews within 48 hours of settlement.
+Impact: Improves visibility, freshness and trust.
+
+Priority 2: Use customer language in marketing
+Why: Customers repeatedly mention auction, selling process and supportive team.
+Action: Add those exact themes to the website and social proof sections.
+Impact: Makes marketing match what customers already value.
+
+Priority 3: Monitor secondary platforms
+Why: Lower or missing ratings on secondary platforms can create doubt.
+Action: Check TripAdvisor/Yelp only if relevant, but focus on high-relevance real estate platforms.
+Impact: Reduces trust gaps.
+
+6. Action Recommendations
+Add a practical section with:
+- website changes
+- review request process
+- staff communication actions
+- offer/reputation campaign
+- competitor monitoring
+
+Example:
+Website changes:
+Add a section called “Trusted support through every step of the selling process.”
+
+Review process:
+Send SMS/email review request after appraisal, auction and settlement.
+
+Staff action:
+Track client response times and ensure every enquiry gets a same-day response.
+
+Marketing:
+Use phrases customers already use: supportive team, selling process, auction guidance, local market knowledge.
+
+Competitor monitoring:
+Track review volume and rating movement monthly.
+
+7. Customer Language Insights
+Make this stronger.
+
+Include:
+Words customers use:
+- auction
+- supportive
+- selling
+- professional
+- knowledgeable
+- communication
+- honest
+- helpful
+
+Marketing phrases to use:
+- Supportive team from appraisal to settlement
+- Clear guidance through the selling process
+- Local market knowledge you can trust
+- Auction strategy backed by experience
+
+Avoid:
+- generic claims with no proof
+- guaranteed sale language
+- overpromising
+- saying “best” without evidence
+
+8. Review Tag Analysis Table
+Add a table:
+
+Tag / Topic
+Mentions
+Customer Meaning
+Business Action
+
+Example:
+auction | 34 | Customers associate this business with auction support and outcomes | Promote auction strategy expertise
+selling property | 25 | Customers are using the business for selling decisions | Add seller-focused testimonials
+selling process | 12 | Customers value guidance through the journey | Create content explaining the sales process
+supportive team | 3 | Emotional support is a trust driver | Use this in testimonials and staff bios
+
+9. Report summary should answer these questions:
+- What do clients think about this business?
+- What do clients like most?
+- What concerns or risks appear?
+- What does the business need to improve?
+- What actions should the owner take this week?
+- What should be monitored over the next 30 days?
+
+Update the AI prompt:
+Tell OpenAI:
+
+“You are analysing customer reviews for a business owner. Your job is to explain what clients actually think, using review text, review tags, repeated phrases, ratings, review volume and competitor signals. Focus on practical business insight. Identify what customers love, what may concern them, what needs improvement, and what actions the business should take. Do not invent complaints. If data is limited, clearly say so.”
+
+Update report JSON to include:
+
+customerVoiceAnalysis: {
+  reviewTags: [
+    {
+      tag: "",
+      count: 0,
+      customerMeaning: "",
+      businessAction: ""
+    }
+  ],
+  whatCustomersLove: [
+    {
+      theme: "",
+      explanation: "",
+      evidence: "",
+      opportunity: ""
+    }
+  ],
+  customerConcerns: [
+    {
+      theme: "",
+      riskLevel: "",
+      explanation: "",
+      recommendedFix: ""
+    }
+  ],
+  clientExpectationMap: [],
+  improvementPriorities: [
+    {
+      priority: "",
+      level: "",
+      whyItMatters: "",
+      action: "",
+      expectedImpact: ""
+    }
+  ],
+  actionRecommendations: {
+    websiteChanges: [],
+    reviewProcess: [],
+    staffCommunication: [],
+    marketingActions: [],
+    competitorMonitoring: []
+  },
+  customerLanguageInsights: {
+    wordsCustomersUse: [],
+    phrasesToUseInMarketing: [],
+    phrasesToAvoid: []
+  }
+}
+
+Update the premium PDF template:
+Add Customer Voice Analysis section with:
+- Review Tag Analysis table
+- What Customers Love cards
+- Customer Concerns cards
+- Client Expectation Map
+- Improvement Priorities
+- Action Recommendations
+- Customer Language Insights
+
+Final goal:
+The report should make the business owner feel:
+“Now I understand what my clients think, why they choose us, what might stop new customers, and what we need to fix next.”

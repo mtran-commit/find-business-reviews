@@ -1,0 +1,163 @@
+Add analytics sections to the paid AI Business Reputation Report.
+
+The report should feel like a premium business intelligence report, not just a written review summary.
+
+Add a new section called:
+
+Reputation Analytics
+
+Place it after the KPI cards and before the Executive Summary.
+
+This section should include visual analytics cards:
+
+1. Trust Score Trend
+Show:
+- Improving
+- Stable
+- Declining
+- Not enough historical data
+
+If historical data is not available, show:
+“Trend tracking will begin from this report.”
+
+2. Review Volume Analytics
+Show:
+- Total reviews analysed
+- Estimated new reviews needed to compete with top nearby competitors
+- Review volume compared with competitors
+
+Example:
+“Your business has 280 public reviews analysed. The top nearby competitor has 1,011 reviews. Increasing recent review volume may improve trust and conversion.”
+
+3. Platform Rating Gap
+Show:
+- Highest platform rating
+- Lowest platform rating
+- Rating gap
+
+Example:
+“Google: 4.9/5”
+“TripAdvisor: 3.8/5”
+“Rating gap: 1.1 points”
+
+Add explanation:
+“A larger rating gap may cause customers to hesitate when comparing platforms.”
+
+4. Sentiment Breakdown
+Show:
+- Positive %
+- Neutral %
+- Negative %
+- Confidence level
+
+Use a small donut chart or visual bars if possible.
+
+5. Complaint Frequency
+Show the top repeated complaints as analytics chips or bars.
+
+Example:
+- Slow response time: Medium frequency
+- Communication gaps: Medium frequency
+- Pricing expectation mismatch: Low frequency
+
+6. Competitor Gap
+Show:
+- Your Trust Score
+- Highest competitor Trust Score
+- Difference
+
+Example:
+“Your Trust Score: 87”
+“Top competitor: 98”
+“Gap: 11 points”
+
+7. Growth Opportunity Score
+Create a score:
+Low / Medium / High opportunity
+
+Example:
+“Growth Opportunity: High”
+Reason:
+“Strong ratings but lower review volume means the business may improve quickly by increasing recent reviews.”
+
+Design:
+Use dashboard-style cards:
+- white background
+- rounded corners
+- subtle border
+- purple icons
+- dark navy text
+- small progress bars
+- clean metric labels
+
+Use colours:
+- Dark navy: #071A3D
+- Purple: #7B3CFF
+- Light purple: #F1E8FF
+- Green: #16A34A
+- Orange: #F97316
+- Red: #DC2626
+- Border: #E5E5E5
+
+Do not use turquoise or aqua.
+
+Update AI prompt:
+Ask OpenAI to calculate and return an analytics object:
+
+analytics: {
+  trustScoreTrend: {
+    status: "Improving | Stable | Declining | Not enough historical data",
+    explanation: ""
+  },
+  reviewVolumeAnalytics: {
+    totalReviews: 0,
+    competitorTopReviews: 0,
+    reviewGap: 0,
+    explanation: ""
+  },
+  platformRatingGap: {
+    highestPlatform: "",
+    highestRating: 0,
+    lowestPlatform: "",
+    lowestRating: 0,
+    gap: 0,
+    explanation: ""
+  },
+  sentimentBreakdown: {
+    positive: 0,
+    neutral: 0,
+    negative: 0,
+    confidence: "High | Medium | Low"
+  },
+  complaintFrequency: [
+    {
+      theme: "",
+      frequency: "High | Medium | Low",
+      explanation: ""
+    }
+  ],
+  competitorGap: {
+    yourTrustScore: 0,
+    topCompetitorTrustScore: 0,
+    gap: 0,
+    explanation: ""
+  },
+  growthOpportunityScore: {
+    level: "High | Medium | Low",
+    explanation: ""
+  }
+}
+
+Important:
+If the app does not have historical data yet, do not invent a trend.
+Show:
+“Trend tracking will begin from this report.”
+
+If review snippets are limited, sentiment and complaint frequency should say:
+“Estimated from available public review samples.”
+
+Add these analytics to both:
+- HTML report view
+- PDF report download
+
+The analytics section should make the report feel more valuable and business-focused.
