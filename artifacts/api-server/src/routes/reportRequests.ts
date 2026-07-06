@@ -13,10 +13,11 @@ import { buildReportPdf } from "../lib/reportPdf";
 import { buildReportHtml } from "../lib/reportHtml";
 import {
   ReportBusyError,
+  ReportSendInProgressError,
   runReportGeneration,
-  emailReportToCustomer,
-  markReportSent,
+  deliverGeneratedReport,
   autoDeliverReport,
+  isSendClaimActive,
 } from "../lib/reportDelivery";
 
 const router: IRouter = Router();
@@ -207,6 +208,12 @@ router.patch("/report-requests/:id", async (req, res): Promise<void> => {
       return;
     }
 
+    // Legacy "Mark as paid" path: trigger the same automatic delivery as the
+    // dedicated mark-paid route and the Stripe webhook.
+    if (parsed.data.status === "paid") {
+      void autoDeliverReport(row.id);
+    }
+
     res.json(row);
   } catch (err) {
     req.log.error({ err }, "Failed to update report request");
@@ -249,6 +256,10 @@ router.post(
         .set({ status: "paid", paidAt: row.paidAt ?? new Date() })
         .where(eq(reportRequestsTable.id, row.id))
         .returning();
+      // Kick off automatic generation + email delivery in the background.
+      // The admin sees the row flip to "generating" on the next refresh;
+      // manual buttons remain as fallback if this fails.
+      void autoDeliverReport(row.id);
       res.json(updated);
     } catch (err) {
       req.log.error({ err }, "Failed to mark request as paid");
@@ -287,193 +298,6 @@ router.post(
 );
 
 /**
- * Core generation pipeline shared by the "Generate report" and
- * "Generate & send report" admin actions. Sets `generating`, builds the full
- * report, persists it and returns the updated row. On ANY failure it flips
- * the status to `failed` (so the admin can retry) and rethrows.
- */
-/** Thrown when another request is already generating this report. */
-class ReportBusyError extends Error {
-  constructor() {
-    super("Report is already generating.");
-    this.name = "ReportBusyError";
-  }
-}
-
-async function runReportGeneration(
-  row: ReportRequest,
-  log: Request["log"],
-): Promise<ReportRequest> {
-  // Atomically claim the row: only one concurrent request may flip it to
-  // `generating`. Losing racers get ReportBusyError (→ 409, never `failed`).
-  const claimed = await db
-    .update(reportRequestsTable)
-    .set({ reportStatus: "generating" })
-    .where(
-      and(
-        eq(reportRequestsTable.id, row.id),
-        ne(reportRequestsTable.reportStatus, "generating"),
-      ),
-    )
-    .returning({ id: reportRequestsTable.id });
-  if (claimed.length === 0) {
-    throw new ReportBusyError();
-  }
-
-  try {
-      // Re-fetch current review data. Prefer a live SerpApi lookup; fall back to
-      // the snapshot captured when the customer submitted the request.
-      let data: BusinessReviews | null = null;
-      const apiKey = process.env["SERPAPI_API_KEY"];
-      const query = [row.businessName, row.businessAddress]
-        .filter(Boolean)
-        .join(" ");
-      if (apiKey) {
-        try {
-          data = await fetchBusinessReviews(query, apiKey, log);
-        } catch (err) {
-          log.warn({ err }, "Live review fetch failed; using saved snapshot");
-        }
-      }
-      if (!data && row.searchedBusiness) {
-        data = row.searchedBusiness as BusinessReviews;
-      }
-      if (!data) {
-        throw new Error("No review data available for this business.");
-      }
-
-      // Best-effort review snippets for richer AI theme analysis. A failure here
-      // just yields fewer snippets (and a lower data-quality score), never aborts.
-      let snippets: ReviewSnippets = {
-        google: [],
-        yelp: [],
-        tripadvisor: [],
-        googleTopics: [],
-      };
-      if (apiKey) {
-        try {
-          snippets = await fetchReviewSnippets(data, apiKey, log);
-        } catch (err) {
-          log.warn({ err }, "Review snippet fetch failed; continuing");
-        }
-      }
-      const snippetCount =
-        snippets.google.length + snippets.yelp.length + snippets.tripadvisor.length;
-
-      const metrics = computeMetrics(data, snippetCount);
-      const category = data.category?.label ?? "";
-      const suburb = data.locality?.suburb ?? "";
-
-      // Best-effort public branding + social proof (Facebook / Instagram via
-      // SerpApi, confidence-matched). A failure just means no social section.
-      let branding: BusinessBranding = emptyBranding();
-      if (apiKey) {
-        try {
-          branding = await fetchBusinessBranding(
-            {
-              businessName: row.businessName,
-              businessAddress: row.businessAddress,
-              suburb,
-              website: data.website ?? row.businessLink ?? "",
-              phone: data.phone ?? "",
-              googleThumbnail: data.imageUrl ?? "",
-            },
-            apiKey,
-            log,
-          );
-        } catch (err) {
-          log.warn({ err }, "Branding fetch failed; continuing without it");
-        }
-      }
-
-      const sections = await generateAiSections(
-        row.businessName,
-        metrics,
-        category,
-        suburb,
-        snippets,
-      );
-
-      const report: BusinessReport = {
-        businessName: row.businessName,
-        businessAddress: row.businessAddress,
-        category,
-        suburb,
-        website: data.website ?? "",
-        phone: data.phone ?? "",
-        // Zero-tolerance logo rule: only a confidently matched brand mark may
-        // appear in the report. Priority: confidently matched social profile
-        // image (Facebook > Instagram), then a high-confidence Google logo;
-        // otherwise "" and renderers show a neat initials tile.
-        businessLogo:
-          branding.businessLogo ||
-          (data.logoConfidence === "high" && data.logoUrl ? data.logoUrl : ""),
-        businessLogoSource:
-          branding.businessLogo && branding.businessLogoSource
-            ? branding.businessLogoSource
-            : data.logoConfidence === "high" && data.logoUrl
-              ? "google_maps"
-              : "",
-        businessImage: data.imageUrl || branding.businessImage || "",
-        socialPresence: {
-          facebook: branding.facebook
-            ? {
-                profileUrl: branding.facebook.profileUrl,
-                followers: branding.facebook.followers,
-                likes: branding.facebook.likes,
-                rating: branding.facebook.rating,
-                reviews: branding.facebook.reviews,
-                verified: branding.facebook.verified,
-              }
-            : null,
-          instagram: branding.instagram
-            ? {
-                profileUrl: branding.instagram.profileUrl,
-                followers: branding.instagram.followers,
-                posts: branding.instagram.posts,
-                verified: branding.instagram.verified,
-              }
-            : null,
-          brandingSource: branding.brandingSource,
-          confidenceScore: branding.confidenceScore,
-        },
-        generatedAt: new Date().toISOString(),
-        metrics,
-        sections,
-        disclaimer: REPORT_DISCLAIMER,
-      };
-
-      const pdfPath = `/api/admin/report-requests/${row.id}/download`;
-      const [updated] = await db
-        .update(reportRequestsTable)
-        .set({
-          reportStatus: "generated",
-          reportJson: report,
-          reportPdfUrl: pdfPath,
-          reportGeneratedAt: new Date(),
-        })
-        .where(eq(reportRequestsTable.id, row.id))
-        .returning();
-
-      if (!updated) {
-        throw new Error("Report request disappeared during generation.");
-      }
-      return updated;
-    } catch (err) {
-      log.error({ err }, "Report generation failed");
-      try {
-        await db
-          .update(reportRequestsTable)
-          .set({ reportStatus: "failed" })
-          .where(eq(reportRequestsTable.id, row.id));
-      } catch (setErr) {
-        log.error({ err: setErr }, "Failed to set report status to failed");
-      }
-      throw err;
-    }
-}
-
-/**
  * Admin only: generate the full paid AI Customer Review Sentiment Report. Requires the
  * request to be paid first. Re-fetches current review data, calls OpenAI for the
  * qualitative sections, persists the structured report JSON, and flips the report
@@ -490,6 +314,12 @@ router.post(
     if (row.status !== "paid") {
       res.status(400).json({
         error: "Payment must be marked as paid before generating report.",
+      });
+      return;
+    }
+    if (isSendClaimActive(row)) {
+      res.status(409).json({
+        error: "The report email is being sent right now. Please wait a moment.",
       });
       return;
     }
@@ -537,12 +367,21 @@ router.post(
       });
       return;
     }
+    if (isSendClaimActive(row)) {
+      res.status(409).json({
+        error: "The report email is being sent right now. Please wait a moment.",
+      });
+      return;
+    }
 
-    // Generate first unless a finished report already exists.
+    // Generate first unless a finished report already exists. A stale
+    // `sending` row (crashed mid-email) still holds a finished report.
     let current = row;
     if (
       !current.reportJson ||
-      (current.reportStatus !== "generated" && current.reportStatus !== "sent")
+      (current.reportStatus !== "generated" &&
+        current.reportStatus !== "sent" &&
+        current.reportStatus !== "sending")
     ) {
       try {
         current = await runReportGeneration(current, req.log);
@@ -566,45 +405,25 @@ router.post(
       return;
     }
 
-    // Build the PDF and email it. An email failure leaves the report as
-    // `generated` (never `sent`) so the state stays honest.
+    // Build the PDF and email it under the shared atomic send claim (so this
+    // can never double-send against the automatic post-payment delivery). An
+    // email failure leaves the report as `generated` (never `sent`).
     try {
-      const pdf = await buildReportPdf(normalizeReport(current.reportJson));
-      const safeName = (current.businessName || "business")
-        .replace(/[^a-z0-9]+/gi, "-")
-        .replace(/^-+|-+$/g, "")
-        .toLowerCase()
-        .slice(0, 60);
-      await sendReportEmail({
-        to: current.email,
-        customerName: current.fullName || "",
-        businessName: current.businessName || "",
-        pdf,
-        pdfFilename: `reputation-report-${safeName || "business"}.pdf`,
-      });
+      const updated = await deliverGeneratedReport(current, req.log);
+      res.json(updated);
     } catch (err) {
+      if (err instanceof ReportSendInProgressError) {
+        res.status(409).json({
+          error:
+            "The report email is being sent right now. Please wait a moment.",
+        });
+        return;
+      }
       req.log.error({ err }, "Failed to email report to customer");
       res.status(502).json({
         error:
           "Report was generated but the email could not be sent. You can retry, or download the PDF and email it manually.",
       });
-      return;
-    }
-
-    try {
-      const [updated] = await db
-        .update(reportRequestsTable)
-        .set({
-          reportStatus: "sent",
-          reportSentAt: current.reportSentAt ?? new Date(),
-        })
-        .where(eq(reportRequestsTable.id, current.id))
-        .returning();
-      res.json(updated ?? current);
-    } catch (err) {
-      req.log.error({ err }, "Email sent but failed to mark report as sent");
-      // The customer HAS the report; report success but flag the stale status.
-      res.json({ ...current, reportStatus: "sent" });
     }
   },
 );

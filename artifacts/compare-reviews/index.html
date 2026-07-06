@@ -1847,6 +1847,7 @@
       function reportBadge(status) {
         const map = {
           generating: ['badge-generating', 'Generating'],
+          sending: ['badge-generating', 'Sending'],
           generated: ['badge-generated', 'Generated'],
           sent: ['badge-sent', 'Sent'],
           failed: ['badge-failed', 'Failed'],
@@ -2076,6 +2077,19 @@
           actions += btn('mark-paid', 'Mark as paid');
         } else if (rs === 'generating') {
           actions += '<div class="admin-hint">Generating report. This may take up to 60 seconds.</div>';
+        } else if (rs === 'sending') {
+          // A send claim expires after 10 minutes — if it looks stuck (process
+          // died mid-email), offer a retry that safely reclaims the row.
+          const started = r.reportSendStartedAt ? new Date(r.reportSendStartedAt).getTime() : 0;
+          const stale = !started || (Date.now() - started > 10 * 60 * 1000);
+          if (stale) {
+            actions += '<div class="admin-hint err">Email sending appears stuck.</div>';
+            actions += btn('send', 'Retry email', 'send');
+            actions += btn('view', 'View report', 'view');
+            actions += btn('download', 'Download report', 'dl');
+          } else {
+            actions += '<div class="admin-hint">Emailing report to the customer…</div>';
+          }
         } else if (rs === 'generated') {
           actions += btn('send', 'Email report to customer', 'send');
           actions += btn('view', 'View report', 'view');

@@ -102,6 +102,19 @@ export async function processStripeWebhook(
 
   if (updated.length > 0) {
     logger.info({ requestId, paymentIntent }, "Report request marked paid via Stripe webhook");
+    // Automatically generate + email the report to the customer in the
+    // background. Fire-and-forget so the webhook responds to Stripe fast;
+    // any failure (including the import itself) is logged and never fails the
+    // webhook acknowledgment — the admin page remains the manual fallback.
+    try {
+      const { autoDeliverReport } = await import("./reportDelivery");
+      void autoDeliverReport(requestId);
+    } catch (err) {
+      logger.error(
+        { err, requestId },
+        "Failed to start automatic report delivery after payment",
+      );
+    }
   } else {
     logger.info(
       { requestId },
