@@ -107,6 +107,10 @@ export async function createReportCheckoutSession(params: {
     metadata: { reportRequestId: params.requestId },
     payment_intent_data: {
       metadata: { reportRequestId: params.requestId },
+      // Stripe sends its own payment receipt to this address on success,
+      // regardless of the dashboard's global email setting. (Stripe suppresses
+      // receipt emails in test mode — they only go out with live keys.)
+      receipt_email: params.email,
     },
     success_url: `${base}/?payment=success`,
     cancel_url: `${base}/?payment=cancelled`,
