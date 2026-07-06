@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, ne, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
@@ -28,6 +28,7 @@ import {
 } from "../lib/branding";
 import { buildReportPdf } from "../lib/reportPdf";
 import { buildReportHtml } from "../lib/reportHtml";
+import { sendReportEmail } from "../lib/reportEmail";
 
 const router: IRouter = Router();
 
@@ -297,39 +298,40 @@ router.post(
 );
 
 /**
- * Admin only: generate the full paid AI Customer Review Sentiment Report. Requires the
- * request to be paid first. Re-fetches current review data, calls OpenAI for the
- * qualitative sections, persists the structured report JSON, and flips the report
- * status to `generated`. On any failure the status is set to `failed` so the
- * admin can retry. Public users can never reach this (admin-token gated).
+ * Core generation pipeline shared by the "Generate report" and
+ * "Generate & send report" admin actions. Sets `generating`, builds the full
+ * report, persists it and returns the updated row. On ANY failure it flips
+ * the status to `failed` (so the admin can retry) and rethrows.
  */
-router.post(
-  "/admin/report-requests/:id/generate-report",
-  async (req, res): Promise<void> => {
-    if (!requireAdmin(req, res)) return;
-    const row = await loadRequest(req, res);
-    if (!row) return;
+/** Thrown when another request is already generating this report. */
+class ReportBusyError extends Error {
+  constructor() {
+    super("Report is already generating.");
+    this.name = "ReportBusyError";
+  }
+}
 
-    if (row.status !== "paid") {
-      res.status(400).json({
-        error: "Payment must be marked as paid before generating report.",
-      });
-      return;
-    }
+async function runReportGeneration(
+  row: ReportRequest,
+  log: Request["log"],
+): Promise<ReportRequest> {
+  // Atomically claim the row: only one concurrent request may flip it to
+  // `generating`. Losing racers get ReportBusyError (→ 409, never `failed`).
+  const claimed = await db
+    .update(reportRequestsTable)
+    .set({ reportStatus: "generating" })
+    .where(
+      and(
+        eq(reportRequestsTable.id, row.id),
+        ne(reportRequestsTable.reportStatus, "generating"),
+      ),
+    )
+    .returning({ id: reportRequestsTable.id });
+  if (claimed.length === 0) {
+    throw new ReportBusyError();
+  }
 
-    // Mark as generating so concurrent clicks and the UI reflect progress.
-    try {
-      await db
-        .update(reportRequestsTable)
-        .set({ reportStatus: "generating" })
-        .where(eq(reportRequestsTable.id, row.id));
-    } catch (err) {
-      req.log.error({ err }, "Failed to set report status to generating");
-      res.status(500).json({ error: "Could not start report generation." });
-      return;
-    }
-
-    try {
+  try {
       // Re-fetch current review data. Prefer a live SerpApi lookup; fall back to
       // the snapshot captured when the customer submitted the request.
       let data: BusinessReviews | null = null;
@@ -339,9 +341,9 @@ router.post(
         .join(" ");
       if (apiKey) {
         try {
-          data = await fetchBusinessReviews(query, apiKey, req.log);
+          data = await fetchBusinessReviews(query, apiKey, log);
         } catch (err) {
-          req.log.warn({ err }, "Live review fetch failed; using saved snapshot");
+          log.warn({ err }, "Live review fetch failed; using saved snapshot");
         }
       }
       if (!data && row.searchedBusiness) {
@@ -361,9 +363,9 @@ router.post(
       };
       if (apiKey) {
         try {
-          snippets = await fetchReviewSnippets(data, apiKey, req.log);
+          snippets = await fetchReviewSnippets(data, apiKey, log);
         } catch (err) {
-          req.log.warn({ err }, "Review snippet fetch failed; continuing");
+          log.warn({ err }, "Review snippet fetch failed; continuing");
         }
       }
       const snippetCount =
@@ -388,10 +390,10 @@ router.post(
               googleThumbnail: data.imageUrl ?? "",
             },
             apiKey,
-            req.log,
+            log,
           );
         } catch (err) {
-          req.log.warn({ err }, "Branding fetch failed; continuing without it");
+          log.warn({ err }, "Branding fetch failed; continuing without it");
         }
       }
 
@@ -464,20 +466,156 @@ router.post(
         .where(eq(reportRequestsTable.id, row.id))
         .returning();
 
-      res.json(updated);
+      if (!updated) {
+        throw new Error("Report request disappeared during generation.");
+      }
+      return updated;
     } catch (err) {
-      req.log.error({ err }, "Report generation failed");
+      log.error({ err }, "Report generation failed");
       try {
         await db
           .update(reportRequestsTable)
           .set({ reportStatus: "failed" })
           .where(eq(reportRequestsTable.id, row.id));
       } catch (setErr) {
-        req.log.error({ err: setErr }, "Failed to set report status to failed");
+        log.error({ err: setErr }, "Failed to set report status to failed");
+      }
+      throw err;
+    }
+}
+
+/**
+ * Admin only: generate the full paid AI Customer Review Sentiment Report. Requires the
+ * request to be paid first. Re-fetches current review data, calls OpenAI for the
+ * qualitative sections, persists the structured report JSON, and flips the report
+ * status to `generated`. On any failure the status is set to `failed` so the
+ * admin can retry. Public users can never reach this (admin-token gated).
+ */
+router.post(
+  "/admin/report-requests/:id/generate-report",
+  async (req, res): Promise<void> => {
+    if (!requireAdmin(req, res)) return;
+    const row = await loadRequest(req, res);
+    if (!row) return;
+
+    if (row.status !== "paid") {
+      res.status(400).json({
+        error: "Payment must be marked as paid before generating report.",
+      });
+      return;
+    }
+
+    try {
+      const updated = await runReportGeneration(row, req.log);
+      res.json(updated);
+    } catch (err) {
+      if (err instanceof ReportBusyError) {
+        res.status(409).json({
+          error: "Report is already generating. Please try again shortly.",
+        });
+        return;
       }
       res.status(502).json({
         error: "Report could not be generated right now. Please try again.",
       });
+    }
+  },
+);
+
+/**
+ * Admin: generate (if needed) AND email the report to the customer with the
+ * PDF attached, then mark the request as sent. Uses the Gmail connection
+ * (hello@findbusinessreviews.com). If the email fails after a successful
+ * generation the report stays `generated` so the admin can retry or fall back
+ * to manual download + email.
+ */
+router.post(
+  "/admin/report-requests/:id/send-report",
+  async (req, res): Promise<void> => {
+    if (!requireAdmin(req, res)) return;
+    const row = await loadRequest(req, res);
+    if (!row) return;
+
+    if (row.status !== "paid") {
+      res.status(400).json({
+        error: "Payment must be marked as paid before sending the report.",
+      });
+      return;
+    }
+    if (row.reportStatus === "generating") {
+      res.status(409).json({
+        error: "Report is already generating. Please try again shortly.",
+      });
+      return;
+    }
+
+    // Generate first unless a finished report already exists.
+    let current = row;
+    if (
+      !current.reportJson ||
+      (current.reportStatus !== "generated" && current.reportStatus !== "sent")
+    ) {
+      try {
+        current = await runReportGeneration(current, req.log);
+      } catch (err) {
+        if (err instanceof ReportBusyError) {
+          res.status(409).json({
+            error: "Report is already generating. Please try again shortly.",
+          });
+          return;
+        }
+        res.status(502).json({
+          error: "Report could not be generated right now. Please try again.",
+        });
+        return;
+      }
+    }
+    if (!current.reportJson) {
+      res.status(502).json({
+        error: "Report could not be generated right now. Please try again.",
+      });
+      return;
+    }
+
+    // Build the PDF and email it. An email failure leaves the report as
+    // `generated` (never `sent`) so the state stays honest.
+    try {
+      const pdf = await buildReportPdf(normalizeReport(current.reportJson));
+      const safeName = (current.businessName || "business")
+        .replace(/[^a-z0-9]+/gi, "-")
+        .replace(/^-+|-+$/g, "")
+        .toLowerCase()
+        .slice(0, 60);
+      await sendReportEmail({
+        to: current.email,
+        customerName: current.fullName || "",
+        businessName: current.businessName || "",
+        pdf,
+        pdfFilename: `reputation-report-${safeName || "business"}.pdf`,
+      });
+    } catch (err) {
+      req.log.error({ err }, "Failed to email report to customer");
+      res.status(502).json({
+        error:
+          "Report was generated but the email could not be sent. You can retry, or download the PDF and email it manually.",
+      });
+      return;
+    }
+
+    try {
+      const [updated] = await db
+        .update(reportRequestsTable)
+        .set({
+          reportStatus: "sent",
+          reportSentAt: current.reportSentAt ?? new Date(),
+        })
+        .where(eq(reportRequestsTable.id, current.id))
+        .returning();
+      res.json(updated ?? current);
+    } catch (err) {
+      req.log.error({ err }, "Email sent but failed to mark report as sent");
+      // The customer HAS the report; report success but flag the stale status.
+      res.json({ ...current, reportStatus: "sent" });
     }
   },
 );

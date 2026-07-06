@@ -716,6 +716,8 @@
       .admin-btn.gen:hover { opacity: .92; }
       .admin-btn.dl { background: var(--navy); color: #fff; border-color: var(--navy); }
       .admin-btn.dl:hover { opacity: .92; }
+      .admin-btn.send { background: var(--black); color: #fff; border-color: var(--black); }
+      .admin-btn.send:hover { opacity: .88; }
       .admin-row-actions { display: flex; flex-direction: column; gap: 6px; min-width: 150px; }
       .admin-row-actions .admin-btn { padding: 6px 10px; font-size: 12px; text-align: center; }
       .admin-state {
@@ -2075,18 +2077,22 @@
         } else if (rs === 'generating') {
           actions += '<div class="admin-hint">Generating report. This may take up to 60 seconds.</div>';
         } else if (rs === 'generated') {
+          actions += btn('send', 'Email report to customer', 'send');
           actions += btn('view', 'View report', 'view');
           actions += btn('download', 'Download report', 'dl');
           actions += btn('mark-sent', 'Mark report as sent');
         } else if (rs === 'sent') {
           actions += btn('view', 'View report', 'view');
           actions += btn('download', 'Download report', 'dl');
+          actions += btn('send', 'Email report again');
           actions += '<span class="admin-badge badge-sent">Sent ✓</span>';
         } else if (rs === 'failed') {
           actions += '<div class="admin-hint err">Generation failed. Try again.</div>';
+          actions += btn('send', 'Generate & send report', 'send');
           actions += btn('generate', 'Generate report', 'gen');
         } else {
           // paid + pending
+          actions += btn('send', 'Generate & send report', 'send');
           actions += btn('generate', 'Generate report', 'gen');
         }
         actions += btn('delete', 'Delete', 'del');
@@ -2134,6 +2140,8 @@
               adminAction(id, 'mark-sent', btn, 'Report marked as sent');
             } else if (act === 'generate') {
               adminGenerate(id, btn);
+            } else if (act === 'send') {
+              adminSendReport(id, req, btn);
             } else if (act === 'download') {
               adminDownload(id, req, btn);
             } else if (act === 'view') {
@@ -2229,6 +2237,46 @@
           if (j !== -1) adminRequests[j].reportStatus = 'failed';
           adminToast((err && err.message) || 'Report generation failed');
           renderAdminTable();
+        }
+      }
+
+      // Generate (if needed) AND email the report to the customer with the PDF
+      // attached, then mark it sent — one server round-trip. Optimistically
+      // shows "generating" only when there isn't a finished report yet.
+      async function adminSendReport(id, req, btn) {
+        const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+        if (!token) { renderAdminGate(false); return; }
+        if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+        const already = req && (req.reportStatus === 'generated' || req.reportStatus === 'sent');
+        if (!already) {
+          const idx = adminRequests.findIndex(function (r) { return r.id === id; });
+          if (idx !== -1) adminRequests[idx].reportStatus = 'generating';
+          renderAdminTable();
+          adminToast('Generating and emailing report. This may take up to 60 seconds.');
+        } else {
+          adminToast('Emailing report to the customer…');
+        }
+        try {
+          const res = await fetch(
+            API_BASE + '/admin/report-requests/' + encodeURIComponent(id) + '/send-report',
+            { method: 'POST', headers: { 'x-admin-token': token } }
+          );
+          if (res.status === 401 || res.status === 403) {
+            localStorage.removeItem(ADMIN_TOKEN_KEY);
+            renderAdminGate(true);
+            return;
+          }
+          const body = await res.json().catch(function () { return {}; });
+          if (!res.ok) throw new Error((body && body.error) || 'Could not send the report');
+          const j = adminRequests.findIndex(function (r) { return r.id === id; });
+          if (j !== -1) adminRequests[j] = body;
+          adminToast('Report emailed to the customer');
+          renderAdminTable();
+        } catch (err) {
+          // Refresh the real state from the server (the report may have been
+          // generated even though the email failed).
+          adminToast((err && err.message) || 'Could not send the report. Please try again.');
+          loadAdminRequests();
         }
       }
 
