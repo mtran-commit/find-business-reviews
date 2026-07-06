@@ -1755,17 +1755,83 @@
         return false;
       }
 
+      // ---- Current-location fallback for the location field ----
+      // When the user leaves the location field empty we ask the browser for
+      // their position (with permission) and reverse-geocode it to a suburb /
+      // city, so results are local by default. Any failure (denied, timeout,
+      // geocoder down) silently falls back to a business-only search.
+      var detectedLocality = null;   // cached "Suburb STATE" once detected
+      var localityDetectionDone = false; // avoid re-prompting after a failure
+
+      function getCurrentPosition(timeoutMs) {
+        return new Promise(function (resolve) {
+          if (!navigator.geolocation) { resolve(null); return; }
+          navigator.geolocation.getCurrentPosition(
+            function (pos) { resolve(pos); },
+            function () { resolve(null); },
+            { timeout: timeoutMs, maximumAge: 600000 }
+          );
+        });
+      }
+
+      async function detectLocality() {
+        if (detectedLocality) return detectedLocality;
+        if (localityDetectionDone) return null;
+        try {
+          const pos = await getCurrentPosition(6000);
+          if (!pos) { localityDetectionDone = true; return null; }
+          const ctrl = new AbortController();
+          const timer = setTimeout(function () { ctrl.abort(); }, 5000);
+          const resp = await fetch(
+            'https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=' +
+              encodeURIComponent(pos.coords.latitude) +
+              '&longitude=' + encodeURIComponent(pos.coords.longitude) +
+              '&localityLanguage=en',
+            { signal: ctrl.signal }
+          );
+          clearTimeout(timer);
+          if (!resp.ok) { localityDetectionDone = true; return null; }
+          const geo = await resp.json();
+          const place = (geo.city || geo.locality || '').trim();
+          const state = (geo.principalSubdivision || '').trim();
+          const label = [place, state].filter(Boolean).join(' ').trim();
+          localityDetectionDone = true;
+          if (label) { detectedLocality = label; return label; }
+          return null;
+        } catch (e) {
+          localityDetectionDone = true;
+          return null;
+        }
+      }
+
       // Combine the business + location inputs into one query, then run the search.
-      function handleLandingSearch() {
+      var landingSearchInFlight = false; // single-flight guard: repeated Enter/click during detection must not fire duplicate searches
+      async function handleLandingSearch() {
+        if (landingSearchInFlight) return;
         const businessQuery = (els.input.value || '').trim();
-        const locationQuery = (els.location && els.location.value ? els.location.value : '').trim();
+        let locationQuery = (els.location && els.location.value ? els.location.value : '').trim();
         if (!businessQuery) {
           alert('Please enter a business, service or category.');
           els.input.focus();
           return;
         }
-        const finalQuery = locationQuery ? (businessQuery + ' ' + locationQuery) : businessQuery;
-        runSearch(finalQuery);
+        landingSearchInFlight = true;
+        try {
+          if (!locationQuery && els.location) {
+            const prevPlaceholder = els.location.placeholder;
+            els.location.placeholder = 'Detecting your location…';
+            const locality = await detectLocality();
+            els.location.placeholder = prevPlaceholder;
+            if (locality) {
+              locationQuery = locality;
+              els.location.value = locality; // show the user what we detected
+            }
+          }
+          const finalQuery = locationQuery ? (businessQuery + ' ' + locationQuery) : businessQuery;
+          runSearch(finalQuery);
+        } finally {
+          landingSearchInFlight = false;
+        }
       }
 
       // ---- Events ----
