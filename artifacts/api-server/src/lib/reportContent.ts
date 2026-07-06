@@ -3,10 +3,43 @@ import type { BusinessReviews, PlatformRating, NearbyBusiness } from "./serpapi"
 
 /** Fixed legal disclaimer required on every report. */
 export const REPORT_DISCLAIMER =
-  "This report is generated using available public review data and AI analysis. " +
-  "It is intended for business insight purposes only and should not be treated " +
-  "as legal, financial or professional advice. Public review data may be " +
-  "incomplete or change over time.";
+  "This report is generated using available public review data, third-party " +
+  "platform signals and AI analysis. AI-generated content may contain errors, " +
+  "omissions, incorrect assumptions or incomplete interpretations. Public " +
+  "review data may be incomplete, outdated or unavailable and may change after " +
+  "the report is generated. This report is provided for general business " +
+  "insight purposes only and should not be treated as legal, financial, " +
+  "accounting, marketing or professional advice. Find Business Reviews accepts " +
+  "no liability for decisions made based on this report; important information " +
+  "should be verified independently before acting on it. This report does not " +
+  "guarantee improved ratings, sales, bookings, rankings or revenue.";
+
+/** Fixed 'Important Notice' card shown under the KPI cards on page 1. */
+export const REPORT_IMPORTANT_NOTICE =
+  "This report is generated using available public review data and AI " +
+  "analysis. AI may make mistakes, and public data may be incomplete, " +
+  "outdated or unavailable. This report is provided for general business " +
+  "insight only and does not guarantee improved ratings, sales, bookings, " +
+  "rankings or revenue.";
+
+/** Fixed 'Data Cut-Off' notice shown on page 1 and near the final disclaimer. */
+export const REPORT_DATA_CUTOFF =
+  "This report reflects available public review data at or around the " +
+  "generated date. Ratings, review counts, review text, business information " +
+  "and competitor data may change after this report is produced.";
+
+/** Fixed 'How to Use This Report' copy shown near the start of the report. */
+export const HOW_TO_USE_REPORT =
+  "Use this report to understand what customers appear to value, what may be " +
+  "creating hesitation, and which reputation actions should be prioritised. " +
+  "This report should be reviewed together with your own business records, " +
+  "staff feedback and customer service data.";
+
+/** Fixed note shown above the competitor table (indicative comparison only). */
+export const COMPETITOR_NOTE =
+  "Competitor information is provided as an indicative comparison only where " +
+  "verified competitor data is limited. Use this section as a guide, not as a " +
+  "definitive ranking.";
 
 /** Fixed intro shown above the Platform Checklist table. */
 export const PLATFORM_CHECKLIST_INTRO =
@@ -131,11 +164,13 @@ const AiSectionsSchema = z.object({
         riskLevel: RiskEnum.default("Low"),
         explanation: z.string().trim().default(""),
         fix: z.string().trim().default(""),
+        businessImpact: z.string().trim().default(""),
       }),
     )
     .max(6)
     .default([]),
   costingYouCustomers: z.array(z.string().trim().min(1)).max(8).default([]),
+  commercialImpact: z.array(z.string().trim().min(1)).max(6).default([]),
   customerLanguage: z
     .object({
       words: z.array(z.string().trim().min(1)).max(12).default([]),
@@ -187,8 +222,34 @@ const AiSectionsSchema = z.object({
       first: z.string().trim().default(""),
       fastest: z.string().trim().default(""),
       monitor: z.string().trim().default(""),
+      biggestRisk: z.string().trim().default(""),
+      marketingOpportunity: z.string().trim().default(""),
     })
-    .default({ first: "", fastest: "", monitor: "" }),
+    .default({
+      first: "",
+      fastest: "",
+      monitor: "",
+      biggestRisk: "",
+      marketingOpportunity: "",
+    }),
+  executiveSnapshot: z
+    .object({
+      customersLove: z.array(z.string().trim().min(1)).max(3).default([]),
+      mainRisks: z.array(z.string().trim().min(1)).max(3).default([]),
+      doFirst: z.string().trim().default(""),
+      monitorNext: z.string().trim().default(""),
+    })
+    .default({ customersLove: [], mainRisks: [], doFirst: "", monitorNext: "" }),
+  customerVoiceSummary: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1),
+        text: z.string().trim().default(""),
+      }),
+    )
+    .max(5)
+    .default([]),
+  topActionsThisWeek: z.array(z.string().trim().min(1)).max(3).default([]),
   analytics: z
     .object({
       trustScoreTrend: z
@@ -252,6 +313,8 @@ const AiSectionsSchema = z.object({
             explanation: z.string().trim().default(""),
             evidence: z.string().trim().default(""),
             opportunity: z.string().trim().default(""),
+            confidence: z.string().trim().default(""),
+            confidenceBasis: z.string().trim().default(""),
           }),
         )
         .max(6)
@@ -263,6 +326,9 @@ const AiSectionsSchema = z.object({
             riskLevel: z.string().trim().default(""),
             explanation: z.string().trim().default(""),
             recommendedFix: z.string().trim().default(""),
+            businessImpact: z.string().trim().default(""),
+            confidence: z.string().trim().default(""),
+            confidenceBasis: z.string().trim().default(""),
           }),
         )
         .max(6)
@@ -538,9 +604,9 @@ export function computeCompetitors(
     let comparison = "Not enough data to compare";
     if (trustScore !== null && businessTrustScore !== null) {
       const diff = businessTrustScore - trustScore;
-      if (diff >= 4) comparison = "You are ahead";
-      else if (diff <= -4) comparison = "Ahead of you";
-      else comparison = "Closely matched";
+      if (diff >= 4) comparison = "You currently lead this comparison";
+      else if (diff <= -4) comparison = "Stronger review visibility";
+      else comparison = "Similar position";
     }
     return {
       name: n.name,
@@ -811,8 +877,17 @@ const SYSTEM_PROMPT =
   "topStrengths (array of exactly 3 objects {theme, explanation, evidence} — " +
   "evidence is a short paraphrased theme, not a quote); " +
   "mainComplaints (array of 0-3 objects {theme, riskLevel ('Low'|'Medium'|" +
-  "'High'), explanation, fix}); " +
+  "'High'), explanation, fix, businessImpact — businessImpact is one plain-" +
+  "English sentence on why the issue matters commercially, e.g. 'Repeated " +
+  "stock gaps may reduce repeat visits and push regular customers to nearby " +
+  "competitors.', worded carefully with 'may'); " +
   "costingYouCustomers (array of 3-6 short risk statements); " +
+  "commercialImpact (array of 2-5 plain-English sentences explaining how the " +
+  "review themes may affect sales, bookings, foot traffic, enquiries or " +
+  "customer confidence — e.g. strong positive themes can be used in marketing " +
+  "to increase conversion; repeated complaints may cause hesitation before " +
+  "purchase; low review freshness may reduce trust compared with competitors; " +
+  "grounded ONLY in the data given, cautious wording); " +
   "customerLanguage (object {words (array), marketingPhrases (array), " +
   "avoidPhrases (array)}); " +
   "competitorConclusion (string: one honest sentence on local standing); " +
@@ -825,8 +900,29 @@ const SYSTEM_PROMPT =
   "'Week 4'); " +
   "responseTemplates (object {positive, negative} — professional, business-" +
   "friendly review reply templates); " +
-  "finalRecommendation (object {first, fastest, monitor} — what to do first, " +
-  "what improves trust fastest, what to monitor next); " +
+  "finalRecommendation (object {first, fastest, monitor, biggestRisk, " +
+  "marketingOpportunity} — first: the most urgent action; fastest: the " +
+  "quickest action that may improve trust; monitor: what to track over the " +
+  "next 30 days; biggestRisk: the most important customer risk from the " +
+  "review analysis; marketingOpportunity: the positive customer theme the " +
+  "business should promote); " +
+  "executiveSnapshot (object {customersLove, mainRisks, doFirst, monitorNext} " +
+  "— an executive summary card: customersLove is 2-3 short positive themes " +
+  "drawn from the tags/review text, mainRisks is 1-3 short concerns (cautious " +
+  "wording, fewer if data is limited), doFirst is ONE urgent action sentence, " +
+  "monitorNext is ONE 30-day monitoring item); " +
+  "customerVoiceSummary (array of 3-5 objects {label, text} summarising in " +
+  "plain business language what customers appear to think, using EXACTLY " +
+  "these labels in this order where data allows: 'Customers most often " +
+  "praise', 'Customers repeatedly mention', 'Main improvement signals', " +
+  "'Fastest trust opportunity', 'What to monitor next' — text is one short " +
+  "sentence per label grounded in the tags/snippets; if tags like 'bakery' " +
+  "or 'fresh vegetables' exist, explain what they mean in plain business " +
+  "language; omit labels you cannot ground in data); " +
+  "topActionsThisWeek (array of EXACTLY 3 short, very practical actions for " +
+  "this week, generated from the actual review analysis — e.g. audit stock " +
+  "gaps for high-demand items, respond publicly to recent service feedback, " +
+  "add QR review prompts at checkout — never generic filler); " +
   "analytics (object with EXACTLY these keys — all estimates must come ONLY " +
   "from the data provided, never invented: " +
   "trustScoreTrend (object {direction, explanation}: direction is 'Improving', " +
@@ -867,14 +963,25 @@ const SYSTEM_PROMPT =
   "priorities, businessAction is one practical action; EMPTY ARRAY if no tags " +
   "were provided — NEVER invent tags or counts); " +
   "whatCustomersLove (array of 3-5 objects {theme, explanation, evidence, " +
-  "opportunity}: positive themes drawn from the review text and tags; evidence " +
-  "cites paraphrased review/tag signals like 'mentioned in the auction tag (34 " +
-  "mentions)' — never invented quotes; opportunity is how the business can use " +
-  "the theme; fewer or empty if data is limited); " +
+  "opportunity, confidence, confidenceBasis}: positive themes drawn from the " +
+  "review text and tags; evidence cites paraphrased review/tag signals like " +
+  "'mentioned in the auction tag (34 mentions)' — never invented quotes; " +
+  "opportunity is how the business can use the theme; confidence is 'High', " +
+  "'Medium' or 'Low' — High ONLY when supported by high review volume, " +
+  "repeated tags with large mention counts or many snippets; Medium when " +
+  "supported by some review text or one platform only; Low when inferred from " +
+  "limited data — NEVER pretend confidence is high when data is limited; " +
+  "confidenceBasis is one short line citing the real basis, e.g. 'Based on 94 " +
+  "customer topic mentions.' or 'Based on limited available review text.'; " +
+  "fewer or empty if data is limited); " +
   "customerConcerns (array of 0-4 objects {theme, riskLevel, explanation, " +
-  "recommendedFix}: concerns from low-rated reviews, negative snippets and " +
-  "platform rating gaps; riskLevel 'Low', 'Medium' or 'High'; do NOT invent " +
-  "complaints — empty array if no negative signals exist); " +
+  "recommendedFix, businessImpact, confidence, confidenceBasis}: concerns " +
+  "from low-rated reviews, negative snippets and platform rating gaps; " +
+  "riskLevel 'Low', 'Medium' or 'High'; businessImpact is one careful " +
+  "sentence on why the concern matters commercially ('may reduce', 'may " +
+  "cause'); confidence/confidenceBasis follow the same honest rules as " +
+  "whatCustomersLove; do NOT invent complaints — empty array if no negative " +
+  "signals exist); " +
   "concernsNote (string: '' normally, but when there is not enough negative " +
   "review text set it exactly to 'Limited negative review text was available. " +
   "Risks are inferred from rating gaps and available public review signals.'); " +
@@ -998,12 +1105,34 @@ export async function generateAiSections(
 const LIMITED_CONCERNS_NOTE =
   "Limited negative review text was available. Risks are inferred from rating gaps and available public review signals.";
 
+const CONF_RANK: Record<string, number> = { Low: 0, Medium: 1, High: 2 };
+
+/**
+ * Deterministic confidence ceiling: the AI may never claim more confidence
+ * than the underlying data supports. High needs high data quality (>=30
+ * snippets) or >=30 total tag mentions; Medium needs medium data quality or
+ * >=10 tag mentions; otherwise everything is capped at Low.
+ */
+function maxConfidence(snippetCount: number, tagMentions: number): DataQuality {
+  const quality = computeDataQuality(snippetCount);
+  if (quality === "High" || tagMentions >= 30) return "High";
+  if (quality === "Medium" || tagMentions >= 10) return "Medium";
+  return "Low";
+}
+
+function clampConfidence(value: string, ceiling: DataQuality): string {
+  const v = value.trim();
+  if (!(v in CONF_RANK)) return "";
+  return CONF_RANK[v]! > CONF_RANK[ceiling]! ? ceiling : v;
+}
+
 /**
  * Deterministic anti-invention guardrails for customerVoiceAnalysis.
  * - reviewTags may ONLY contain tags that actually came from Google review topics,
  *   with the real mention counts (AI keeps only its interpretation columns).
  * - When no review snippet text exists, concerns cannot be grounded in customer
  *   words, so they are cleared and replaced with the fixed limited-data note.
+ * - Per-insight confidence labels are clamped to what the data volume supports.
  */
 function groundCustomerVoice(
   sections: AiSections,
@@ -1011,6 +1140,14 @@ function groundCustomerVoice(
   snippetCount: number,
 ): AiSections {
   const cv = sections.customerVoiceAnalysis;
+  const tagMentions = realTags.reduce((s, t) => s + (t.count > 0 ? t.count : 0), 0);
+  const ceiling = maxConfidence(snippetCount, tagMentions);
+  for (const item of cv.whatCustomersLove) {
+    item.confidence = clampConfidence(item.confidence, ceiling);
+  }
+  for (const item of cv.customerConcerns) {
+    item.confidence = clampConfidence(item.confidence, ceiling);
+  }
 
   if (realTags.length === 0) {
     cv.reviewTags = [];

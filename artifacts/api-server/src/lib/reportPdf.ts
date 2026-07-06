@@ -12,6 +12,10 @@ import { ICON_PATHS, SECTION_ICON_NAMES } from "./reportIcons";
 import {
   PLATFORM_CHECKLIST_INTRO,
   TRUST_SCORE_EXPLANATION,
+  REPORT_IMPORTANT_NOTICE,
+  REPORT_DATA_CUTOFF,
+  HOW_TO_USE_REPORT,
+  COMPETITOR_NOTE,
   computeAnalytics,
   type BusinessReport,
   type AiSections,
@@ -867,6 +871,12 @@ function drawAnalytics(l: Layout, report: BusinessReport): void {
   }
 }
 
+/** "Confidence: High - basis" footer line for individual insight cards. */
+function confidenceLine(confidence: string, basis: string): string {
+  if (!confidence) return "";
+  return basis ? `Confidence: ${confidence} - ${basis}` : `Confidence: ${confidence}`;
+}
+
 /** Customer Voice Analysis — what customers actually say (tags, love, concerns, priorities, actions). */
 function drawCustomerVoice(l: Layout, s: AiSections): void {
   const cv = s.customerVoiceAnalysis;
@@ -949,6 +959,7 @@ function drawCustomerVoice(l: Layout, s: AiSections): void {
           { text: lv.explanation, size: 9.5 },
           { text: lv.evidence || "", size: 8.5, color: GREY },
           { text: lv.opportunity ? "Opportunity: " + lv.opportunity : "", size: 9, color: NAVY },
+          { text: confidenceLine(lv.confidence, lv.confidenceBasis), size: 8, color: GREY },
         ],
         GREEN,
       );
@@ -964,7 +975,9 @@ function drawCustomerVoice(l: Layout, s: AiSections): void {
         [
           { text: c.theme, size: 11, color: NAVY, bold: true, gapAfter: 3 },
           { text: c.explanation, size: 9.5 },
+          { text: c.businessImpact ? "Business impact: " + c.businessImpact : "", size: 9, color: GREY },
           { text: c.recommendedFix ? "Recommended fix: " + c.recommendedFix : "", size: 9, color: NAVY },
+          { text: confidenceLine(c.confidence, c.confidenceBasis), size: 8, color: GREY },
         ],
         riskColor(c.riskLevel),
         c.riskLevel ? { text: `${c.riskLevel} risk`, color: riskColor(c.riskLevel) } : undefined,
@@ -1206,7 +1219,7 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   } catch {
     l.page.drawText("AI CUSTOMER REVIEW SENTIMENT REPORT", { x: MARGIN, y: PAGE_H - 34, size: 8.5, font: bold, color: LAVENDER });
   }
-  const paidText = "PAID REPORT";
+  const paidText = "PREMIUM AI REPUTATION REPORT";
   const paidW = bold.widthOfTextAtSize(paidText, 8) + 18;
   fillRounded(l.page, PAGE_W - MARGIN - paidW, PAGE_H - 40, paidW, 17, 8.5, WHITE);
   l.page.drawText(paidText, { x: PAGE_W - MARGIN - paidW + 9, y: PAGE_H - 35, size: 8, font: bold, color: BLACK });
@@ -1275,6 +1288,39 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
 
   // ---- KPI cards ----
   drawKpiCards(l, m, s);
+
+  // ---- Page-1 notices + executive cards ----
+  drawCallout(l, "Important Notice", REPORT_IMPORTANT_NOTICE);
+  drawCallout(l, "Data Cut-Off", REPORT_DATA_CUTOFF);
+
+  const snap = s.executiveSnapshot;
+  const snapLove = snap.customersLove || [];
+  const snapRisks = snap.mainRisks || [];
+  if (snapLove.length || snapRisks.length || snap.doFirst || snap.monitorNext) {
+    drawSubHeading(l, "Executive Snapshot");
+    drawContentCard(l, [
+      { text: "Overall position: " + trustLabel(m.trustScore), size: 9.5, color: NAVY, bold: true, gapAfter: 3 },
+      { text: snapLove.length ? "Customers love: " + snapLove.join(" · ") : "", size: 9.5 },
+      { text: snapRisks.length ? "Main risks: " + snapRisks.join(" · ") : "", size: 9.5 },
+      { text: snap.doFirst ? "Do first: " + snap.doFirst : "", size: 9.5 },
+      { text: snap.monitorNext ? "Monitor next: " + snap.monitorNext : "", size: 9.5 },
+    ]);
+  }
+
+  const topActions = s.topActionsThisWeek || [];
+  if (topActions.length) {
+    drawSubHeading(l, "Top 3 Actions This Week");
+    drawNavyCard(l, topActions.map((a, i) => ({ label: `Action ${i + 1}`, text: a })));
+  }
+
+  const voiceSummary = (s.customerVoiceSummary || []).filter((i) => i.text);
+  if (voiceSummary.length) {
+    drawSubHeading(l, "Customer Voice Summary");
+    drawContentCard(l, voiceSummary.map((i) => ({ text: `${i.label}: ${i.text}`, size: 9.5 })));
+  }
+
+  drawCallout(l, "How to Use This Report", HOW_TO_USE_REPORT);
+
   drawSocialSnapshot(l, report);
 
   // 1. Reputation Analytics
@@ -1390,6 +1436,7 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
         [
           { text: c.theme, size: 11, color: NAVY, bold: true, gapAfter: 3 },
           { text: c.explanation, size: 9.5 },
+          { text: c.businessImpact ? "Business impact: " + c.businessImpact : "", size: 9, color: GREY },
           { text: c.fix ? "Recommended fix: " + c.fix : "", size: 9, color: NAVY },
         ],
         riskColor(c.riskLevel),
@@ -1406,6 +1453,19 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
     }
   } else drawParagraph(l, "No material issues identified from the available data.", { color: GREY });
 
+  // What this means commercially
+  drawSectionHeading(l, "What This Means Commercially");
+  if (s.commercialImpact?.length) {
+    drawParagraph(
+      l,
+      "How the review themes above may affect sales, bookings, foot traffic, enquiries and customer confidence.",
+      { size: 9.5, color: GREY, gap: 8 },
+    );
+    for (const item of s.commercialImpact) {
+      drawContentCard(l, [{ text: item, size: 9.5 }], NAVY);
+    }
+  } else drawParagraph(l, "No commercial impact analysis was available for this report.", { color: GREY });
+
   // 8. Customer language
   drawSectionHeading(l, "Customer Language Insights");
   const cl = s.customerLanguage;
@@ -1418,6 +1478,7 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   // 9. Competitor snapshot
   drawSectionHeading(l, "Competitor Snapshot");
   if (m.competitors?.length) {
+    drawCallout(l, "Competitor Note", COMPETITOR_NOTE);
     drawTable(
       l,
       [
@@ -1500,15 +1561,17 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   const finalRows: Array<{ label: string; text: string }> = [];
   if (f.first) finalRows.push({ label: "Do first", text: f.first });
   if (f.fastest) finalRows.push({ label: "Fastest trust win", text: f.fastest });
+  if (f.biggestRisk) finalRows.push({ label: "Biggest customer risk", text: f.biggestRisk });
+  if (f.marketingOpportunity) finalRows.push({ label: "Best marketing opportunity", text: f.marketingOpportunity });
   if (f.monitor) finalRows.push({ label: "Monitor next", text: f.monitor });
   if (finalRows.length) drawNavyCard(l, finalRows);
   else drawParagraph(l, "Continue monitoring reviews and encourage satisfied customers to leave feedback.", { color: GREY });
 
-  // Disclaimer (unnumbered muted box).
+  // Data cut-off + disclaimer (unnumbered muted boxes).
   l.y -= 4;
-  {
+  for (const boxText of [`Data Cut-Off: ${REPORT_DATA_CUTOFF}`, report.disclaimer]) {
     const size = 8.5;
-    const lines = wrapLines(report.disclaimer, l.font, size, CONTENT_W - 28);
+    const lines = wrapLines(boxText, l.font, size, CONTENT_W - 28);
     const h = lines.length * size * 1.5 + 22;
     ensureSpace(l, h + 6);
     roundedCard(l.page, MARGIN, l.y - h, CONTENT_W, h, 9, CARD_FILL, CARD_BORDER);

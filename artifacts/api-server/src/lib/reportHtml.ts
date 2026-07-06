@@ -1,6 +1,10 @@
 import {
   PLATFORM_CHECKLIST_INTRO,
   TRUST_SCORE_EXPLANATION,
+  REPORT_IMPORTANT_NOTICE,
+  REPORT_DATA_CUTOFF,
+  HOW_TO_USE_REPORT,
+  COMPETITOR_NOTE,
   computeAnalytics,
   type BusinessReport,
   type AiSections,
@@ -99,6 +103,75 @@ function platformTile(key: string, name: string): string {
   const marks: Record<string, string> = { google: "G", yelp: "Y", tripadvisor: "T" };
   const mark = marks[key] || (name[0] || "?").toUpperCase();
   return `<span class="pf-cell"><span class="pf-tile">${esc(mark)}</span><span class="strong">${esc(name)}</span></span>`;
+}
+
+/** Small "Confidence: High · basis" line for individual insights. */
+function confLine(confidence: string, basis: string): string {
+  if (!confidence) return "";
+  return `<div class="conf-line"><span class="conf-badge" style="${pillStyle(confidence)}">Confidence: ${esc(confidence)}</span>${basis ? `<span class="conf-basis">${esc(basis)}</span>` : ""}</div>`;
+}
+
+/** Fixed Important Notice + Data Cut-Off cards shown under the KPI cards. */
+function noticeCards(): string {
+  return `<div class="notice-card">
+      <div class="notice-title">Important Notice</div>
+      <div class="notice-body">${esc(REPORT_IMPORTANT_NOTICE)}</div>
+    </div>
+    <div class="notice-card">
+      <div class="notice-title">Data Cut-Off</div>
+      <div class="notice-body">${esc(REPORT_DATA_CUTOFF)}</div>
+    </div>`;
+}
+
+/** Compact Executive Snapshot card (page 1, after the KPI cards). */
+function executiveSnapshotCard(report: BusinessReport): string {
+  const snap = report.sections.executiveSnapshot;
+  const love = safeArr(snap.customersLove);
+  const risks = safeArr(snap.mainRisks);
+  if (!love.length && !risks.length && !snap.doFirst && !snap.monitorNext)
+    return "";
+  const row = (label: string, val: string) =>
+    val
+      ? `<div class="snap-row"><div class="snap-label">${esc(label)}</div><div class="snap-val">${esc(val)}</div></div>`
+      : "";
+  return `<div class="snap-card">
+    <div class="snap-head">${icon("gauge", 15)} Executive Snapshot</div>
+    ${row("Overall position", trustLabel(report.metrics.trustScore))}
+    ${row("Customers love", love.join(" · "))}
+    ${row("Main risks", risks.join(" · "))}
+    ${row("Do first", snap.doFirst)}
+    ${row("Monitor next", snap.monitorNext)}
+  </div>`;
+}
+
+/** Highlighted "Top 3 Actions This Week" box (page 1). */
+function topActionsCard(s: AiSections): string {
+  const actions = safeArr(s.topActionsThisWeek);
+  if (!actions.length) return "";
+  return `<div class="top-actions">
+    <div class="ta-head">${icon("check", 15)} Top 3 Actions This Week</div>
+    <ol class="ta-list">${actions.map((a) => `<li>${esc(a)}</li>`).join("")}</ol>
+  </div>`;
+}
+
+/** Customer Voice Summary bullets (page 1). */
+function voiceSummaryCard(s: AiSections): string {
+  const items = safeArr(s.customerVoiceSummary).filter((i) => i.text);
+  if (!items.length) return "";
+  return `<div class="voice-summary">
+    <div class="vs-head">${icon("chat", 15)} Customer Voice Summary</div>
+    <ul class="vs-list">${items
+      .map((i) => `<li><strong>${esc(i.label)}:</strong> ${esc(i.text)}</li>`)
+      .join("")}</ul>
+  </div>`;
+}
+
+/** Fixed "How to Use This Report" card (near the beginning). */
+function howToUseCard(): string {
+  return `<div class="howto-card">
+    <div class="howto-title">How to Use This Report</div>
+    <div class="howto-body">${esc(HOW_TO_USE_REPORT)}</div>
+  </div>`;
 }
 
 function kpiCards(m: ReportMetrics, s: AiSections): string {
@@ -393,6 +466,7 @@ function customerVoiceSection(s: AiSections): string {
             <div class="mini-body">${esc(l.explanation)}</div>
             ${l.evidence ? `<div class="mini-evi">${esc(l.evidence)}</div>` : ""}
             ${l.opportunity ? `<div class="mini-fix"><strong>Opportunity:</strong> ${esc(l.opportunity)}</div>` : ""}
+            ${confLine(l.confidence, l.confidenceBasis)}
           </div>`,
         )
         .join("")}</div>`
@@ -409,7 +483,9 @@ function customerVoiceSection(s: AiSections): string {
               ${c.riskLevel ? `<span class="risk-badge" style="${pillStyle(c.riskLevel)}">${esc(c.riskLevel)} risk</span>` : ""}
             </div>
             <div class="mini-body">${esc(c.explanation)}</div>
+            ${c.businessImpact ? `<div class="mini-impact"><strong>Business impact:</strong> ${esc(c.businessImpact)}</div>` : ""}
             ${c.recommendedFix ? `<div class="mini-fix"><strong>Recommended fix:</strong> ${esc(c.recommendedFix)}</div>` : ""}
+            ${confLine(c.confidence, c.confidenceBasis)}
           </div>`;
         })
         .join("")}</div>`
@@ -519,6 +595,7 @@ function complaintsSection(s: AiSections): string {
           <span class="risk-badge" style="${pillStyle(c.riskLevel)}">${esc(c.riskLevel)} risk</span>
         </div>
         <div class="mini-body">${esc(c.explanation)}</div>
+        ${c.businessImpact ? `<div class="mini-impact"><strong>Business impact:</strong> ${esc(c.businessImpact)}</div>` : ""}
         ${c.fix ? `<div class="mini-fix"><strong>Recommended fix:</strong> ${esc(c.fix)}</div>` : ""}
       </div>`;
     })
@@ -537,6 +614,21 @@ function costingSection(items: string[]): string {
       </div>`,
     )
     .join("")}</div>`;
+}
+
+function commercialSection(s: AiSections): string {
+  const arr = safeArr(s.commercialImpact);
+  if (!arr.length)
+    return `<p class="muted">No commercial impact analysis was available for this report.</p>`;
+  return `<p class="lede">How the review themes above may affect sales, bookings, foot traffic, enquiries and customer confidence.</p>
+    <div class="risk-list">${arr
+      .map(
+        (i) => `<div class="risk-item">
+          <span class="risk-ico">${icon("chart", 14)}</span>
+          <span>${esc(i)}</span>
+        </div>`,
+      )
+      .join("")}</div>`;
 }
 
 function languageSection(s: AiSections): string {
@@ -561,8 +653,11 @@ function languageSection(s: AiSections): string {
 
 function competitorSection(m: ReportMetrics, s: AiSections): string {
   const comps = safeArr(m.competitors);
+  const note = comps.length
+    ? `<div class="notice-card" style="margin:0 0 12px"><div class="notice-title">Competitor Note</div><div class="notice-body">${esc(COMPETITOR_NOTE)}</div></div>`
+    : "";
   const table = comps.length
-    ? `<table class="tbl">
+    ? `${note}<table class="tbl">
         <thead><tr><th>Competitor</th><th>Trust Score</th><th>Rating</th><th>Reviews</th><th>Comparison</th></tr></thead>
         <tbody>${comps
           .map(
@@ -659,6 +754,8 @@ function finalSection(s: AiSections): string {
   const body =
     row("Do first", f.first) +
     row("Fastest trust win", f.fastest) +
+    row("Biggest customer risk", f.biggestRisk) +
+    row("Best marketing opportunity", f.marketingOpportunity) +
     row("Monitor next", f.monitor);
   if (!body)
     return `<p class="muted">Continue monitoring reviews and encourage satisfied customers to leave feedback.</p>`;
@@ -1084,6 +1181,33 @@ export function buildReportHtml(report: BusinessReport): string {
 
   .disclaimer { font-size:12px; color:#5F6368; margin-top:20px; padding:16px 18px; background:#fff; border:1px solid #E5E5E5; border-radius:12px; }
 
+  /* ===== Page-1 executive cards & notices ===== */
+  .notice-card { background:#F3F4F6; border:1px solid #E5E7EB; border-radius:12px; padding:12px 16px; margin:14px 0 0; }
+  .notice-title { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.06em; color:#4B5563; margin-bottom:4px; }
+  .notice-body { font-size:12px; color:#5F6368; line-height:1.55; }
+  .snap-card { background:#fff; border:1.5px solid #111111; border-radius:16px; padding:18px 20px; margin:18px 0 0; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+  .snap-head { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:.05em; color:#111111; margin-bottom:10px; }
+  .snap-row { display:grid; grid-template-columns:170px 1fr; gap:12px; padding:9px 0; border-bottom:1px solid #F3F4F6; }
+  .snap-row:last-child { border-bottom:none; }
+  .snap-label { font-size:11px; font-weight:800; text-transform:uppercase; letter-spacing:.05em; color:#6B7280; padding-top:2px; }
+  .snap-val { font-size:13.5px; color:#111111; font-weight:600; }
+  .top-actions { background:linear-gradient(135deg,#0A0A0A,#1F2937); border-radius:16px; padding:18px 20px; margin:18px 0 0; color:#fff; }
+  .ta-head { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:.05em; margin-bottom:10px; }
+  .ta-list { margin:0; padding-left:22px; }
+  .ta-list li { font-size:13.5px; color:#F3F4F6; padding:4px 0; }
+  .voice-summary { background:#fff; border:1px solid #E5E5E5; border-radius:16px; padding:18px 20px; margin:18px 0 0; box-shadow:0 2px 8px rgba(0,0,0,.05); }
+  .vs-head { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:900; text-transform:uppercase; letter-spacing:.05em; color:#111111; margin-bottom:10px; }
+  .vs-list { margin:0; padding-left:20px; }
+  .vs-list li { font-size:13.5px; color:#111111; padding:4px 0; line-height:1.55; }
+  .vs-list li strong { color:#111111; }
+  .howto-card { background:#F9FAFB; border:1px solid #E5E7EB; border-radius:12px; padding:14px 18px; margin:14px 0 0; }
+  .howto-title { font-size:12px; font-weight:900; text-transform:uppercase; letter-spacing:.05em; color:#111111; margin-bottom:5px; }
+  .howto-body { font-size:13px; color:#374151; line-height:1.6; }
+  .conf-line { display:flex; align-items:center; gap:8px; margin-top:9px; flex-wrap:wrap; }
+  .conf-badge { display:inline-block; border-radius:999px; padding:2px 10px; font-size:10.5px; font-weight:800; letter-spacing:.03em; }
+  .conf-basis { font-size:11.5px; color:#6B7280; }
+  .mini-impact { font-size:12.5px; color:#374151; margin-top:8px; padding-top:8px; border-top:1px dashed #E5E7EB; }
+
   /* ===== Footer ===== */
   .report-footer { background:#0A0A0A; color:#9CA3AF; margin-top:34px; padding:22px; text-align:center; font-size:12px; }
   .report-footer .fb { color:#E5E7EB; font-weight:800; margin-bottom:4px; font-size:13px; }
@@ -1091,13 +1215,14 @@ export function buildReportHtml(report: BusinessReport): string {
   @media print {
     body { background:#fff; }
     .sec, .kpi, .mini-card, .week-card, .tpl-card { box-shadow:none; }
-    .report-header, .offer-card, .final-card, .conclusion, .report-footer, .sec-num, .paid-badge, .tl-dot { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+    .report-header, .offer-card, .final-card, .conclusion, .report-footer, .sec-num, .paid-badge, .tl-dot, .top-actions, .notice-card, .snap-card { -webkit-print-color-adjust:exact; print-color-adjust:exact; }
   }
   @media (max-width:760px){
     .report-header h1 { font-size:28px; }
     .kpi-grid{grid-template-columns:repeat(2,1fr);}
     .card-grid,.lang-grid,.week-grid,.tpl-grid,.theme-grid,.ana-grid{grid-template-columns:1fr;}
     .final-row{grid-template-columns:1fr;gap:4px;}
+    .snap-row{grid-template-columns:1fr;gap:3px;}
     .tbl{font-size:12.5px;}
     .tl-row{grid-template-columns:52px 22px 1fr;}
   }
@@ -1107,7 +1232,7 @@ export function buildReportHtml(report: BusinessReport): string {
   <header class="report-header"><div class="inner">
     <div class="brand-row">
       <img class="brand-logo" src="data:image/png;base64,${BRAND_LOGO_MONO_PNG_BASE64}" alt="Find Business Reviews" />
-      <div class="paid-badge">Paid Report</div>
+      <div class="paid-badge">Premium AI Reputation Report</div>
     </div>
     <h1>AI Customer Review Sentiment Report</h1>
     <div class="client-row">
@@ -1121,6 +1246,11 @@ export function buildReportHtml(report: BusinessReport): string {
   </div></header>
   <div class="wrap">
     ${kpiCards(m, s)}
+    ${noticeCards()}
+    ${executiveSnapshotCard(report)}
+    ${topActionsCard(s)}
+    ${voiceSummaryCard(s)}
+    ${howToUseCard()}
     ${socialSnapshot(report)}
     ${section(1, "Reputation Analytics", analyticsSection(report))}
     ${section(2, "Executive Summary", execSummary(report))}
@@ -1131,14 +1261,16 @@ export function buildReportHtml(report: BusinessReport): string {
     ${section(7, "Top Strengths Customers Mention", strengthsSection(s))}
     ${section(8, "Main Complaints and Risk Level", complaintsSection(s))}
     ${section(9, "What May Be Costing You Customers", costingSection(s.costingYouCustomers))}
-    ${section(10, "Customer Language Insights", languageSection(s))}
-    ${section(11, "Competitor Snapshot", competitorSection(m, s))}
-    ${section(12, "Recommended Offer to Win More Bookings", offerSection(s))}
-    ${section(13, "Review Improvement Opportunity", improvementSection(s))}
-    ${section(14, "7-Day Reputation Action Plan", sevenDaySection(s))}
-    ${section(15, "30-Day Reputation Plan", thirtyDaySection(s))}
-    ${section(16, "Suggested Response Templates", templatesSection(s))}
-    ${section(17, "Final Recommendation", finalSection(s))}
+    ${section(10, "What This Means Commercially", commercialSection(s))}
+    ${section(11, "Customer Language Insights", languageSection(s))}
+    ${section(12, "Competitor Snapshot", competitorSection(m, s))}
+    ${section(13, "Recommended Offer to Win More Bookings", offerSection(s))}
+    ${section(14, "Review Improvement Opportunity", improvementSection(s))}
+    ${section(15, "7-Day Reputation Action Plan", sevenDaySection(s))}
+    ${section(16, "30-Day Reputation Plan", thirtyDaySection(s))}
+    ${section(17, "Suggested Response Templates", templatesSection(s))}
+    ${section(18, "Final Recommendation", finalSection(s))}
+    <div class="disclaimer"><strong>Data Cut-Off:</strong> ${esc(REPORT_DATA_CUTOFF)}</div>
     <div class="disclaimer">${esc(report.disclaimer)}</div>
   </div>
   <footer class="report-footer">

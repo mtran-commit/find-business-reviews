@@ -1,0 +1,296 @@
+Improve the paid AI Customer Review Sentiment Report template using the following final upgrades.
+
+The current report is good, but it needs to feel more valuable, more executive-focused, and safer from a legal/data accuracy point of view.
+
+Keep the current structure and content, but add these improvements.
+
+1. CHANGE REPORT BADGE WORDING
+
+Replace the badge text:
+
+PAID REPORT
+
+with:
+
+Premium AI Reputation Report
+
+or:
+
+Premium Business Intelligence Report
+
+This makes the report feel more valuable and professional.
+
+2. ADD IMPORTANT NOTICE ON PAGE 1
+
+Add a small disclaimer/notice directly under the KPI cards on page 1.
+
+Text:
+
+Important Notice:
+This report is generated using available public review data and AI analysis. AI may make mistakes, and public data may be incomplete, outdated or unavailable. This report is provided for general business insight only and does not guarantee improved ratings, sales, bookings, rankings or revenue.
+
+Style:
+- light grey card
+- small text
+- rounded corners
+- not too dominant
+- visible on page 1
+
+3. ADD DATA CUT-OFF NOTICE
+
+Add a “Data Cut-Off” notice on page 1 near the generated date or under the important notice.
+
+Text:
+
+Data Cut-Off:
+This report reflects available public review data at or around the generated date. Ratings, review counts, review text, business information and competitor data may change after this report is produced.
+
+This should also appear near the final disclaimer at the end of the report.
+
+4. ADD CUSTOMER VOICE SUMMARY NEAR THE FRONT
+
+Add a new section on page 1 or early page 2 called:
+
+Customer Voice Summary
+
+This should summarise in 3–5 bullet points what customers appear to think about the business.
+
+Example format:
+
+Customer Voice Summary:
+- Customers most often praise: [top positive themes]
+- Customers repeatedly mention: [review tags / common words]
+- Main improvement signals: [top concerns]
+- Fastest trust opportunity: [one quick action]
+- What to monitor next: [main risk area]
+
+For example, if the report has tags like bakery, cafe, pharmacy, food court and fresh vegetables, explain what those tags mean in plain business language.
+
+5. ADD TOP 3 ACTIONS THIS WEEK ON PAGE 1
+
+Add a new highlighted box on page 1 or early page 2 called:
+
+Top 3 Actions This Week
+
+This must be very practical.
+
+Example:
+
+Top 3 Actions This Week:
+1. Audit stock gaps for high-demand items.
+2. Respond publicly to recent service or safety feedback.
+3. Add QR review prompts at checkout, receipts or follow-up messages.
+
+These actions should be generated based on the actual review analysis, not hardcoded.
+
+6. ADD “HOW TO USE THIS REPORT” SECTION
+
+Add a small section near the beginning:
+
+How to Use This Report
+
+Text:
+
+Use this report to understand what customers appear to value, what may be creating hesitation, and which reputation actions should be prioritised. This report should be reviewed together with your own business records, staff feedback and customer service data.
+
+7. ADD CONFIDENCE LEVELS TO INSIGHTS
+
+For each major insight, add a confidence level:
+
+Confidence: High
+Confidence: Medium
+Confidence: Low
+
+Use this logic:
+- High confidence: supported by high review volume, repeated review tags, repeated themes or many review snippets.
+- Medium confidence: supported by some review text, limited snippets or one platform only.
+- Low confidence: inferred from limited data, missing platforms or small review sample.
+
+Example:
+
+Bakery strength
+Confidence: High
+Based on 94 customer topic mentions.
+
+Safety/service concern
+Confidence: Medium
+Based on limited available negative review text.
+
+Do not pretend confidence is high if data is limited.
+
+8. IMPROVE COMPETITOR SECTION
+
+If real competitors are available, use real competitors only.
+
+If competitor data is illustrative or estimated, clearly label it.
+
+Add this notice above the competitor table when competitor data is not verified:
+
+Competitor Note:
+Competitor information is provided as an indicative comparison only where verified competitor data is limited. Use this section as a guide, not as a definitive ranking.
+
+Avoid harsh wording like:
+
+Ahead of you
+
+Replace with softer wording:
+- Stronger review visibility
+- Higher review volume
+- Similar position
+- Lower visible trust signal
+- Opportunity to improve
+- You currently lead this comparison
+
+9. MAKE PAGE 1 MORE EXECUTIVE-FOCUSED
+
+The first page should quickly answer:
+
+- What is the overall trust position?
+- What do customers love most?
+- What are the biggest risks?
+- What should the business do first?
+- What should they monitor over the next 30 days?
+
+Add a compact “Executive Snapshot” card after the KPI cards.
+
+Executive Snapshot should include:
+
+Overall position:
+[Very Trusted / Trusted / Needs Improvement]
+
+Customers love:
+[top 2–3 positive themes]
+
+Main risks:
+[top 2–3 concerns]
+
+Do first:
+[one urgent action]
+
+Monitor next:
+[one 30-day monitoring item]
+
+10. STRENGTHEN CUSTOMER VOICE ANALYSIS
+
+The Customer Voice Analysis section should clearly explain:
+
+- What customers actually think
+- What customers praise
+- What customers complain about
+- What customers expect
+- What language customers use
+- What the business should copy into marketing
+
+Make sure review tags/topic chips are used when available.
+
+Example:
+
+Tag: bakery
+Mentions: 94
+Customer meaning: Bakery products are a major reason customers visit and talk positively about this business.
+Business action: Promote bakery products more clearly in Google photos, social posts and in-store offers.
+
+11. ADD BUSINESS IMPACT LANGUAGE
+
+For each concern or risk, explain why it matters commercially.
+
+Example:
+
+Product availability/stock gaps
+Business impact:
+Repeated stock gaps may reduce repeat visits and push regular customers to nearby competitors.
+
+Payment limitations
+Business impact:
+Limited payment options may cause checkout friction and reduce impulse purchases.
+
+Service/safety feedback
+Business impact:
+Unresolved safety or service concerns may reduce trust from cautious customers.
+
+12. ADD “WHAT THIS MEANS FOR SALES / BOOKINGS”
+
+Add a short section after “What May Be Costing You Customers” called:
+
+What This Means Commercially
+
+This should explain in plain English how review themes may affect sales, bookings, foot traffic, enquiries or customer confidence.
+
+Examples:
+- Strong positive themes can be used in marketing to increase conversion.
+- Repeated complaints may cause hesitation before purchase.
+- Low review freshness may reduce trust compared with competitors.
+- Clear responses to reviews can improve customer confidence.
+
+13. ADD STRONGER FINAL RECOMMENDATION
+
+Improve the final recommendation section so it is clearer and more executive.
+
+Use this structure:
+
+Final Recommendation
+
+Do First:
+[Most urgent action]
+
+Fastest Trust Win:
+[Quickest action that may improve trust]
+
+Biggest Customer Risk:
+[Most important risk from review analysis]
+
+Best Marketing Opportunity:
+[Positive customer theme the business should promote]
+
+Monitor Next:
+[What to track over 30 days]
+
+14. IMPROVE LEGAL DISCLAIMER AT END
+
+Replace the current final disclaimer with this stronger version:
+
+This report is generated using available public review data, third-party platform signals and AI analysis. AI-generated content may contain errors, omissions, incorrect assumptions or incomplete interpretations. Public review data may be incomplete, outdated or unavailable and may change after the report is generated. This report is provided for general business insight purposes only and should not be treated as legal, financial, accounting, marketing or professional advice. Find Business Reviews does not guarantee improved ratings, reviews, rankings, sales, bookings, revenue or business outcomes. You should independently verify all information before relying on it or making business decisions.
+
+15. VISUAL IMPROVEMENTS
+
+Keep the black, white and grey premium design.
+
+Improve:
+- spacing
+- section cards
+- KPI cards
+- progress bars
+- action boxes
+- page breaks
+- table readability
+- visual hierarchy
+
+Do not make the report look too colourful.
+
+Use:
+- black
+- white
+- grey
+- dark navy/black accents
+- light grey cards
+
+Avoid:
+- turquoise
+- aqua
+- messy gradients
+- cramped tables
+- very long plain text blocks
+
+16. FINAL GOAL
+
+The report must make a business owner quickly understand:
+
+- What customers think
+- What customers love
+- What customers are concerned about
+- What may be costing customers
+- What actions to take this week
+- What to monitor over the next 30 days
+- What data is strong and what data is limited
+
+The report should feel worth paying for because it gives practical business intelligence, not just ratings.
