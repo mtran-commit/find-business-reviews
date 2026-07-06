@@ -39,6 +39,7 @@ async function getStripeCredentials(): Promise<{
 
   const data = (await resp.json()) as {
     items?: Array<{
+      environment?: string;
       settings?: {
         secret_key?: string;
         secret?: string;
@@ -46,10 +47,23 @@ async function getStripeCredentials(): Promise<{
       };
     }>;
   };
-  const settings = data.items?.[0]?.settings;
+  const items = (data.items ?? []).filter(
+    (i) => i.settings?.secret_key || i.settings?.secret,
+  );
+
+  // The connection API can return BOTH a development (sandbox) and a
+  // production (live) Stripe connection. Pick the one matching where we run:
+  // deployments use the production/live connection, the workspace uses the
+  // development/test one. Fall back to the first usable item.
+  const wantEnv = process.env["REPLIT_DEPLOYMENT"]
+    ? "production"
+    : "development";
+  const settings = (
+    items.find((i) => i.environment === wantEnv) ?? items[0]
+  )?.settings;
   const secretKey = settings?.secret_key || settings?.secret;
 
-  if (!secretKey) {
+  if (!secretKey || !settings) {
     throw new Error(
       "Stripe integration not connected or missing secret key. " +
         "Connect Stripe via the Integrations tab first.",
