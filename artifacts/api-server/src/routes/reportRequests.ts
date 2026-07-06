@@ -8,27 +8,16 @@ import {
   updateReportRequestSchema,
   type ReportRequest,
 } from "@workspace/db";
-import {
-  fetchBusinessReviews,
-  fetchReviewSnippets,
-  type BusinessReviews,
-  type ReviewSnippets,
-} from "../lib/serpapi";
-import {
-  computeMetrics,
-  generateAiSections,
-  normalizeReport,
-  REPORT_DISCLAIMER,
-  type BusinessReport,
-} from "../lib/reportContent";
-import {
-  emptyBranding,
-  fetchBusinessBranding,
-  type BusinessBranding,
-} from "../lib/branding";
+import { normalizeReport } from "../lib/reportContent";
 import { buildReportPdf } from "../lib/reportPdf";
 import { buildReportHtml } from "../lib/reportHtml";
-import { sendReportEmail } from "../lib/reportEmail";
+import {
+  ReportBusyError,
+  runReportGeneration,
+  emailReportToCustomer,
+  markReportSent,
+  autoDeliverReport,
+} from "../lib/reportDelivery";
 
 const router: IRouter = Router();
 
