@@ -30,6 +30,8 @@ export const reportRequestsTable = pgTable("report_requests", {
   reportSentAt: timestamp("report_sent_at", { withTimezone: true }),
   /** Optional Stripe payment reference for manual reconciliation. */
   stripePaymentReference: text("stripe_payment_reference"),
+  /** Stripe Checkout Session id created for this request (customer-specific payment). */
+  stripeCheckoutSessionId: text("stripe_checkout_session_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

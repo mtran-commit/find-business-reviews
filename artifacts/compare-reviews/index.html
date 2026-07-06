@@ -1585,7 +1585,26 @@
           const data = await res.json().catch(function () { return {}; });
           if (!res.ok) throw new Error(data && data.error ? data.error : 'Could not save request');
 
-          const opened = safeOpen(BUSINESS_REPORT_PAYMENT_LINK);
+          // Ask the server for a customer-specific Stripe Checkout link tied
+          // to this request (so payment auto-marks the request as paid via
+          // webhook). If that fails, fall back to the shared Payment Link and
+          // the admin matches the payment manually.
+          if (submitBtn) submitBtn.textContent = 'Preparing secure payment…';
+          currentCheckoutUrl = '';
+          if (data && data.requestId) {
+            try {
+              const coRes = await fetch(
+                API_BASE + '/report-requests/' + encodeURIComponent(data.requestId) + '/checkout',
+                { method: 'POST' }
+              );
+              const coData = await coRes.json().catch(function () { return {}; });
+              if (coRes.ok && coData && coData.url && /^https:\/\//i.test(coData.url)) {
+                currentCheckoutUrl = coData.url;
+              }
+            } catch (coErr) { /* fall back to the shared payment link below */ }
+          }
+
+          const opened = safeOpen(currentCheckoutUrl || BUSINESS_REPORT_PAYMENT_LINK);
           els.reportTitle.textContent = 'Continue to payment';
           els.reportSub.textContent = 'Secured by Stripe';
           els.reportBody.innerHTML = '' +
@@ -1609,13 +1628,18 @@
       // securely, we never collect card details. The free report is unaffected.
       var BUSINESS_REPORT_PAYMENT_LINK = 'https://buy.stripe.com/5kQ14oa2yfUh9JR1Tt2cg00';
 
+      // Customer-specific Stripe Checkout URL for the most recently saved
+      // request (set in submitReportRequest). Preferred over the shared
+      // Payment Link because paying through it auto-marks the request as paid.
+      var currentCheckoutUrl = '';
+
       // Opens the hosted Stripe payment page. Only ever called AFTER the report
       // request form has been validated and SAVED — either automatically at the
       // end of submitReportRequest(), or via the post-save "Open secure payment"
       // fallback button. It is never wired to the Business Report entry button
       // on ANY device (desktop, tablet or mobile).
       function openStripePayment() {
-        if (!safeOpen(BUSINESS_REPORT_PAYMENT_LINK)) {
+        if (!safeOpen(currentCheckoutUrl || BUSINESS_REPORT_PAYMENT_LINK)) {
           alert('Could not open the secure payment page. Please try again.');
         }
       }

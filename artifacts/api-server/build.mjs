@@ -47,6 +47,8 @@ async function buildAll() {
       "isolated-vm",
       "lightningcss",
       "pg-native",
+      // reads its SQL migration files from disk relative to __dirname
+      "stripe-replit-sync",
       "oracledb",
       "mongodb-client-encryption",
       "nodemailer",

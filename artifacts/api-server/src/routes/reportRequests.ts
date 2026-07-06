@@ -113,6 +113,48 @@ router.post("/report-requests", async (req, res): Promise<void> => {
 });
 
 /**
+ * Create a customer-specific Stripe Checkout Session for a saved report
+ * request. Public (the customer just saved their own request), but only works
+ * for requests still awaiting payment. The session carries the request id in
+ * metadata so the Stripe webhook can automatically mark it paid. If Stripe is
+ * unavailable this returns 503 and the frontend falls back to the shared
+ * Payment Link (matched manually by the admin).
+ */
+router.post(
+  "/report-requests/:id/checkout",
+  async (req, res): Promise<void> => {
+    const row = await loadRequest(req, res);
+    if (!row) return;
+    if (row.status !== "pending_payment") {
+      res.status(400).json({ error: "This request is not awaiting payment." });
+      return;
+    }
+
+    try {
+      const { createReportCheckoutSession } = await import(
+        "../lib/stripeCheckout"
+      );
+      const { sessionId, url } = await createReportCheckoutSession({
+        requestId: row.id,
+        email: row.email,
+      });
+
+      await db
+        .update(reportRequestsTable)
+        .set({ stripeCheckoutSessionId: sessionId })
+        .where(eq(reportRequestsTable.id, row.id));
+
+      res.json({ url });
+    } catch (err) {
+      req.log.error({ err }, "Failed to create Stripe checkout session");
+      res
+        .status(503)
+        .json({ error: "Could not start the secure payment right now." });
+    }
+  },
+);
+
+/**
  * Admin listing of report requests. This returns customer PII (names, emails,
  * phone numbers), so it is gated behind REPORT_ADMIN_TOKEN. When the token is
  * not configured the endpoint refuses to serve data (safe default), so PII is

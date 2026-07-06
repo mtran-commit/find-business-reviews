@@ -20,6 +20,8 @@
     "pdf-lib": "^1.17.1",
     "pino": "^9.14.0",
     "pino-http": "^10.5.0",
+    "stripe": "^22.3.0",
+    "stripe-replit-sync": "^1.0.0",
     "zod": "catalog:"
   },
   "devDependencies": {
