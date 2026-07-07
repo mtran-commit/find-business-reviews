@@ -1,0 +1,179 @@
+Fix the result cards so each business result fetches and displays the real business logo instead of showing initials like “LD”.
+
+Current issue:
+The result card shows an initials placeholder badge, for example “LD”, even when the business has a real logo available from Google, Facebook, website, or public business profile.
+
+Goal:
+For every business result card, fetch and display the real business logo where available.
+
+Logo sources, in this priority order:
+
+1. Google Business Profile / Google local result image/logo if available
+2. Business official website logo
+3. Facebook business profile picture/logo if available
+4. Favicon from the official business website
+5. Initials fallback only if no reliable logo is found
+
+Important:
+Do not show initials if a valid business logo exists.
+
+Backend requirements:
+
+When fetching business data, return a logo object for each business:
+
+business.logo = {
+  url: "",
+  source: "google | website | facebook | favicon | fallback",
+  confidence: "high | medium | low"
+}
+
+Use the highest-confidence valid logo.
+
+Google:
+If SerpApi Google local/business data returns a thumbnail, logo, image, place image, profile image, or business photo that appears to be a logo, save it as logo.url.
+If Google only returns a general business photo, keep it as business.photo, not logo.
+
+Website:
+If the business website is available, fetch the website homepage HTML and look for:
+- og:image
+- twitter:image
+- schema.org Organization logo
+- JSON-LD logo
+- link rel="icon"
+- link rel="apple-touch-icon"
+- /logo.png
+- /logo.svg
+- /assets/logo
+- /wp-content/uploads logos
+
+Use only valid image URLs.
+
+Facebook:
+If Facebook profile data is available, use the Facebook page profile picture as logo if it clearly belongs to the business.
+
+Favicon fallback:
+If no logo is found, use the website favicon only if it is clean and not generic.
+
+Validation rules:
+Do not use logos from:
+- Google
+- Yelp
+- TripAdvisor
+- Trustpilot
+- Facebook
+- Instagram
+- WordPress
+- Wix
+- Squarespace
+- Shopify
+- placeholder images
+- default avatar images
+- broken image URLs
+- generic icons
+- review platform logos
+
+Logo confidence:
+High confidence if:
+- logo comes from official website schema/logo field
+- logo image URL contains the business name or domain
+- Facebook profile image belongs to the exact business page
+- Google profile image is clearly business-branded
+
+Medium confidence if:
+- og:image from official website appears brand-related
+- favicon from official website is available
+
+Low confidence if:
+- image source is uncertain
+
+Only display logo if confidence is high or medium.
+
+Frontend requirements:
+
+On each business result card:
+- Display business photo as the large main image.
+- Display the business logo as a small overlay badge on the bottom-left corner of the image.
+- If logo.url exists and confidence is high/medium, show the logo image.
+- If no logo exists, show initials fallback.
+- The initials fallback should only appear when logo is not available.
+
+Update the card image area:
+
+<div class="business-image-wrapper">
+  <img class="business-photo" src="{business.photo}" />
+  <div class="business-logo-badge">
+    if business.logo.url exists:
+      <img src="{business.logo.url}" alt="{business.name} logo" />
+    else:
+      show initials
+  </div>
+</div>
+
+CSS:
+.business-image-wrapper {
+  position: relative;
+}
+
+.business-logo-badge {
+  position: absolute;
+  left: 16px;
+  bottom: 16px;
+  width: 56px;
+  height: 56px;
+  border-radius: 14px;
+  background: white;
+  border: 2px solid white;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.business-logo-badge img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 6px;
+}
+
+.business-logo-badge.initials {
+  background: #071A3D;
+  color: white;
+  font-weight: 800;
+  font-size: 18px;
+}
+
+Error handling:
+If the logo image fails to load on the frontend, hide it and show initials fallback.
+
+Add:
+
+<img
+  src="{business.logo.url}"
+  onerror="this.style.display='none'; this.parentElement.classList.add('initials'); this.parentElement.textContent='{initials}'"
+/>
+
+Apply this to:
+- AI recommendation top result
+- similar business result cards
+- competitor cards if shown
+- any business card in the search results page
+
+Also cache logo URLs in the database if possible so we do not refetch the logo every time.
+
+Database optional fields:
+business_logo_url
+business_logo_source
+business_logo_confidence
+business_photo_url
+
+Final result:
+Each result should show:
+- real business photo as the large card image
+- real business logo overlay if available
+- initials fallback only when no logo can be found
+
+Do not use platform logos as the business logo.
+Do not use random website or WordPress logos.
+Only use a real business logo or fallback initials.

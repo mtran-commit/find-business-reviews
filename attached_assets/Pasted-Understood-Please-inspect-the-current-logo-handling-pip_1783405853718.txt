@@ -1,0 +1,116 @@
+Understood. Please inspect the current logo handling pipeline first before making changes.
+
+Goal:
+We do NOT want to bypass the existing trust/safety rule. We want to understand why the system is currently forcing initials everywhere, then safely allow verified business logos only when confidence is high.
+
+Please do the following first:
+
+1. Find all logo-related code
+Search the project for:
+- logo
+- businessLogo
+- logoUrl
+- logo_url
+- logoConfidence
+- initials
+- fallback
+- trust rule
+- zero-tolerance
+- disabled logo pipeline
+- force initials
+- placeholder
+- avatar
+
+2. Identify where initials are being forced
+Find the exact file/function that forces every business card to show initials instead of logos.
+
+Examples to look for:
+- logo = null
+- logoUrl = null
+- alwaysUseInitials = true
+- forceInitials = true
+- disableLogoFetching = true
+- return initials
+- logoPipelineDisabled
+
+3. Explain the current logic before changing it
+Before editing, summarise:
+- which file controls logo selection
+- why logos were disabled
+- what rule is forcing initials
+- what risks the rule is trying to prevent
+- where the frontend renders the initials badge
+
+4. Then implement a SAFE logo pipeline
+Do not remove the initials fallback.
+Do not blindly trust any image.
+Do not show random platform logos.
+
+Only show a business logo if it passes validation.
+
+Logo source priority:
+1. official business website schema.org / JSON-LD logo
+2. official website og:image only if clearly brand-related
+3. Google Business Profile logo/image only if clearly business-branded
+4. Facebook business page profile image only if exact business match
+5. website favicon only as medium/low confidence
+6. initials fallback
+
+5. Keep the zero-tolerance rule for bad logos
+Never use logos/images from:
+- Google
+- Yelp
+- TripAdvisor
+- Trustpilot
+- ProductReview
+- Facebook as platform logos
+- Instagram
+- WordPress
+- Wix
+- Squarespace
+- Shopify
+- generic avatars
+- placeholder images
+- broken images
+- unrelated website icons
+
+Important:
+Facebook profile image is allowed ONLY if it is the actual business page profile picture, not the Facebook platform logo.
+
+6. Add logo confidence
+Every business should have:
+
+logo: {
+  url: string | null,
+  source: "website_schema" | "website_og" | "google" | "facebook" | "favicon" | "fallback",
+  confidence: "high" | "medium" | "low" | "none",
+  reason: string
+}
+
+7. Display rule
+Frontend should show:
+- logo image only when confidence is high or medium
+- initials fallback when confidence is low, none, missing or image fails to load
+
+8. Add safe fallback on image error
+If a logo image fails to load:
+- hide the image
+- show initials
+- do not break the card
+
+9. Add logging for debugging
+For each result, log:
+- business name
+- selected logo URL
+- logo source
+- confidence
+- reason
+- whether initials fallback was used
+
+10. Do not change the whole result card layout
+Only update the logo selection pipeline and logo badge rendering.
+
+Final behaviour:
+The result card should still be safe.
+Initials should remain the fallback.
+But if a verified business logo is available from a trusted source, show it instead of initials.

@@ -1885,34 +1885,37 @@
 
       // ---- Logo trust gate ----------------------------------------------
       // NEVER show a wrong or generic logo. A logo is only shown when the
-      // backend flags it high-confidence AND it passes a local validator that
-      // rejects platform/CMS icons, favicon services and placeholders.
+      // backend flags it high/medium-confidence AND it passes the local
+      // validator below.
+      // Defence-in-depth banned list: platform/builder CDNs, review-site and
+      // social hosts, and placeholder/favicon services that must NEVER be shown
+      // as a business's own brand mark. The backend already scopes logos to the
+      // business's own website, so this is a safety net — it deliberately does
+      // NOT ban legitimate self-hosted filenames (apple-touch-icon, favicon,
+      // wp-content) which are the business's real, own-domain assets.
       var LOGO_BANNED = [
-        'wordpress', 'wix', 'squarespace', 'shopify', 'weebly', 'godaddy',
-        'wp-content', 'wp-includes', 'google', 'gstatic', 'facebook', 'fbcdn',
-        'instagram', 'cdninstagram', 'tripadvisor', 'yelp', 'favicon',
-        'apple-touch-icon', 's2/favicons', 'placeholder', 'default', 'logo-default',
-        'sprite', 'gravatar'
+        'wordpress.com', 'wix', 'wixstatic', 'parastorage', 'pfavico',
+        'squarespace', 'shopify', 'weebly', 'godaddy',
+        'google', 'gstatic', 'ggpht', 'googleusercontent', 'facebook', 'fbcdn',
+        'instagram', 'cdninstagram', 'tripadvisor', 'yelp', 'trustpilot',
+        's2/favicons', 'placeholder', 'placehold', 'default-avatar', 'gravatar'
       ];
-      function isValidBusinessLogo(logoUrl, name) {
+      function isValidBusinessLogo(logoUrl) {
         if (!logoUrl || typeof logoUrl !== 'string') return false;
         var url = logoUrl.toLowerCase();
         if (url.indexOf('http') !== 0) return false;
         for (var i = 0; i < LOGO_BANNED.length; i++) {
           if (url.indexOf(LOGO_BANNED[i]) !== -1) return false;
         }
-        // Require a distinctive word from the business name (>2 chars) to appear
-        // somewhere in the URL, so the logo is plausibly this business's own.
-        var words = String(name || '').toLowerCase().split(/[^a-z0-9]+/).filter(function (w) { return w.length > 2; });
-        for (var j = 0; j < words.length; j++) {
-          if (url.indexOf(words[j]) !== -1) return true;
-        }
-        return false;
+        return true;
       }
       // Resolve a trustworthy logo URL for a business object, or "" for initials.
+      // The backend only sets high/medium confidence for a logo scraped from the
+      // business's own official website; we trust that plus the safety net above.
       function safeLogoUrl(biz) {
-        if (!biz || biz.logoConfidence !== 'high') return '';
-        return isValidBusinessLogo(biz.logoUrl, biz.name) ? biz.logoUrl : '';
+        if (!biz) return '';
+        if (biz.logoConfidence !== 'high' && biz.logoConfidence !== 'medium') return '';
+        return isValidBusinessLogo(biz.logoUrl) ? biz.logoUrl : '';
       }
 
       // ---- Logo rendering: real logo if present, else initials fallback ----

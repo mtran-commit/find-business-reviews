@@ -7,6 +7,7 @@ import {
   dataforseoTrustpilotReviews,
   type DataforseoCreds,
 } from "./dataforseo";
+import { resolveWebsiteLogo, type LogoConfidence } from "./logo";
 
 /**
  * Business reviews lookup across a split of two providers.
@@ -62,10 +63,12 @@ export interface NearbyBusiness {
   name: string;
   category: string;
   location: string;
-  /** Brand logo URL; only trust it when `logoConfidence === "high"`. */
+  /** Brand logo URL; only trust it when `logoConfidence` is high/medium. */
   logoUrl: string;
-  /** "high" only when the logo is confidently the business's own brand mark. */
-  logoConfidence: "high" | "low";
+  /** high/medium only when the logo is confidently the business's own mark. */
+  logoConfidence: LogoConfidence;
+  /** Where the logo came from ("website" | "favicon" | "" when none). */
+  logoSource: string;
   /** Colour business photo when available (optional for rows). */
   imageUrl: string;
   google: PlatformRating | null;
@@ -96,10 +99,12 @@ export interface BusinessReviews {
   name: string;
   address: string;
   logoText: string;
-  /** Brand logo URL; only trust it when `logoConfidence === "high"`. */
+  /** Brand logo URL; only trust it when `logoConfidence` is high/medium. */
   logoUrl: string;
-  /** "high" only when the logo is confidently the business's own brand mark. */
-  logoConfidence: "high" | "low";
+  /** high/medium only when the logo is confidently the business's own mark. */
+  logoConfidence: LogoConfidence;
+  /** Where the logo came from ("website" | "favicon" | "" when none). */
+  logoSource: string;
   /** Colour business photo when available (Google Maps thumbnail). */
   imageUrl: string;
   website: string;
@@ -233,14 +238,12 @@ export async function fetchBusinessReviews(
   const address = dfsAddress(place);
   const phone = typeof place["phone"] === "string" ? place["phone"] : "";
   const website = dfsWebsite(place);
-  // `main_image` is a colour business photo. We deliberately do NOT trust a
-  // DataForSEO `logo` as the brand mark: like website favicons it can be a
-  // platform/placeholder icon that cannot be confidently matched to the
-  // business, so we leave the logo empty and let the frontend show initials.
+  // `main_image` is a colour business photo (always shown). We do NOT trust a
+  // DataForSEO `logo` as the brand mark — it can be a platform/placeholder
+  // icon. The one trustworthy source is the business's OWN website, scraped
+  // below (`resolveWebsiteLogo`); anything uncertain falls back to initials.
   const imageUrl =
     typeof place["main_image"] === "string" ? place["main_image"] : "";
-  const logoUrl = "";
-  const logoConfidence: "high" | "low" = "low";
 
   const google = dfsRating(place);
 
@@ -303,17 +306,21 @@ export async function fetchBusinessReviews(
   if (!productReview) unavailable.push("productReview");
   if (!facebook) unavailable.push("facebook");
 
-  // ---- Similar businesses: same category + suburb (real lookup, demo fallback) ----
+  // ---- Similar businesses + brand logo (resolved concurrently) ----
   const category = detectBusinessCategory(name, query, placeTypes);
   const locality = extractLocality(address, query);
-  const nearby = await fetchSimilarBusinesses(category, locality, name, creds, log);
+  const [nearby, logo] = await Promise.all([
+    fetchSimilarBusinesses(category, locality, name, creds, log),
+    resolveWebsiteLogo(website, log),
+  ]);
 
   return {
     name,
     address,
     logoText: initials(name),
-    logoUrl,
-    logoConfidence,
+    logoUrl: logo?.url ?? "",
+    logoConfidence: logo?.confidence ?? "low",
+    logoSource: logo?.source ?? "",
     imageUrl,
     website,
     phone,
@@ -656,6 +663,7 @@ export function buildCategoryDemoNearby(
       location: place,
       logoUrl: "",
       logoConfidence: "low",
+      logoSource: "",
       imageUrl: "",
       google: demoRating(seed + "g", 60, 360),
       yelp: yelp ? demoRating(seed + "y", 20, 180) : null,
@@ -689,6 +697,7 @@ export async function fetchSimilarBusinesses(
     .trim();
 
   const results: NearbyBusiness[] = [];
+  const sites: string[] = [];
   try {
     const local = await dataforseoLive(
       "/serp/google/maps/live/advanced",
@@ -738,18 +747,34 @@ export async function fetchSimilarBusinesses(
         location: rowSuburb,
         logoUrl: "",
         logoConfidence: "low",
+        logoSource: "",
         imageUrl: rowThumb,
         google: dfsRating(r),
         yelp: null,
         tripadvisor: null,
         demo: false,
       });
+      sites.push(dfsWebsite(r));
     }
   } catch (err) {
     log?.warn({ err }, "Similar-business lookup failed; using demo fallback");
   }
 
   if (results.length < 3) return buildCategoryDemoNearby(category, suburb);
+
+  // Best-effort brand logos for real peers, resolved concurrently from each
+  // peer's own website (cached; misses simply leave the initials fallback).
+  const logos = await Promise.all(
+    sites.map((site) => resolveWebsiteLogo(site, log).catch(() => null)),
+  );
+  results.forEach((row, i) => {
+    const lg = logos[i];
+    if (lg) {
+      row.logoUrl = lg.url;
+      row.logoConfidence = lg.confidence;
+      row.logoSource = lg.source;
+    }
+  });
   return results;
 }
 

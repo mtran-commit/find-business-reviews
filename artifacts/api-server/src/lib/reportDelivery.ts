@@ -194,16 +194,17 @@ export async function runReportGeneration(
       phone: data.phone ?? "",
       // Zero-tolerance logo rule: only a confidently matched brand mark may
       // appear in the report. Priority: confidently matched social profile
-      // image (Facebook > Instagram), then a high-confidence Google logo;
-      // otherwise "" and renderers show a neat initials tile.
+      // image (Facebook > Instagram), then a high/medium-confidence logo
+      // scraped from the business's own website; otherwise "" and renderers
+      // show a neat initials tile.
       businessLogo:
         branding.businessLogo ||
-        (data.logoConfidence === "high" && data.logoUrl ? data.logoUrl : ""),
+        (data.logoConfidence !== "low" && data.logoUrl ? data.logoUrl : ""),
       businessLogoSource:
         branding.businessLogo && branding.businessLogoSource
           ? branding.businessLogoSource
-          : data.logoConfidence === "high" && data.logoUrl
-            ? "google_maps"
+          : data.logoConfidence !== "low" && data.logoUrl
+            ? data.logoSource || "website"
             : "",
       businessImage: data.imageUrl || branding.businessImage || "",
       socialPresence: {
