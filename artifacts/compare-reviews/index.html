@@ -110,15 +110,6 @@
       .hero-badge::before {
         content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--purple-2);
       }
-      .hero-headline {
-        font-size: clamp(42px, 7vw, 74px); font-weight: 950;
-        line-height: 1.05; letter-spacing: -1.6px; color: var(--text);
-        max-width: 920px; margin: 0 auto;
-      }
-      .hero-headline .hl {
-        background: linear-gradient(92deg, var(--purple), var(--purple-2));
-        -webkit-background-clip: text; background-clip: text; color: transparent;
-      }
       .hero-sub {
         font-size: clamp(16px, 1.7vw, 19px); color: var(--navy);
         max-width: 660px; margin: 6px auto 0; line-height: 1.55;
@@ -144,7 +135,7 @@
         .platform-logo { width: 24px; height: 24px; }
         .platform-name { font-size: 16px; }
       }
-      @media (max-width: 640px) { .hero { padding: 30px 0 2px; } .hero-headline { letter-spacing: -1px; } }
+      @media (max-width: 640px) { .hero { padding: 30px 0 2px; } }
 
       /* ===== Feature cards ===== */
       .feature-grid {
@@ -754,7 +745,6 @@
     <main class="page-shell">
       <!-- Hero (landing only) -->
       <div id="heroWrap" class="hero">
-        <h1 class="hero-headline">Compare business ratings with one <span class="hl">search</span>.</h1>
         <div class="platform-strip">
           <div class="platform-pill">
             <img src="./icons/google.svg" alt="Google logo" class="platform-logo" />
