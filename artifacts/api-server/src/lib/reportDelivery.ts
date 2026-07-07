@@ -134,6 +134,7 @@ export async function runReportGeneration(
       google: [],
       yelp: [],
       tripadvisor: [],
+      trustpilot: [],
       googleTopics: [],
     };
     if (creds) {
@@ -144,7 +145,10 @@ export async function runReportGeneration(
       }
     }
     const snippetCount =
-      snippets.google.length + snippets.yelp.length + snippets.tripadvisor.length;
+      snippets.google.length +
+      snippets.yelp.length +
+      snippets.tripadvisor.length +
+      snippets.trustpilot.length;
 
     const metrics = computeMetrics(data, snippetCount);
     const category = data.category?.label ?? "";

@@ -98,6 +98,7 @@ export interface ReviewSnippets {
   google: string[];
   yelp: string[];
   tripadvisor: string[];
+  trustpilot: string[];
   /** Google review topic chips (e.g. "auction — 34 mentions"); [] when none. */
   googleTopics: ReviewTag[];
 }
@@ -114,8 +115,18 @@ const AiSectionsSchema = z.object({
       google: z.string().trim().default(""),
       yelp: z.string().trim().default(""),
       tripadvisor: z.string().trim().default(""),
+      trustpilot: z.string().trim().default(""),
+      productReview: z.string().trim().default(""),
+      facebook: z.string().trim().default(""),
     })
-    .default({ google: "", yelp: "", tripadvisor: "" }),
+    .default({
+      google: "",
+      yelp: "",
+      tripadvisor: "",
+      trustpilot: "",
+      productReview: "",
+      facebook: "",
+    }),
   platformChecklist: z
     .array(
       z.object({
@@ -639,6 +650,9 @@ export function computeMetrics(
     { key: "google", label: "Google", rating: data.google },
     { key: "yelp", label: "Yelp", rating: data.yelp },
     { key: "tripadvisor", label: "TripAdvisor", rating: data.tripadvisor },
+    { key: "trustpilot", label: "Trustpilot", rating: data.trustpilot },
+    { key: "productReview", label: "Product Review", rating: data.productReview },
+    { key: "facebook", label: "Facebook", rating: data.facebook },
   ];
 
   const available = entries.filter(
@@ -830,8 +844,11 @@ const SYSTEM_PROMPT =
   "practical business insight: what customers love, what may concern them, what " +
   "needs improvement, and what actions the business should take. Do not invent " +
   "complaints. If data is limited, clearly say so. " +
-  "Analyse the available Google, Yelp and TripAdvisor ratings, review counts, " +
+  "Analyse the available platform ratings (which may include Google, Yelp, " +
+  "TripAdvisor, Trustpilot, Product Review and Facebook), review counts, " +
   "review snippets, customer sentiment themes and competitor signals provided. " +
+  "Only discuss platforms whose data is actually supplied; never invent a " +
+  "listing for a platform that has no data. " +
   "Provide practical, specific, business-friendly recommendations for an " +
   "Australian business (Australian spelling). Do NOT invent facts, specific " +
   "review quotes, customer names, platforms, competitor names or numbers that " +
@@ -847,8 +864,9 @@ const SYSTEM_PROMPT =
   "risks appear, what the business needs to improve, what the owner should do " +
   "this week, and what to monitor over the next 30 days); " +
   "customerSentimentLabel (string: e.g. 'Mostly Positive', 'Positive', 'Mixed'); " +
-  "platformMeanings (object {google, yelp, tripadvisor}: each a one-sentence " +
-  "business meaning, '' if no listing); " +
+  "platformMeanings (object {google, yelp, tripadvisor, trustpilot, " +
+  "productReview, facebook}: each a one-sentence business meaning, '' if no " +
+  "listing or no data for that platform); " +
   "platformChecklist (array of 4-7 objects {platform, relevant, currentStatus, " +
   "recommendedAction, priority} — a platform monitoring checklist chosen for " +
   "the detected business category. 'platform' is the platform name (e.g. " +
@@ -1056,7 +1074,8 @@ export async function generateAiSections(
   const snippetText =
     snippetBlock("Google", snippets.google) +
     snippetBlock("Yelp", snippets.yelp) +
-    snippetBlock("TripAdvisor", snippets.tripadvisor);
+    snippetBlock("TripAdvisor", snippets.tripadvisor) +
+    snippetBlock("Trustpilot", snippets.trustpilot);
 
   const tagLines = (snippets.googleTopics ?? [])
     .map((t) => `- ${t.tag} — ${t.count > 0 ? `${t.count} mentions` : "mention count not available"}`)

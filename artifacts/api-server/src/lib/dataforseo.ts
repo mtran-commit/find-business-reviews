@@ -271,3 +271,49 @@ export async function dataforseoTripadvisorSearch(
     overallTimeoutMs,
   );
 }
+
+/**
+ * ASYNCHRONOUS Trustpilot search flow (task_post → poll task_get). Like
+ * TripAdvisor, Trustpilot is async-only here. Each result item carries the
+ * aggregate `rating` object (value + votes_count) and a `domain` we can reuse
+ * to fetch that business's Trustpilot review snippets. Pass `priority: 2` for
+ * the fast queue (~seconds).
+ */
+export async function dataforseoTrustpilotSearch(
+  task: Record<string, unknown>,
+  creds: DataforseoCreds,
+  log?: Logger,
+  overallTimeoutMs = 30000,
+): Promise<Record<string, unknown>[]> {
+  return dataforseoTask(
+    "/business_data/trustpilot/search/task_post",
+    "/business_data/trustpilot/search/task_get",
+    task,
+    creds,
+    "trustpilot",
+    log,
+    overallTimeoutMs,
+  );
+}
+
+/**
+ * ASYNCHRONOUS Trustpilot reviews flow (task_post → poll task_get), keyed by a
+ * Trustpilot business `domain` (from the search result). Used only for the paid
+ * report's review snippets; degrades gracefully to `[]`.
+ */
+export async function dataforseoTrustpilotReviews(
+  task: Record<string, unknown>,
+  creds: DataforseoCreds,
+  log?: Logger,
+  overallTimeoutMs = 30000,
+): Promise<Record<string, unknown>[]> {
+  return dataforseoTask(
+    "/business_data/trustpilot/reviews/task_post",
+    "/business_data/trustpilot/reviews/task_get",
+    task,
+    creds,
+    "trustpilot-reviews",
+    log,
+    overallTimeoutMs,
+  );
+}

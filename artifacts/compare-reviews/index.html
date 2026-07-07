@@ -34,6 +34,9 @@
         --google: #4285F4;
         --tripadvisor: #00AA6C;
         --yelp: #D32323;
+        --trustpilot: #00B67A;
+        --productreview: #00A5B5;
+        --facebook: #1877F2;
         --shadow-pill: 0 12px 30px rgba(0,0,0,0.08);
         --shadow-soft: 0 1px 2px rgba(5,5,5,.04), 0 8px 24px rgba(5,5,5,.05);
       }
@@ -335,7 +338,10 @@
       .platform-icon-sm {
         width: 22px; height: 22px; border-radius: 5px; flex-shrink: 0;
         display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px;
+        overflow: hidden;
       }
+      .platform-icon-sm.logo { background: #fff !important; border: 1px solid var(--border); }
+      .platform-icon-sm img { width: 100%; height: 100%; object-fit: contain; padding: 2px; display: block; }
       .platform-row-name { font-weight: 600; font-size: 13.5px; display: flex; align-items: center; gap: 6px; }
       .platform-row-meta { display: flex; align-items: center; gap: 7px; justify-self: end; }
       .platform-row-meta .star1 { color: var(--text); font-size: 13px; }
@@ -762,6 +768,18 @@
             <img src="./icons/tripadvisor.svg" alt="TripAdvisor logo" class="platform-logo" />
             <span class="platform-name">TripAdvisor</span>
           </div>
+          <div class="platform-pill">
+            <img src="./icons/trustpilot.svg" alt="Trustpilot logo" class="platform-logo" />
+            <span class="platform-name">Trustpilot</span>
+          </div>
+          <div class="platform-pill">
+            <img src="./icons/productreview.svg" alt="Product Review logo" class="platform-logo" />
+            <span class="platform-name">Product Review</span>
+          </div>
+          <div class="platform-pill">
+            <img src="./icons/facebook.svg" alt="Facebook logo" class="platform-logo" />
+            <span class="platform-name">Facebook</span>
+          </div>
         </div>
       </div>
 
@@ -887,10 +905,25 @@
 
       // ---- Platform metadata (brand colours stay on icons) ----
       const PLATFORMS = [
-        { key: 'google',      label: 'Google',      color: 'var(--google)',      letter: 'G' },
-        { key: 'yelp',        label: 'Yelp',        color: 'var(--yelp)',        letter: 'Y' },
-        { key: 'tripadvisor', label: 'TripAdvisor', color: 'var(--tripadvisor)', letter: 'T' }
+        { key: 'google',        label: 'Google',        color: 'var(--google)',        letter: 'G', icon: './icons/google.svg' },
+        { key: 'yelp',          label: 'Yelp',          color: 'var(--yelp)',          letter: 'Y', icon: './icons/yelp.svg' },
+        { key: 'tripadvisor',   label: 'TripAdvisor',   color: 'var(--tripadvisor)',   letter: 'T', icon: './icons/tripadvisor.svg' },
+        { key: 'trustpilot',    label: 'Trustpilot',    color: 'var(--trustpilot)',    letter: 'T', icon: './icons/trustpilot.svg' },
+        { key: 'productReview', label: 'Product Review', color: 'var(--productreview)', letter: 'P', icon: './icons/productreview.svg' },
+        { key: 'facebook',      label: 'Facebook',      color: 'var(--facebook)',      letter: 'F', icon: './icons/facebook.svg' }
       ];
+
+      // Real brand logo on a white tile; falls back to the colour+letter badge
+      // if the SVG fails to load, so a platform icon is never blank.
+      function platformIcon(p) {
+        const fallback = "this.onerror=null;var d=this.parentNode;" +
+          "d.className='platform-icon-sm';d.style.background='" + p.color + "';" +
+          "d.textContent='" + p.letter + "';";
+        return '<div class="platform-icon-sm logo">' +
+          '<img src="' + p.icon + '" alt="' + escapeHtml(p.label) + ' logo" ' +
+          'onerror="' + fallback + '" />' +
+        '</div>';
+      }
 
       function isDemo(data, key) {
         return Array.isArray(data.demo) && data.demo.indexOf(key) !== -1;
@@ -1125,19 +1158,19 @@
             const note = (data.notes && data.notes[p.key]) ? data.notes[p.key] : 'Not available yet';
             return '' +
               '<div class="platform-row platform-row--na">' +
-                '<div class="platform-icon-sm" style="background:' + p.color + '">' + p.letter + '</div>' +
+                platformIcon(p) +
                 '<div class="platform-row-name">' + p.label + '</div>' +
                 '<div class="platform-row-na-text">&mdash; ' + escapeHtml(note) + '</div>' +
               '</div>';
           }
           return '' +
             '<div class="platform-row">' +
-              '<div class="platform-icon-sm" style="background:' + p.color + '">' + p.letter + '</div>' +
+              platformIcon(p) +
               '<div class="platform-row-name">' + p.label + (demo ? ' <span class="demo-badge">Demo</span>' : '') + '</div>' +
               '<div class="platform-row-meta">' +
                 '<span class="star1">&#9733;</span>' +
                 '<b>' + r.rating.toFixed(1) + '</b>' +
-                '<span class="count">(' + (r.reviews || 0).toLocaleString() + ')</span>' +
+                (r.reviews > 0 ? '<span class="count">(' + r.reviews.toLocaleString() + ')</span>' : '') +
               '</div>' +
             '</div>';
         }).join('');

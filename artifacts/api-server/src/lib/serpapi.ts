@@ -3,6 +3,8 @@ import {
   dataforseoLive,
   dataforseoReviews,
   dataforseoTripadvisorSearch,
+  dataforseoTrustpilotSearch,
+  dataforseoTrustpilotReviews,
   type DataforseoCreds,
 } from "./dataforseo";
 
@@ -106,6 +108,12 @@ export interface BusinessReviews {
   google: PlatformRating | null;
   tripadvisor: PlatformRating | null;
   yelp: PlatformRating | null;
+  /** Trustpilot aggregate (DataForSEO async search); null when no match. */
+  trustpilot: PlatformRating | null;
+  /** ProductReview.com.au aggregate (Google rich snippet); null when no match. */
+  productReview: PlatformRating | null;
+  /** Facebook page rating (Google rich snippet); null when no match. */
+  facebook: PlatformRating | null;
   /** Public offer (demo data for now; flagged via `offer.demo`). */
   offer: Offer;
   /** Detected industry/category of this business. */
@@ -258,52 +266,42 @@ export async function fetchBusinessReviews(
   }
 
   const notes: Record<string, string> = {};
-
-  // ---- Yelp: resolve the listing by name, then derive rating from reviews ----
-  // Kept on SerpApi (DataForSEO has no Yelp source). Skipped cleanly when no
-  // SerpApi key is configured. Step 1 (yelp search) only resolves a place_id;
-  // step 2 (yelp_reviews) runs only on a confident name match, so we never burn
-  // quota on a non-matching business.
-  let yelp: PlatformRating | null = null;
   const loc = deriveLocation(address);
   const nameTokens = distinctiveTokens(name);
-  if (!serpApiKey) {
-    notes["yelp"] = "Lookup unavailable";
-  } else if (loc && nameTokens.length > 0) {
-    try {
-      const placeId = await findYelpPlaceId(name, loc, nameTokens, serpApiKey);
-      if (!placeId) {
-        notes["yelp"] = "No match found";
-      } else {
-        yelp = await fetchYelpRating(placeId, serpApiKey);
-        if (!yelp) notes["yelp"] = "No match found";
-      }
-    } catch (err) {
-      log?.warn({ err }, "Yelp lookup failed; continuing without Yelp data");
-      notes["yelp"] = "Lookup unavailable";
-    }
-  } else {
-    notes["yelp"] = "No match found";
-  }
+  const suburb = extractLocality(address, query).suburb;
 
-  // ---- TripAdvisor: DataForSEO search returns the aggregate rating directly ----
-  let tripadvisor: PlatformRating | null = null;
-  if (nameTokens.length > 0) {
-    try {
-      tripadvisor = await findTripadvisorRating(name, address, nameTokens, creds, log);
-      if (!tripadvisor) notes["tripadvisor"] = "No match found";
-    } catch (err) {
-      log?.warn({ err }, "TripAdvisor lookup failed; continuing without it");
-      notes["tripadvisor"] = "Lookup unavailable";
-    }
-  } else {
-    notes["tripadvisor"] = "No match found";
-  }
+  // All non-Google platform lookups run concurrently — each is fully isolated so
+  // one platform failing never blocks the others, and each reports its own
+  // status note. Yelp stays on SerpApi (DataForSEO has no Yelp source);
+  // TripAdvisor + Trustpilot use DataForSEO async search; Product Review and
+  // Facebook have no review API, so we best-effort read the Google rich-snippet
+  // rating from an organic SERP scoped to their domain.
+  const [yelpR, tripR, trustR, prR, fbR] = await Promise.all([
+    resolveYelp(name, loc, nameTokens, serpApiKey, log),
+    resolveTripadvisor(name, address, nameTokens, creds, log),
+    resolveTrustpilot(name, address, nameTokens, creds, log),
+    resolveProductReview(name, suburb, nameTokens, creds, log),
+    resolveFacebook(name, suburb, nameTokens, creds, log),
+  ]);
+
+  const yelp = yelpR.rating;
+  const tripadvisor = tripR.rating;
+  const trustpilot = trustR.rating;
+  const productReview = prR.rating;
+  const facebook = fbR.rating;
+  if (yelpR.note) notes["yelp"] = yelpR.note;
+  if (tripR.note) notes["tripadvisor"] = tripR.note;
+  if (trustR.note) notes["trustpilot"] = trustR.note;
+  if (prR.note) notes["productReview"] = prR.note;
+  if (fbR.note) notes["facebook"] = fbR.note;
 
   const unavailable: string[] = [];
   if (!google) unavailable.push("google");
   if (!yelp) unavailable.push("yelp");
   if (!tripadvisor) unavailable.push("tripadvisor");
+  if (!trustpilot) unavailable.push("trustpilot");
+  if (!productReview) unavailable.push("productReview");
+  if (!facebook) unavailable.push("facebook");
 
   // ---- Similar businesses: same category + suburb (real lookup, demo fallback) ----
   const category = detectBusinessCategory(name, query, placeTypes);
@@ -323,6 +321,9 @@ export async function fetchBusinessReviews(
     google,
     tripadvisor,
     yelp,
+    trustpilot,
+    productReview,
+    facebook,
     offer: buildDemoOffer(name, website),
     category,
     locality,
@@ -856,6 +857,282 @@ async function findTripadvisorRating(
   return best ? best.rating : null;
 }
 
+/** Result of a single platform lookup: a rating (or null) + optional status note. */
+interface PlatformLookup {
+  rating: PlatformRating | null;
+  note?: string;
+}
+
+const NO_MATCH = "No match found";
+const LOOKUP_UNAVAILABLE = "Lookup unavailable";
+
+/** Yelp (SerpApi): resolve the listing by confident name match, then rating. */
+async function resolveYelp(
+  name: string,
+  loc: string,
+  nameTokens: string[],
+  serpApiKey: string | null,
+  log?: Logger,
+): Promise<PlatformLookup> {
+  if (!serpApiKey) return { rating: null, note: LOOKUP_UNAVAILABLE };
+  if (!loc || nameTokens.length === 0) return { rating: null, note: NO_MATCH };
+  try {
+    const placeId = await findYelpPlaceId(name, loc, nameTokens, serpApiKey);
+    if (!placeId) return { rating: null, note: NO_MATCH };
+    const yelp = await fetchYelpRating(placeId, serpApiKey);
+    return yelp ? { rating: yelp } : { rating: null, note: NO_MATCH };
+  } catch (err) {
+    log?.warn({ err }, "Yelp lookup failed; continuing without Yelp data");
+    return { rating: null, note: LOOKUP_UNAVAILABLE };
+  }
+}
+
+/** TripAdvisor (DataForSEO async search returns the aggregate rating directly). */
+async function resolveTripadvisor(
+  name: string,
+  address: string,
+  nameTokens: string[],
+  creds: DataforseoCreds,
+  log?: Logger,
+): Promise<PlatformLookup> {
+  if (nameTokens.length === 0) return { rating: null, note: NO_MATCH };
+  try {
+    const r = await findTripadvisorRating(name, address, nameTokens, creds, log);
+    return r ? { rating: r } : { rating: null, note: NO_MATCH };
+  } catch (err) {
+    log?.warn({ err }, "TripAdvisor lookup failed; continuing without it");
+    return { rating: null, note: LOOKUP_UNAVAILABLE };
+  }
+}
+
+/** Trustpilot (DataForSEO async search returns the aggregate rating directly). */
+async function resolveTrustpilot(
+  name: string,
+  address: string,
+  nameTokens: string[],
+  creds: DataforseoCreds,
+  log?: Logger,
+): Promise<PlatformLookup> {
+  if (nameTokens.length === 0) return { rating: null, note: NO_MATCH };
+  try {
+    const r = await findTrustpilotRating(name, address, nameTokens, creds, log);
+    return r ? { rating: r } : { rating: null, note: NO_MATCH };
+  } catch (err) {
+    log?.warn({ err }, "Trustpilot lookup failed; continuing without it");
+    return { rating: null, note: LOOKUP_UNAVAILABLE };
+  }
+}
+
+/** Product Review (best-effort: Google rich-snippet rating for productreview.com.au). */
+async function resolveProductReview(
+  name: string,
+  suburb: string,
+  nameTokens: string[],
+  creds: DataforseoCreds,
+  log?: Logger,
+): Promise<PlatformLookup> {
+  if (nameTokens.length === 0) return { rating: null, note: NO_MATCH };
+  try {
+    const r = await findProductReviewRating(name, suburb, nameTokens, creds, log);
+    return r ? { rating: r } : { rating: null, note: NO_MATCH };
+  } catch (err) {
+    log?.warn({ err }, "Product Review lookup failed; continuing without it");
+    return { rating: null, note: LOOKUP_UNAVAILABLE };
+  }
+}
+
+/** Facebook (best-effort: Google rich-snippet page rating for facebook.com). */
+async function resolveFacebook(
+  name: string,
+  suburb: string,
+  nameTokens: string[],
+  creds: DataforseoCreds,
+  log?: Logger,
+): Promise<PlatformLookup> {
+  if (nameTokens.length === 0) return { rating: null, note: NO_MATCH };
+  try {
+    const r = await findFacebookRating(name, suburb, nameTokens, creds, log);
+    return r ? { rating: r } : { rating: null, note: NO_MATCH };
+  } catch (err) {
+    log?.warn({ err }, "Facebook lookup failed; continuing without it");
+    return { rating: null, note: LOOKUP_UNAVAILABLE };
+  }
+}
+
+/**
+ * Resolve a Trustpilot rating via the DataForSEO Trustpilot search endpoint,
+ * mirroring TripAdvisor: match the item whose title shares the most distinctive
+ * tokens with the name, ties broken by review count. Returns null when no
+ * confident match has a rating.
+ */
+async function findTrustpilotRating(
+  name: string,
+  address: string,
+  nameTokens: string[],
+  creds: DataforseoCreds,
+  log?: Logger,
+): Promise<PlatformRating | null> {
+  const loc = deriveLocation(address);
+  const q = loc ? `${name} ${loc}` : name;
+  const items = await dataforseoTrustpilotSearch(
+    {
+      keyword: q,
+      location_name: DFS_LOCATION,
+      language_code: DFS_LANGUAGE,
+      priority: 2,
+    },
+    creds,
+    log,
+  );
+
+  const wanted = new Set(nameTokens);
+  const needed = Math.max(1, Math.ceil(nameTokens.length / 2));
+  let best: { rating: PlatformRating; score: number } | null = null;
+  for (const r of items) {
+    const title = typeof r["title"] === "string" ? r["title"] : "";
+    const rating = dfsRating(r);
+    if (!title || !rating) continue;
+
+    let score = 0;
+    for (const tok of distinctiveTokens(title)) {
+      if (wanted.has(tok)) score++;
+    }
+    if (score < needed) continue;
+
+    if (
+      !best ||
+      score > best.score ||
+      (score === best.score && rating.reviews > best.rating.reviews)
+    ) {
+      best = { rating, score };
+    }
+  }
+
+  return best ? best.rating : null;
+}
+
+/** Hostname of a URL string, lowercased; "" when not a valid URL. */
+function hostOf(url: unknown): string {
+  if (typeof url !== "string") return "";
+  try {
+    return new URL(url).hostname.toLowerCase();
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * Map a DataForSEO organic-SERP item's rich-snippet `rating` to a PlatformRating,
+ * normalising to a 5-point scale when `rating_max` is present and not already 5
+ * (e.g. some snippets report out of 10). Returns null when there is no numeric
+ * rating value.
+ */
+function organicRating(item: Record<string, unknown>): PlatformRating | null {
+  const r = item["rating"];
+  if (!r || typeof r !== "object") return null;
+  const ro = r as Record<string, unknown>;
+  const value = ro["value"];
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  const max = ro["rating_max"];
+  const scaled =
+    typeof max === "number" && max > 0 && max !== 5 ? (value / max) * 5 : value;
+  const rating = Math.round(scaled * 10) / 10;
+  const votes = ro["votes_count"];
+  return {
+    rating,
+    reviews: typeof votes === "number" && votes > 0 ? Math.round(votes) : 0,
+  };
+}
+
+/**
+ * From a Google organic SERP, pick the rich-snippet rating on the first result
+ * whose URL is on `hostNeedle` (e.g. "facebook.com") AND whose title shares
+ * enough distinctive tokens with the business name. Ties broken by review count.
+ * Returns null when no confident, rated match exists.
+ */
+function matchOrganicRating(
+  items: Record<string, unknown>[],
+  hostNeedle: string,
+  nameTokens: string[],
+): PlatformRating | null {
+  const wanted = new Set(nameTokens);
+  const needed = Math.max(1, Math.ceil(nameTokens.length / 2));
+  let best: { rating: PlatformRating; score: number } | null = null;
+  for (const item of items) {
+    if (!item || typeof item !== "object") continue;
+    const host = hostOf(item["url"]);
+    // Exact domain or a subdomain of it — never a substring (so "notfacebook.com"
+    // can't masquerade as "facebook.com").
+    if (host !== hostNeedle && !host.endsWith("." + hostNeedle)) continue;
+    const rating = organicRating(item);
+    if (!rating) continue;
+    const title = typeof item["title"] === "string" ? item["title"] : "";
+
+    let score = 0;
+    for (const tok of distinctiveTokens(title)) {
+      if (wanted.has(tok)) score++;
+    }
+    if (score < needed) continue;
+
+    if (
+      !best ||
+      score > best.score ||
+      (score === best.score && rating.reviews > best.rating.reviews)
+    ) {
+      best = { rating, score };
+    }
+  }
+  return best ? best.rating : null;
+}
+
+/**
+ * Best-effort Product Review (productreview.com.au) rating: Product Review has no
+ * public API, so we read the Google rich-snippet star rating from an organic SERP
+ * scoped to their domain. Returns null when no confident match carries a rating.
+ */
+async function findProductReviewRating(
+  name: string,
+  suburb: string,
+  nameTokens: string[],
+  creds: DataforseoCreds,
+  log?: Logger,
+): Promise<PlatformRating | null> {
+  const keyword = `${name} ${suburb} productreview.com.au`
+    .replace(/\s+/g, " ")
+    .trim();
+  const items = await dataforseoLive(
+    "/serp/google/organic/live/advanced",
+    { keyword, location_name: DFS_LOCATION, language_code: DFS_LANGUAGE },
+    creds,
+    log,
+  );
+  return matchOrganicRating(items, "productreview.com.au", nameTokens);
+}
+
+/**
+ * Best-effort Facebook page rating: Facebook has no public review API, so we read
+ * the Google rich-snippet rating from an organic SERP scoped to facebook.com.
+ * Returns null when no confident match carries a rating.
+ */
+async function findFacebookRating(
+  name: string,
+  suburb: string,
+  nameTokens: string[],
+  creds: DataforseoCreds,
+  log?: Logger,
+): Promise<PlatformRating | null> {
+  const keyword = `${name} ${suburb} Facebook reviews`
+    .replace(/\s+/g, " ")
+    .trim();
+  const items = await dataforseoLive(
+    "/serp/google/organic/live/advanced",
+    { keyword, location_name: DFS_LOCATION, language_code: DFS_LANGUAGE },
+    creds,
+    log,
+  );
+  return matchOrganicRating(items, "facebook.com", nameTokens);
+}
+
 /**
  * Derive a Yelp rating for a place_id from the first page of reviews:
  * average of the returned review stars, with the total review count taken
@@ -909,6 +1186,7 @@ export interface ReviewSnippets {
   google: string[];
   yelp: string[];
   tripadvisor: string[];
+  trustpilot: string[];
   /** Google review topic chips (e.g. "auction — 34 mentions"); [] when none. */
   googleTopics: ReviewTag[];
 }
@@ -1062,6 +1340,7 @@ export async function fetchReviewSnippets(
     google: [],
     yelp: [],
     tripadvisor: [],
+    trustpilot: [],
     googleTopics: [],
   };
   const name = data.name;
@@ -1108,6 +1387,57 @@ export async function fetchReviewSnippets(
       }
     } catch (err) {
       log?.warn({ err }, "Yelp review snippet fetch failed");
+    }
+  }
+
+  // ---- Trustpilot reviews (DataForSEO async search -> domain -> reviews) ----
+  if (nameTokens.length > 0) {
+    try {
+      const loc = deriveLocation(address);
+      const q = loc ? `${name} ${loc}` : name;
+      const found = await dataforseoTrustpilotSearch(
+        {
+          keyword: q,
+          location_name: DFS_LOCATION,
+          language_code: DFS_LANGUAGE,
+          priority: 2,
+        },
+        creds,
+        log,
+      );
+      const wanted = new Set(nameTokens);
+      const needed = Math.max(1, Math.ceil(nameTokens.length / 2));
+      let domain = "";
+      let bestScore = -1;
+      for (const it of found) {
+        const title = typeof it["title"] === "string" ? it["title"] : "";
+        const d = typeof it["domain"] === "string" ? it["domain"] : "";
+        if (!d) continue;
+        let score = 0;
+        for (const tok of distinctiveTokens(title)) {
+          if (wanted.has(tok)) score++;
+        }
+        if (score >= needed && score > bestScore) {
+          bestScore = score;
+          domain = d;
+        }
+      }
+      if (domain) {
+        const items = await dataforseoTrustpilotReviews(
+          {
+            domain,
+            location_name: DFS_LOCATION,
+            language_code: DFS_LANGUAGE,
+            depth: 20,
+            priority: 2,
+          },
+          creds,
+          log,
+        );
+        result.trustpilot = collectDfsSnippets(items, 12);
+      }
+    } catch (err) {
+      log?.warn({ err }, "Trustpilot review snippet fetch failed");
     }
   }
 
