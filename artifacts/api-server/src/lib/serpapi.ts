@@ -2,6 +2,7 @@ import type { Logger } from "pino";
 import {
   dataforseoLive,
   dataforseoReviews,
+  dataforseoTripadvisorSearch,
   type DataforseoCreds,
 } from "./dataforseo";
 
@@ -11,7 +12,7 @@ import {
  * DataForSEO (primary) supplies:
  *   - Google business profile + rating (my_business_info/live)
  *   - nearby/similar competitors (serp/google/maps/live/advanced)
- *   - TripAdvisor aggregate rating (business_data/tripadvisor/search/live)
+ *   - TripAdvisor aggregate rating (business_data/tripadvisor/search task_post + task_get, priority:2)
  *   - Google review snippets (business_data/google/reviews task_post + task_get)
  *
  * SerpApi (kept) supplies:
@@ -800,9 +801,15 @@ async function findTripadvisorRating(
 ): Promise<PlatformRating | null> {
   const loc = deriveLocation(address);
   const q = loc ? `${name} ${loc}` : name;
-  const places = await dataforseoLive(
-    "/business_data/tripadvisor/search/live",
-    { keyword: q, location_name: DFS_LOCATION, language_code: DFS_LANGUAGE },
+  // TripAdvisor has NO live endpoint — only the async task flow. priority:2 uses
+  // DataForSEO's fast queue so the aggregate rating returns in seconds.
+  const places = await dataforseoTripadvisorSearch(
+    {
+      keyword: q,
+      location_name: DFS_LOCATION,
+      language_code: DFS_LANGUAGE,
+      priority: 2,
+    },
     creds,
     log,
   );

@@ -1,4 +1,5 @@
-- [SerpApi engine quirks](serpapi-engines.md) — which SerpApi engines expose aggregate ratings directly vs require derivation; TripAdvisor=direct, Yelp=derive.
+- [SerpApi engine quirks](serpapi-engines.md) — SerpApi-only (pre-DataForSEO) historical: which engines expose aggregate ratings directly vs require derivation; Yelp=derive. TripAdvisor is now DataForSEO async, not SerpApi.
+- [DataForSEO async task quirks](dataforseo-task-quirks.md) — task_post returns 20100 not 20000; TripAdvisor is async-only (no /live), priority:2 for fast queue; provider split.
 - [Replit OpenAI integration lazy import](openai-integration-lazy-import.md) — the AI-integrations OpenAI client throws at module load if env vars missing; import it lazily inside handlers.
 - [Featured card grid widths](featured-card-grid-widths.md) — don't use the spec's literal 330/1fr/330/230 cols; they starve the details column and break long business names.
 - [No Chromium on Replit](no-chromium-pdf-rendering.md) — no headless Chrome available; render PDFs with pdf-lib + a parallel inline-CSS HTML view from one normalized JSON, not Puppeteer.

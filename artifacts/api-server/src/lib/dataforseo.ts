@@ -138,34 +138,51 @@ const sleep = (ms: number): Promise<void> =>
 const IN_PROGRESS_CODES = new Set([40100, 40601, 40602]);
 
 /**
- * Run the ASYNCHRONOUS Google Reviews flow: submit a task, then poll
- * `task_get/{id}` with backoff until the result is ready or the overall
+ * Run an ASYNCHRONOUS DataForSEO flow: submit a task to `{postPath}`, then poll
+ * `{getPathPrefix}/{id}` with backoff until the result is ready or the overall
  * deadline passes. Degrades gracefully to `[]` on timeout or any error — a
- * missing/late review payload must never abort report generation.
+ * missing/late payload must never abort the caller.
+ *
+ * `label` only tags log lines. Pass `priority: 2` in the task to use DataForSEO's
+ * fast queue (seconds instead of minutes) for latency-sensitive lookups.
  */
-export async function dataforseoReviews(
+export async function dataforseoTask(
+  postPath: string,
+  getPathPrefix: string,
   task: Record<string, unknown>,
   creds: DataforseoCreds,
+  label: string,
   log?: Logger,
   overallTimeoutMs = 75000,
 ): Promise<Record<string, unknown>[]> {
   let id = "";
   try {
-    const post = await dfsFetch(
-      "/business_data/google/reviews/task_post",
-      [task],
-      creds,
-      20000,
-    );
-    assertTaskOk(post);
+    const post = await dfsFetch(postPath, [task], creds, 20000);
+    // A successful task_post returns top-level 20000 and a per-task 20100
+    // ("Task Created."). Do NOT use assertTaskOk here — it requires 20000 on the
+    // task and would reject the normal "Task Created" response.
+    const topCode = post["status_code"];
+    if (typeof topCode === "number" && topCode !== 20000) {
+      throw new Error(
+        `DataForSEO error ${topCode}: ${String(post["status_message"] ?? "")}`,
+      );
+    }
     const tasks = post["tasks"];
     const t0 = Array.isArray(tasks) ? tasks[0] : null;
     if (t0 && typeof t0 === "object") {
+      const tCode = (t0 as Record<string, unknown>)["status_code"];
+      if (typeof tCode === "number" && tCode !== 20000 && tCode !== 20100) {
+        throw new Error(
+          `DataForSEO task error ${tCode}: ${String(
+            (t0 as Record<string, unknown>)["status_message"] ?? "",
+          )}`,
+        );
+      }
       const tid = (t0 as Record<string, unknown>)["id"];
       if (typeof tid === "string") id = tid;
     }
   } catch (err) {
-    log?.warn({ err }, "DataForSEO reviews task_post failed");
+    log?.warn({ err }, `DataForSEO ${label} task_post failed`);
     return [];
   }
   if (!id) return [];
@@ -175,12 +192,7 @@ export async function dataforseoReviews(
   while (Date.now() < deadline) {
     await sleep(delay);
     try {
-      const get = await dfsFetch(
-        `/business_data/google/reviews/task_get/${id}`,
-        undefined,
-        creds,
-        20000,
-      );
+      const get = await dfsFetch(`${getPathPrefix}/${id}`, undefined, creds, 20000);
       const tasks = get["tasks"];
       const t0 =
         Array.isArray(tasks) && tasks[0] && typeof tasks[0] === "object"
@@ -195,16 +207,59 @@ export async function dataforseoReviews(
         // Terminal error (bad request, not found, etc.) — stop early.
         log?.warn(
           { code, message: t0?.["status_message"] },
-          "DataForSEO reviews task_get returned a terminal error",
+          `DataForSEO ${label} task_get returned a terminal error`,
         );
         return [];
       }
     } catch (err) {
-      log?.warn({ err }, "DataForSEO reviews task_get poll failed");
+      log?.warn({ err }, `DataForSEO ${label} task_get poll failed`);
       // Transient — keep trying until the deadline.
     }
     delay = Math.min(delay + 1000, 6000);
   }
-  log?.warn("DataForSEO reviews polling timed out; continuing without snippets");
+  log?.warn(`DataForSEO ${label} polling timed out; continuing without it`);
   return [];
+}
+
+/**
+ * ASYNCHRONOUS Google Reviews flow (task_post → poll task_get). A missing/late
+ * review payload must never abort report generation, hence the graceful `[]`.
+ */
+export async function dataforseoReviews(
+  task: Record<string, unknown>,
+  creds: DataforseoCreds,
+  log?: Logger,
+  overallTimeoutMs = 75000,
+): Promise<Record<string, unknown>[]> {
+  return dataforseoTask(
+    "/business_data/google/reviews/task_post",
+    "/business_data/google/reviews/task_get",
+    task,
+    creds,
+    "reviews",
+    log,
+    overallTimeoutMs,
+  );
+}
+
+/**
+ * ASYNCHRONOUS TripAdvisor search flow (task_post → poll task_get). TripAdvisor
+ * has NO live endpoint, so this is the only way to read its aggregate rating.
+ * Callers should pass `priority: 2` in the task for the fast queue (~seconds).
+ */
+export async function dataforseoTripadvisorSearch(
+  task: Record<string, unknown>,
+  creds: DataforseoCreds,
+  log?: Logger,
+  overallTimeoutMs = 30000,
+): Promise<Record<string, unknown>[]> {
+  return dataforseoTask(
+    "/business_data/tripadvisor/search/task_post",
+    "/business_data/tripadvisor/search/task_get",
+    task,
+    creds,
+    "tripadvisor",
+    log,
+    overallTimeoutMs,
+  );
 }
