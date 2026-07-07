@@ -18,6 +18,7 @@ import {
   fetchBusinessBranding,
   type BusinessBranding,
 } from "./branding";
+import { getDataforseoCreds } from "./dataforseo";
 import { buildReportPdf } from "./reportPdf";
 import { sendReportEmail } from "./reportEmail";
 import type { Logger } from "pino";
@@ -105,16 +106,17 @@ export async function runReportGeneration(
   }
 
   try {
-    // Re-fetch current review data. Prefer a live SerpApi lookup; fall back to
-    // the snapshot captured when the customer submitted the request.
+    // Re-fetch current review data. Prefer a live DataForSEO lookup; fall back
+    // to the snapshot captured when the customer submitted the request.
     let data: BusinessReviews | null = null;
-    const apiKey = process.env["SERPAPI_API_KEY"];
+    const creds = getDataforseoCreds();
+    const serpApiKey = process.env["SERPAPI_API_KEY"] ?? null;
     const query = [row.businessName, row.businessAddress]
       .filter(Boolean)
       .join(" ");
-    if (apiKey) {
+    if (creds) {
       try {
-        data = await fetchBusinessReviews(query, apiKey, log);
+        data = await fetchBusinessReviews(query, creds, serpApiKey, log);
       } catch (err) {
         log.warn({ err }, "Live review fetch failed; using saved snapshot");
       }
@@ -134,9 +136,9 @@ export async function runReportGeneration(
       tripadvisor: [],
       googleTopics: [],
     };
-    if (apiKey) {
+    if (creds) {
       try {
-        snippets = await fetchReviewSnippets(data, apiKey, log);
+        snippets = await fetchReviewSnippets(data, creds, serpApiKey, log);
       } catch (err) {
         log.warn({ err }, "Review snippet fetch failed; continuing");
       }
@@ -151,7 +153,7 @@ export async function runReportGeneration(
     // Best-effort public branding + social proof (Facebook / Instagram via
     // SerpApi, confidence-matched). A failure just means no social section.
     let branding: BusinessBranding = emptyBranding();
-    if (apiKey) {
+    if (creds) {
       try {
         branding = await fetchBusinessBranding(
           {
@@ -162,7 +164,8 @@ export async function runReportGeneration(
             phone: data.phone ?? "",
             googleThumbnail: data.imageUrl ?? "",
           },
-          apiKey,
+          serpApiKey,
+          creds,
           log,
         );
       } catch (err) {

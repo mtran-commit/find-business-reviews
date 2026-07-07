@@ -7,6 +7,7 @@ import {
   fetchSimilarBusinesses,
 } from "../lib/serpapi";
 import { fetchBusinessBranding } from "../lib/branding";
+import { getDataforseoCreds } from "../lib/dataforseo";
 
 const router: IRouter = Router();
 
@@ -26,17 +27,23 @@ router.get("/search-business", async (req, res): Promise<void> => {
     return;
   }
 
-  const apiKey = process.env["SERPAPI_API_KEY"];
-  if (!apiKey) {
-    req.log.error("SERPAPI_API_KEY is not configured");
+  const creds = getDataforseoCreds();
+  if (!creds) {
+    req.log.error("DataForSEO credentials are not configured");
     res
       .status(503)
       .json({ error: "Reviews service is not configured on the server." });
     return;
   }
+  const serpApiKey = process.env["SERPAPI_API_KEY"] ?? null;
 
   try {
-    const data = await fetchBusinessReviews(parsed.data.query, apiKey, req.log);
+    const data = await fetchBusinessReviews(
+      parsed.data.query,
+      creds,
+      serpApiKey,
+      req.log,
+    );
     if (!data) {
       res
         .status(404)
@@ -45,7 +52,7 @@ router.get("/search-business", async (req, res): Promise<void> => {
     }
     res.json(data);
   } catch (err) {
-    req.log.error({ err }, "SerpApi business lookup failed");
+    req.log.error({ err }, "DataForSEO business lookup failed");
     res
       .status(502)
       .json({ error: "Could not fetch reviews right now. Please try again." });
@@ -90,9 +97,9 @@ router.get("/similar-businesses", async (req, res): Promise<void> => {
     return;
   }
 
-  const apiKey = process.env["SERPAPI_API_KEY"];
-  if (!apiKey) {
-    req.log.error("SERPAPI_API_KEY is not configured");
+  const creds = getDataforseoCreds();
+  if (!creds) {
+    req.log.error("DataForSEO credentials are not configured");
     res
       .status(503)
       .json({ error: "Reviews service is not configured on the server." });
@@ -109,7 +116,7 @@ router.get("/similar-businesses", async (req, res): Promise<void> => {
       category,
       { suburb, state },
       businessName,
-      apiKey,
+      creds,
       req.log,
     );
     res.json({
@@ -146,14 +153,15 @@ router.get("/business-branding", async (req, res): Promise<void> => {
     return;
   }
 
-  const apiKey = process.env["SERPAPI_API_KEY"];
-  if (!apiKey) {
-    req.log.error("SERPAPI_API_KEY is not configured");
+  const creds = getDataforseoCreds();
+  if (!creds) {
+    req.log.error("DataForSEO credentials are not configured");
     res
       .status(503)
       .json({ error: "Branding service is not configured on the server." });
     return;
   }
+  const serpApiKey = process.env["SERPAPI_API_KEY"] ?? null;
 
   const q = parsed.data;
   try {
@@ -165,7 +173,8 @@ router.get("/business-branding", async (req, res): Promise<void> => {
         website: q.website,
         phone: q.phone,
       },
-      apiKey,
+      serpApiKey,
+      creds,
       req.log,
     );
     res.json(branding);

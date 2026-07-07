@@ -1,13 +1,22 @@
 import type { Logger } from "pino";
+import {
+  dataforseoLive,
+  dataforseoReviews,
+  type DataforseoCreds,
+} from "./dataforseo";
 
 /**
- * SerpApi-backed reviews lookup.
+ * Business reviews lookup across a split of two providers.
  *
- * SerpApi exposes separate "engines" per source. We use:
- *   - google_maps  : real Google rating + review count (+ profile data)
+ * DataForSEO (primary) supplies:
+ *   - Google business profile + rating (my_business_info/live)
+ *   - nearby/similar competitors (serp/google/maps/live/advanced)
+ *   - TripAdvisor aggregate rating (business_data/tripadvisor/search/live)
+ *   - Google review snippets (business_data/google/reviews task_post + task_get)
+ *
+ * SerpApi (kept) supplies:
  *   - yelp         : Yelp business search (to resolve a place_id by name)
- *   - yelp_reviews : Yelp reviews for that place_id
- *   - tripadvisor  : TripAdvisor place search (returns aggregate rating + count)
+ *   - yelp_reviews : Yelp reviews for that place_id (rating + snippets)
  *
  * The Yelp business-search engine no longer exposes an aggregate rating, so
  * we resolve the matching Yelp listing by name, then derive the rating from
@@ -16,14 +25,15 @@ import type { Logger } from "pino";
  * approximation of the live Yelp aggregate, accurate for businesses with few
  * reviews and a close estimate for high-volume ones.
  *
- * The TripAdvisor search engine returns the aggregate rating + review count
- * directly on each place result, so a single call (matched by name) suffices.
- *
- * Docs: https://serpapi.com/google-maps-api , https://serpapi.com/yelp-api ,
- *       https://serpapi.com/yelp-reviews-api , https://serpapi.com/tripadvisor
+ * Docs: https://docs.dataforseo.com/v3/ , https://serpapi.com/yelp-api ,
+ *       https://serpapi.com/yelp-reviews-api
  */
 
 const SERPAPI_BASE = "https://serpapi.com/search.json";
+
+/** DataForSEO location/language defaults (the app is Australia-focused). */
+const DFS_LOCATION = "Australia";
+const DFS_LANGUAGE = "en";
 
 export interface PlatformRating {
   rating: number;
@@ -108,7 +118,7 @@ export interface BusinessReviews {
   demo: string[];
   /** Per-platform status note shown when a platform has no rating. */
   notes: Record<string, string>;
-  source: "serpapi";
+  source: "serpapi" | "dataforseo";
 }
 
 /** Tokens too generic to use for matching a business name to a Yelp listing. */
@@ -174,67 +184,44 @@ export async function serpapiGet(
   return json;
 }
 
-function toRating(raw: unknown): PlatformRating | null {
-  if (!raw || typeof raw !== "object") return null;
-  const obj = raw as Record<string, unknown>;
-  const rating = obj["rating"];
-  if (typeof rating !== "number") return null;
-  const reviews = obj["reviews"];
-  return {
-    rating,
-    reviews: typeof reviews === "number" ? reviews : 0,
-  };
-}
-
 /**
  * Look up a business by free-text query and return its ratings across the
  * supported platforms. Returns `null` when no business matches the query.
  */
 export async function fetchBusinessReviews(
   query: string,
-  apiKey: string,
+  creds: DataforseoCreds,
+  serpApiKey: string | null,
   log?: Logger,
 ): Promise<BusinessReviews | null> {
-  // ---- Google Maps (primary source for profile + Google rating) ----
-  const maps = await serpapiGet({
-    engine: "google_maps",
-    type: "search",
-    q: query,
-    api_key: apiKey,
-  });
-
-  const placeResults = maps["place_results"];
-  const localResults = maps["local_results"];
-  const place: Record<string, unknown> | undefined =
-    placeResults && typeof placeResults === "object"
-      ? (placeResults as Record<string, unknown>)
-      : Array.isArray(localResults) && localResults.length > 0
-        ? (localResults[0] as Record<string, unknown>)
-        : undefined;
-
+  // ---- Google business profile + rating (DataForSEO My Business Info) ----
+  const items = await dataforseoLive(
+    "/business_data/google/my_business_info/live",
+    { keyword: query, location_name: DFS_LOCATION, language_code: DFS_LANGUAGE },
+    creds,
+    log,
+  );
+  const place = items[0];
   if (!place) return null;
 
   const name = typeof place["title"] === "string" ? place["title"] : query;
-  const address = typeof place["address"] === "string" ? place["address"] : "";
+  const address = dfsAddress(place);
   const phone = typeof place["phone"] === "string" ? place["phone"] : "";
-  const website = typeof place["website"] === "string" ? place["website"] : "";
-  // Google Maps thumbnail is a colour business photo. We deliberately do NOT
-  // derive a logo from the website favicon: favicons frequently return platform
-  // icons (WordPress/Wix/Shopify/etc.) rather than the real brand mark, so they
-  // cannot be confidently matched to the business. Until a confident logo source
-  // exists we leave the logo empty and let the frontend show initials.
+  const website = dfsWebsite(place);
+  // `main_image` is a colour business photo. We deliberately do NOT trust a
+  // DataForSEO `logo` as the brand mark: like website favicons it can be a
+  // platform/placeholder icon that cannot be confidently matched to the
+  // business, so we leave the logo empty and let the frontend show initials.
   const imageUrl =
-    typeof place["thumbnail"] === "string" ? place["thumbnail"] : "";
+    typeof place["main_image"] === "string" ? place["main_image"] : "";
   const logoUrl = "";
   const logoConfidence: "high" | "low" = "low";
 
-  const google = toRating(place);
+  const google = dfsRating(place);
 
-  // Category hints from the Google Maps profile. SerpApi may return `type` as
-  // either a string or an array (e.g. ["Italian restaurant","Bar"]); `types`
-  // / `category` may also be present, so gather whichever exist.
+  // Category hints from the profile: `category` (string) + `additional_categories`.
   const placeTypes: string[] = [];
-  for (const field of ["type", "types", "category"]) {
+  for (const field of ["category", "additional_categories", "category_ids"]) {
     const v = place[field];
     if (typeof v === "string") placeTypes.push(v);
     else if (Array.isArray(v)) {
@@ -242,15 +229,11 @@ export async function fetchBusinessReviews(
     }
   }
 
-  const coords = place["gps_coordinates"];
+  const lat = place["latitude"];
+  const lng = place["longitude"];
   let directionsUrl: string;
-  if (
-    coords &&
-    typeof coords === "object" &&
-    typeof (coords as Record<string, unknown>)["latitude"] === "number"
-  ) {
-    const c = coords as { latitude: number; longitude: number };
-    directionsUrl = `https://www.google.com/maps/search/?api=1&query=${c.latitude},${c.longitude}`;
+  if (typeof lat === "number" && typeof lng === "number") {
+    directionsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
   } else {
     directionsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
       `${name} ${address}`.trim(),
@@ -260,19 +243,22 @@ export async function fetchBusinessReviews(
   const notes: Record<string, string> = {};
 
   // ---- Yelp: resolve the listing by name, then derive rating from reviews ----
-  // Step 1 (yelp search) only resolves a place_id; step 2 (yelp_reviews) is
-  // only called when a confident name match is found, so we never burn quota
-  // on a non-matching business.
+  // Kept on SerpApi (DataForSEO has no Yelp source). Skipped cleanly when no
+  // SerpApi key is configured. Step 1 (yelp search) only resolves a place_id;
+  // step 2 (yelp_reviews) runs only on a confident name match, so we never burn
+  // quota on a non-matching business.
   let yelp: PlatformRating | null = null;
   const loc = deriveLocation(address);
   const nameTokens = distinctiveTokens(name);
-  if (loc && nameTokens.length > 0) {
+  if (!serpApiKey) {
+    notes["yelp"] = "Lookup unavailable";
+  } else if (loc && nameTokens.length > 0) {
     try {
-      const placeId = await findYelpPlaceId(name, loc, nameTokens, apiKey);
+      const placeId = await findYelpPlaceId(name, loc, nameTokens, serpApiKey);
       if (!placeId) {
         notes["yelp"] = "No match found";
       } else {
-        yelp = await fetchYelpRating(placeId, apiKey);
+        yelp = await fetchYelpRating(placeId, serpApiKey);
         if (!yelp) notes["yelp"] = "No match found";
       }
     } catch (err) {
@@ -283,11 +269,11 @@ export async function fetchBusinessReviews(
     notes["yelp"] = "No match found";
   }
 
-  // ---- TripAdvisor: search returns the aggregate rating directly ----
+  // ---- TripAdvisor: DataForSEO search returns the aggregate rating directly ----
   let tripadvisor: PlatformRating | null = null;
   if (nameTokens.length > 0) {
     try {
-      tripadvisor = await findTripadvisorRating(name, address, nameTokens, apiKey);
+      tripadvisor = await findTripadvisorRating(name, address, nameTokens, creds, log);
       if (!tripadvisor) notes["tripadvisor"] = "No match found";
     } catch (err) {
       log?.warn({ err }, "TripAdvisor lookup failed; continuing without it");
@@ -305,7 +291,7 @@ export async function fetchBusinessReviews(
   // ---- Similar businesses: same category + suburb (real lookup, demo fallback) ----
   const category = detectBusinessCategory(name, query, placeTypes);
   const locality = extractLocality(address, query);
-  const nearby = await fetchSimilarBusinesses(category, locality, name, apiKey, log);
+  const nearby = await fetchSimilarBusinesses(category, locality, name, creds, log);
 
   return {
     name,
@@ -327,8 +313,47 @@ export async function fetchBusinessReviews(
     unavailable,
     demo: [],
     notes,
-    source: "serpapi",
+    source: "dataforseo",
   };
+}
+
+/** Map a DataForSEO `rating` object ({value, votes_count}) to a PlatformRating. */
+function dfsRating(obj: unknown): PlatformRating | null {
+  if (!obj || typeof obj !== "object") return null;
+  const r = (obj as Record<string, unknown>)["rating"];
+  if (!r || typeof r !== "object") return null;
+  const value = (r as Record<string, unknown>)["value"];
+  if (typeof value !== "number" || !Number.isFinite(value)) return null;
+  const votes = (r as Record<string, unknown>)["votes_count"];
+  return {
+    rating: value,
+    reviews: typeof votes === "number" && votes > 0 ? Math.round(votes) : 0,
+  };
+}
+
+/** Read a business address from a DataForSEO item (string or address_info). */
+function dfsAddress(obj: Record<string, unknown>): string {
+  if (typeof obj["address"] === "string" && obj["address"].trim())
+    return obj["address"];
+  const info = obj["address_info"];
+  if (info && typeof info === "object") {
+    const parts = ["address", "city", "region", "zip", "country_code"]
+      .map((k) => (info as Record<string, unknown>)[k])
+      .filter((v): v is string => typeof v === "string" && !!v.trim());
+    if (parts.length > 0) return parts.join(", ");
+  }
+  return "";
+}
+
+/** Read the business website (`url`/`domain`), ignoring Google-owned links. */
+function dfsWebsite(obj: Record<string, unknown>): string {
+  const url = obj["url"];
+  if (typeof url === "string" && url.trim() && !/(^|\.)google\./i.test(url))
+    return url;
+  const domain = obj["domain"];
+  if (typeof domain === "string" && domain.trim() && !/google\./i.test(domain))
+    return domain.startsWith("http") ? domain : `https://${domain}`;
+  return "";
 }
 
 /** Small, stable string hash so demo data stays constant per business name. */
@@ -624,17 +649,18 @@ export function buildCategoryDemoNearby(
 
 /**
  * Find real similar businesses: same category, same suburb. Runs a single
- * `google_maps` search for "<category> near <suburb> <state> Australia",
- * excludes the searched business, and returns up to 3 peers with their real
- * Google rating. Yelp/TripAdvisor are left null here (per-peer lookups would
- * burn quota); the UI shows them as "not available" without penalty. Falls back
- * to category+suburb demo data when fewer than 3 real peers are found.
+ * DataForSEO Google Maps search for "<category> near <suburb> <state>
+ * Australia", excludes the searched business, and returns up to 3 peers with
+ * their real Google rating. Yelp/TripAdvisor are left null here (per-peer
+ * lookups would burn quota); the UI shows them as "not available" without
+ * penalty. Falls back to category+suburb demo data when fewer than 3 real peers
+ * are found.
  */
 export async function fetchSimilarBusinesses(
   category: BusinessCategory,
   locality: Locality,
   excludeName: string,
-  apiKey: string,
+  creds: DataforseoCreds,
   log?: Logger,
 ): Promise<NearbyBusiness[]> {
   const { suburb, state } = locality;
@@ -646,65 +672,60 @@ export async function fetchSimilarBusinesses(
 
   const results: NearbyBusiness[] = [];
   try {
-    const maps = await serpapiGet({
-      engine: "google_maps",
-      type: "search",
-      q,
-      api_key: apiKey,
-    });
+    const local = await dataforseoLive(
+      "/serp/google/maps/live/advanced",
+      { keyword: q, location_name: DFS_LOCATION, language_code: DFS_LANGUAGE },
+      creds,
+      log,
+    );
 
-    const local = maps["local_results"];
-    if (Array.isArray(local)) {
-      const exclTokens = new Set(distinctiveTokens(excludeName));
-      const exclNeeded = Math.max(1, Math.ceil(exclTokens.size / 2));
-      const seen = new Set<string>();
+    const exclTokens = new Set(distinctiveTokens(excludeName));
+    const exclNeeded = Math.max(1, Math.ceil(exclTokens.size / 2));
+    const seen = new Set<string>();
 
-      for (const raw of local) {
-        if (results.length >= 3) break;
-        if (!raw || typeof raw !== "object") continue;
-        const r = raw as Record<string, unknown>;
-        const title = typeof r["title"] === "string" ? r["title"] : "";
-        if (!title) continue;
+    for (const r of local) {
+      if (results.length >= 3) break;
+      const title = typeof r["title"] === "string" ? r["title"] : "";
+      if (!title) continue;
 
-        // Skip the searched business itself (strong distinctive-token overlap).
-        const titleTokens = distinctiveTokens(title);
-        const overlap = titleTokens.filter((t) => exclTokens.has(t)).length;
-        if (exclTokens.size > 0 && overlap >= exclNeeded) continue;
+      // Skip the searched business itself (strong distinctive-token overlap).
+      const titleTokens = distinctiveTokens(title);
+      const overlap = titleTokens.filter((t) => exclTokens.has(t)).length;
+      if (exclTokens.size > 0 && overlap >= exclNeeded) continue;
 
-        const key = normalizeName(title);
-        if (seen.has(key)) continue;
+      const key = normalizeName(title);
+      if (seen.has(key)) continue;
 
-        const addr = typeof r["address"] === "string" ? r["address"] : "";
-        // Australia sanity-check: when an address is present it must look
-        // Australian (an AU state token or "Australia"); guards against a noisy
-        // result leaking a non-AU listing. Missing address → keep (the query
-        // already constrains to Australia).
-        if (addr) {
-          const upper = addr.toUpperCase();
-          const isAU =
-            upper.includes("AUSTRALIA") ||
-            addr.split(/[\s,]+/).some((t) => AU_STATES.has(t.toUpperCase().replace(/\./g, "")));
-          if (!isAU) continue;
-        }
-        seen.add(key);
-
-        const rowSuburb = extractLocality(addr).suburb || suburb;
-        const rowThumb =
-          typeof r["thumbnail"] === "string" ? r["thumbnail"] : "";
-
-        results.push({
-          name: title,
-          category: `${category.rowLabel} · ${rowSuburb}`,
-          location: rowSuburb,
-          logoUrl: "",
-          logoConfidence: "low",
-          imageUrl: rowThumb,
-          google: toRating(r),
-          yelp: null,
-          tripadvisor: null,
-          demo: false,
-        });
+      const addr = dfsAddress(r);
+      // Australia sanity-check: when an address is present it must look
+      // Australian (an AU state token or "Australia"); guards against a noisy
+      // result leaking a non-AU listing. Missing address → keep (the query
+      // already constrains to Australia).
+      if (addr) {
+        const upper = addr.toUpperCase();
+        const isAU =
+          upper.includes("AUSTRALIA") ||
+          addr.split(/[\s,]+/).some((t) => AU_STATES.has(t.toUpperCase().replace(/\./g, "")));
+        if (!isAU) continue;
       }
+      seen.add(key);
+
+      const rowSuburb = extractLocality(addr).suburb || suburb;
+      const rowThumb =
+        typeof r["main_image"] === "string" ? r["main_image"] : "";
+
+      results.push({
+        name: title,
+        category: `${category.rowLabel} · ${rowSuburb}`,
+        location: rowSuburb,
+        logoUrl: "",
+        logoConfidence: "low",
+        imageUrl: rowThumb,
+        google: dfsRating(r),
+        yelp: null,
+        tripadvisor: null,
+        demo: false,
+      });
     }
   } catch (err) {
     log?.warn({ err }, "Similar-business lookup failed; using demo fallback");
@@ -764,38 +785,35 @@ async function findYelpPlaceId(
 }
 
 /**
- * Resolve a TripAdvisor rating by searching the `tripadvisor` engine and
+ * Resolve a TripAdvisor rating via the DataForSEO TripAdvisor search endpoint,
  * matching the place whose title shares the most distinctive tokens with the
- * name. Unlike Yelp, the search result carries the aggregate `rating` and
- * `reviews` count directly, so a single call suffices. Ties are broken by the
+ * name. The search result carries the aggregate `rating` object (value +
+ * votes_count) directly, so a single call suffices. Ties are broken by the
  * highest review count. Returns null when no confident match has a rating.
  */
 async function findTripadvisorRating(
   name: string,
   address: string,
   nameTokens: string[],
-  apiKey: string,
+  creds: DataforseoCreds,
+  log?: Logger,
 ): Promise<PlatformRating | null> {
   const loc = deriveLocation(address);
   const q = loc ? `${name} ${loc}` : name;
-  const res = await serpapiGet({
-    engine: "tripadvisor",
-    q,
-    api_key: apiKey,
-  });
-
-  const places = res["places"];
-  if (!Array.isArray(places)) return null;
+  const places = await dataforseoLive(
+    "/business_data/tripadvisor/search/live",
+    { keyword: q, location_name: DFS_LOCATION, language_code: DFS_LANGUAGE },
+    creds,
+    log,
+  );
 
   const wanted = new Set(nameTokens);
   const needed = Math.max(1, Math.ceil(nameTokens.length / 2));
   let best: { rating: PlatformRating; score: number } | null = null;
-  for (const raw of places) {
-    if (!raw || typeof raw !== "object") continue;
-    const r = raw as Record<string, unknown>;
+  for (const r of places) {
     const title = typeof r["title"] === "string" ? r["title"] : "";
-    const rating = typeof r["rating"] === "number" ? r["rating"] : null;
-    if (!title || rating === null) continue;
+    const rating = dfsRating(r);
+    if (!title || !rating) continue;
 
     let score = 0;
     for (const tok of distinctiveTokens(title)) {
@@ -803,14 +821,12 @@ async function findTripadvisorRating(
     }
     if (score < needed) continue;
 
-    const reviews = typeof r["reviews"] === "number" ? r["reviews"] : 0;
-    const candidate: PlatformRating = { rating, reviews };
     if (
       !best ||
       score > best.score ||
-      (score === best.score && reviews > best.rating.reviews)
+      (score === best.score && rating.reviews > best.rating.reviews)
     ) {
-      best = { rating: candidate, score };
+      best = { rating, score };
     }
   }
 
@@ -874,25 +890,99 @@ export interface ReviewSnippets {
   googleTopics: ReviewTag[];
 }
 
-/** Parse the `topics` array from a google_maps_reviews response into tags. */
-function extractReviewTopics(raw: unknown): ReviewTag[] {
-  if (!Array.isArray(raw)) return [];
-  const out: ReviewTag[] = [];
-  for (const t of raw) {
-    if (!t || typeof t !== "object") continue;
-    const r = t as Record<string, unknown>;
-    const keyword = r["keyword"];
-    const mentions = r["mentions"];
-    if (typeof keyword !== "string" || !keyword.trim()) continue;
-    const count =
-      typeof mentions === "number" && Number.isFinite(mentions) && mentions > 0
-        ? Math.round(mentions)
-        : 0;
-    out.push({ tag: keyword.trim().slice(0, 60), count });
+/**
+ * Words too generic to be a useful review "topic". Combines common English
+ * stopwords with filler words that appear in nearly every review, so the chips
+ * surface real themes ("auction", "coffee", "parking") rather than noise.
+ */
+const TOPIC_STOPWORDS = new Set([
+  // articles / pronouns / conjunctions / prepositions
+  "the", "and", "for", "was", "were", "with", "you", "your", "our", "their",
+  "they", "them", "this", "that", "these", "those", "from", "have", "has",
+  "had", "are", "but", "not", "all", "any", "can", "will", "would", "could",
+  "should", "there", "here", "then", "than", "into", "out", "off", "over",
+  "just", "very", "too", "also", "about", "after", "before", "when", "what",
+  "which", "who", "why", "how", "been", "being", "did", "does", "done", "get",
+  "got", "had", "her", "his", "him", "she", "its", "one", "two", "some", "such",
+  "only", "more", "most", "much", "many", "other", "each", "own", "same", "few",
+  // generic review filler that carries no theme
+  "great", "good", "nice", "best", "amazing", "awesome", "excellent", "lovely",
+  "friendly", "helpful", "happy", "highly", "recommend", "recommended",
+  "definitely", "always", "again", "really", "well", "back", "went", "come",
+  "came", "time", "times", "place", "service", "staff", "experience", "team",
+  "everything", "thank", "thanks", "would", "made", "make", "need", "want",
+  "took", "take", "give", "gave", "day", "days", "people", "everyone", "us",
+]);
+
+/**
+ * Derive Google review topic chips from the raw review texts ourselves:
+ * frequency-based (count = number of reviews that mention the word), stopword-
+ * filtered, top 15 by mentions. Grounded in real text — returns [] when there
+ * is not enough review text to be meaningful, and never invents a theme.
+ */
+function deriveReviewTopics(texts: string[]): ReviewTag[] {
+  // Not enough signal to surface honest themes.
+  if (texts.length < 3) return [];
+
+  const docFreq = new Map<string, number>();
+  for (const text of texts) {
+    const seen = new Set<string>();
+    const words = text
+      .toLowerCase()
+      .replace(/[^a-z\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length >= 4 && !TOPIC_STOPWORDS.has(w));
+    for (const w of words) {
+      if (seen.has(w)) continue; // count each review once per word
+      seen.add(w);
+      docFreq.set(w, (docFreq.get(w) ?? 0) + 1);
+    }
   }
-  // Most-mentioned first so the report leads with the strongest themes; cap after sorting
-  // so we always keep the true top 15 even if SerpApi returns topics unsorted.
-  return out.sort((a, b) => b.count - a.count).slice(0, 15);
+
+  const out: ReviewTag[] = [];
+  for (const [tag, count] of docFreq) {
+    // Require a theme to appear in at least 2 reviews to filter one-off noise.
+    if (count >= 2) out.push({ tag: tag.slice(0, 60), count });
+  }
+  // Most-mentioned first so the report leads with the strongest themes.
+  return out
+    .sort((a, b) => b.count - a.count || a.tag.localeCompare(b.tag))
+    .slice(0, 15);
+}
+
+/** Read a DataForSEO review's free text across the fields the API may use. */
+function dfsReviewText(raw: Record<string, unknown>): string {
+  for (const key of ["review_text", "original_review_text", "snippet", "text"]) {
+    const v = raw[key];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return "";
+}
+
+/** Read a DataForSEO review's relative date ("2 months ago") when present. */
+function dfsReviewDate(raw: Record<string, unknown>): string {
+  const t = raw["time_ago"];
+  if (typeof t === "string" && t.trim() && t.trim().length <= 40)
+    return t.trim();
+  return "";
+}
+
+/** Format DataForSEO review items into short, date-prefixed snippet strings. */
+function collectDfsSnippets(
+  items: Record<string, unknown>[],
+  max: number,
+): string[] {
+  const out: string[] = [];
+  for (const item of items) {
+    let text = dfsReviewText(item);
+    if (!text) continue;
+    if (text.length > 240) text = text.slice(0, 237) + "...";
+    const date = dfsReviewDate(item);
+    if (date) text = `[${date}] ${text}`;
+    out.push(text);
+    if (out.length >= max) break;
+  }
+  return out;
 }
 
 /** Pull a review's free-text from the various shapes SerpApi engines return. */
@@ -941,7 +1031,8 @@ function collectSnippets(reviews: unknown, max: number): string[] {
  */
 export async function fetchReviewSnippets(
   data: BusinessReviews,
-  apiKey: string,
+  creds: DataforseoCreds,
+  serpApiKey: string | null,
   log?: Logger,
 ): Promise<ReviewSnippets> {
   const result: ReviewSnippets = {
@@ -954,56 +1045,47 @@ export async function fetchReviewSnippets(
   const address = data.address;
   const nameTokens = distinctiveTokens(name);
 
-  // ---- Google Maps reviews (resolve data_id, then pull snippets) ----
+  // ---- Google reviews (DataForSEO async task; topics derived from text) ----
   try {
-    const maps = await serpapiGet({
-      engine: "google_maps",
-      type: "search",
-      q: `${name} ${address}`.trim(),
-      api_key: apiKey,
-    });
-    const placeResults = maps["place_results"];
-    const localResults = maps["local_results"];
-    const place: Record<string, unknown> | undefined =
-      placeResults && typeof placeResults === "object"
-        ? (placeResults as Record<string, unknown>)
-        : Array.isArray(localResults) && localResults.length > 0
-          ? (localResults[0] as Record<string, unknown>)
-          : undefined;
-    const dataId =
-      place && typeof place["data_id"] === "string"
-        ? (place["data_id"] as string)
-        : "";
-    if (dataId) {
-      const rev = await serpapiGet({
-        engine: "google_maps_reviews",
-        data_id: dataId,
-        api_key: apiKey,
-      });
-      result.google = collectSnippets(rev["reviews"], 12);
-      result.googleTopics = extractReviewTopics(rev["topics"]);
-    }
+    const items = await dataforseoReviews(
+      {
+        keyword: `${name} ${address}`.trim(),
+        location_name: DFS_LOCATION,
+        language_code: DFS_LANGUAGE,
+        depth: 20,
+        sort_by: "newest",
+      },
+      creds,
+      log,
+    );
+    result.google = collectDfsSnippets(items, 12);
+    const texts = items
+      .map((it) => dfsReviewText(it))
+      .filter((t): t is string => t.length > 0);
+    result.googleTopics = deriveReviewTopics(texts);
   } catch (err) {
     log?.warn({ err }, "Google review snippet fetch failed");
   }
 
-  // ---- Yelp reviews (resolve place_id by confident name match) ----
-  try {
-    const loc = deriveLocation(address);
-    if (loc && nameTokens.length > 0) {
-      const placeId = await findYelpPlaceId(name, loc, nameTokens, apiKey);
-      if (placeId) {
-        const rev = await serpapiGet({
-          engine: "yelp_reviews",
-          place_id: placeId,
-          num: "49",
-          api_key: apiKey,
-        });
-        result.yelp = collectSnippets(rev["reviews"], 12);
+  // ---- Yelp reviews (SerpApi; resolve place_id by confident name match) ----
+  if (serpApiKey) {
+    try {
+      const loc = deriveLocation(address);
+      if (loc && nameTokens.length > 0) {
+        const placeId = await findYelpPlaceId(name, loc, nameTokens, serpApiKey);
+        if (placeId) {
+          const rev = await serpapiGet({
+            engine: "yelp_reviews",
+            place_id: placeId,
+            num: "49",
+            api_key: serpApiKey,
+          });
+          result.yelp = collectSnippets(rev["reviews"], 12);
+        }
       }
+    } catch (err) {
+      log?.warn({ err }, "Yelp review snippet fetch failed");
     }
-  } catch (err) {
-    log?.warn({ err }, "Yelp review snippet fetch failed");
   }
 
   return result;

@@ -1,15 +1,16 @@
 import type { Logger } from "pino";
 import { distinctiveTokens, normalizeName, serpapiGet } from "./serpapi";
+import { dataforseoLive, type DataforseoCreds } from "./dataforseo";
 
 /**
  * Public business-branding lookup.
  *
  * Discovers a business's official Facebook / Instagram profiles via a Google
- * search ("<name> <suburb> Facebook"), then fetches the public profile with
- * SerpApi's `facebook_profile` / `instagram_profile` engines and keeps the
- * data ONLY when the profile confidently matches the business (name tokens +
- * phone / website / suburb corroboration). Low-confidence matches are
- * discarded — never show the wrong business's branding.
+ * organic search ("<name> <suburb> Facebook") through DataForSEO, then fetches
+ * the public profile with SerpApi's `facebook_profile` / `instagram_profile`
+ * engines and keeps the data ONLY when the profile confidently matches the
+ * business (name tokens + phone / website / suburb corroboration). Low-
+ * confidence matches are discarded — never show the wrong business's branding.
  *
  * All failures are non-fatal: the caller always gets a BusinessBranding
  * object (possibly empty) and report generation must never depend on this.
@@ -137,7 +138,7 @@ function extractSlug(
 
 /** Collect up to `max` unique candidate slugs from Google organic results. */
 async function discoverSlugs(
-  apiKey: string,
+  creds: DataforseoCreds,
   businessName: string,
   suburb: string,
   host: "facebook" | "instagram",
@@ -146,19 +147,21 @@ async function discoverSlugs(
 ): Promise<string[]> {
   try {
     const platform = host === "facebook" ? "Facebook" : "Instagram";
-    const json = await serpapiGet({
-      engine: "google",
-      q: `${businessName} ${suburb} ${platform}`.trim(),
-      num: "10",
-      api_key: apiKey,
-    });
-    const organic = json["organic_results"];
-    if (!Array.isArray(organic)) return [];
+    const items = await dataforseoLive(
+      "/serp/google/organic/live/advanced",
+      {
+        keyword: `${businessName} ${suburb} ${platform}`.trim(),
+        location_name: "Australia",
+        language_code: "en",
+      },
+      creds,
+      log,
+    );
     const slugs: string[] = [];
     const seen = new Set<string>();
-    for (const item of organic) {
-      if (!item || typeof item !== "object") continue;
-      const link = (item as Record<string, unknown>)["link"];
+    for (const item of items) {
+      // Organic result URLs live on `url`; skip non-organic SERP items.
+      const link = item["url"];
       if (typeof link !== "string") continue;
       const slug = extractSlug(link, host);
       if (!slug) continue;
@@ -378,7 +381,8 @@ async function fetchInstagram(
 
 export async function fetchBusinessBranding(
   input: BrandingInput,
-  apiKey: string,
+  serpApiKey: string | null,
+  creds: DataforseoCreds,
   log?: Logger,
 ): Promise<BusinessBranding> {
   const key = cacheKey(input);
@@ -387,11 +391,16 @@ export async function fetchBusinessBranding(
 
   const result = emptyBranding();
   try {
+    // Social branding needs BOTH providers: DataForSEO to discover the profile
+    // slug and SerpApi to read the profile. Without a SerpApi key we can still
+    // return the Google business photo below, so skip the social fetch cleanly.
     const suburb = input.suburb ?? "";
-    const [fbSlugs, igSlugs] = await Promise.all([
-      discoverSlugs(apiKey, input.businessName, suburb, "facebook", log),
-      discoverSlugs(apiKey, input.businessName, suburb, "instagram", log),
-    ]);
+    const [fbSlugs, igSlugs] = serpApiKey
+      ? await Promise.all([
+          discoverSlugs(creds, input.businessName, suburb, "facebook", log),
+          discoverSlugs(creds, input.businessName, suburb, "instagram", log),
+        ])
+      : [[], []];
 
     // Try candidates in order, stopping at the first confident match.
     // Capped at 2 profile fetches per platform to protect SerpApi quota.
@@ -406,10 +415,16 @@ export async function fetchBusinessBranding(
       return null;
     };
 
-    const [fb, ig] = await Promise.all([
-      tryCandidates(fbSlugs, (slug) => fetchFacebook(apiKey, slug, input, log)),
-      tryCandidates(igSlugs, (slug) => fetchInstagram(apiKey, slug, input, log)),
-    ]);
+    const [fb, ig] = serpApiKey
+      ? await Promise.all([
+          tryCandidates(fbSlugs, (slug) =>
+            fetchFacebook(serpApiKey, slug, input, log),
+          ),
+          tryCandidates(igSlugs, (slug) =>
+            fetchInstagram(serpApiKey, slug, input, log),
+          ),
+        ])
+      : [null, null];
 
     if (fb) {
       result.facebook = fb.presence;
