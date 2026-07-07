@@ -21,12 +21,19 @@ workflows:
           # (package-firewall.replit.local), unreachable on Codemagic. Rewrite
           # those URLs to the public npm registry for CI only.
           perl -pi -e 's{https?://package-firewall\.replit\.local/npm/}{https://registry.npmjs.org/}g' pnpm-lock.yaml
+          # The Replit template excludes all non-Linux native binaries via
+          # pnpm-workspace.yaml overrides ("replit uses linux-x64 only").
+          # This Mac build needs the darwin binaries (rollup, esbuild,
+          # tailwind oxide, lightningcss), so strip every `"-"` platform
+          # exclusion (keeps real version overrides) — CI only, repo untouched.
+          perl -ni -e "print unless /: *['\"]?-['\"]? *\$/" pnpm-workspace.yaml
           # Activate the pnpm version pinned in package.json ("packageManager")
           # via corepack — avoids clashes with the machine's pre-installed tools.
           corepack enable
           corepack prepare pnpm@10.26.1 --activate
           pnpm config set registry https://registry.npmjs.org/
-          pnpm install --frozen-lockfile
+          # no --frozen-lockfile: the override strip above changes resolution
+          pnpm install --no-frozen-lockfile
       - name: Build the web app (relative base for the native shell)
         script: |
           set -e
