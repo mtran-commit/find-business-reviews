@@ -2020,6 +2020,7 @@
 
         els.reportBody.innerHTML = '' +
           previewCard +
+          '<button class="unlock-report-button" data-act="unlock">Get My Report — $23 + GST</button>' +
           '<p class="ab-body">See what customers really think, where your business is strongest, what may be costing you customers, and the actions to improve your reputation.</p>' +
           '<div class="paid-report-banner"><strong>$23 + GST one-time report</strong><span>AI-powered · Built for business owners</span></div>' +
           '<div class="report-stat-grid">' +
@@ -2038,8 +2039,9 @@
           '<p class="pre-payment-note">After payment, your report will be sent to the email address you provide on the next step.</p>' +
           '<button class="unlock-report-button" data-act="unlock">Get My Report — $23 + GST</button>';
 
-        const unlockBtn = els.reportBody.querySelector('[data-act="unlock"]');
-        if (unlockBtn) unlockBtn.addEventListener('click', function () { openReportRequestForm(); });
+        els.reportBody.querySelectorAll('[data-act="unlock"]').forEach(function (b) {
+          b.addEventListener('click', function () { openReportRequestForm(); });
+        });
       }
 
       // ---- Report request form (collects details, saves, then opens Stripe) ----
