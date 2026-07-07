@@ -1070,10 +1070,12 @@
       let currentMetrics = null;
 
       // ---- Main search flow ----
-      async function runSearch(query) {
+      async function runSearch(query, displayValue) {
         const q = (query != null ? query : els.input.value).trim();
         if (!q) { els.input.focus(); return; }
-        els.input.value = q;
+        // Keep the business field showing just the business term the user typed
+        // (not the internally combined "<business> <location>" query string).
+        els.input.value = (displayValue != null ? displayValue : q).trim();
         closeReport();
         show('loading');
         window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1828,7 +1830,7 @@
             }
           }
           const finalQuery = locationQuery ? (businessQuery + ' ' + locationQuery) : businessQuery;
-          runSearch(finalQuery);
+          runSearch(finalQuery, businessQuery);
         } finally {
           landingSearchInFlight = false;
         }

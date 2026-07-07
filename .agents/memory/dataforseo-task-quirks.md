@@ -17,7 +17,12 @@ description: Non-obvious behaviors of DataForSEO task_post/task_get endpoints (T
 - Add `priority: 2` to the task to use the fast queue → ready in ~3-4s instead of the slow default. Google reviews task is similarly fast (~4s).
 - Aggregate rating is nested: `rating.value` / `rating.votes_count` (handled by `dfsRating`).
 
+## Primary Google lookup: use Maps SERP search, NOT my_business_info/live
+- `business_data/google/my_business_info/live` is the WRONG primary lookup for free-text/search-style queries. It only resolves a single EXACT business, returns `40102 "No Search Results"` for common multi-location queries ("Apple Melbourne", "McDonald Melbourne"), and can take ~30s (exceeds a 20s request timeout → TimeoutError → 502).
+- Use `serp/google/maps/live/advanced` and take the top-ranked item instead: it accepts search-style queries, is faster (~9-18s), and its item is a SUPERSET of the fields needed (rating.value/votes_count, address/address_info, url/domain, phone, main_image, category/additional_categories, latitude/longitude).
+- Treat `40102 No Search Results` as an empty result (return []) so the caller surfaces a clean 404, never a 5xx.
+
 ## Provider split (this project)
-- DataForSEO: Google business info (`/my_business_info/live`), nearby competitors (`/serp/google/maps/live/advanced`), TripAdvisor (async), Google review snippets (async `/google/reviews`), branding slug discovery (`/serp/google/organic/live/advanced`).
+- DataForSEO: Google business info + nearby competitors both via `/serp/google/maps/live/advanced` (see section above — NOT my_business_info), TripAdvisor (async), Google review snippets (async `/google/reviews`), branding slug discovery (`/serp/google/organic/live/advanced`).
 - SerpApi KEPT ONLY for: Yelp (rating + snippets) and Facebook/Instagram branding profiles. Degrades cleanly when `SERPAPI_API_KEY` is absent.
 - Yelp returning null for AU businesses is a Yelp coverage gap, not a bug.

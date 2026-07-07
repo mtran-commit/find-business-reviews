@@ -127,6 +127,14 @@ export async function dataforseoLive(
   timeoutMs = 20000,
 ): Promise<Record<string, unknown>[]> {
   const json = await dfsFetch(path, [task], creds, timeoutMs);
+  // "No Search Results" (40102) is a valid, empty answer — not an error. Return
+  // [] so the caller can surface a clean "not found" instead of a 5xx failure.
+  const tasks = json["tasks"];
+  const t0 = Array.isArray(tasks) ? tasks[0] : null;
+  if (t0 && typeof t0 === "object") {
+    const tc = (t0 as Record<string, unknown>)["status_code"];
+    if (tc === 40102) return [];
+  }
   assertTaskOk(json);
   return resultItems(json);
 }

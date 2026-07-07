@@ -195,14 +195,30 @@ export async function fetchBusinessReviews(
   serpApiKey: string | null,
   log?: Logger,
 ): Promise<BusinessReviews | null> {
-  // ---- Google business profile + rating (DataForSEO My Business Info) ----
+  // ---- Google business profile + rating (DataForSEO Google Maps search) ----
+  // We use the Maps SERP endpoint (not `my_business_info/live`) as the primary
+  // lookup: it accepts free-text/search-style queries (e.g. "Apple Melbourne"),
+  // returns the top-ranked matching business, and is faster + more reliable.
+  // `my_business_info/live` only resolves a single exact business — it returns
+  // "No Search Results" for common multi-location queries and can take ~30s,
+  // exceeding our request timeout. The Maps item is a superset of the fields we
+  // read (rating.value/votes_count, address/address_info, url/domain, phone,
+  // main_image, category/additional_categories, latitude/longitude).
   const items = await dataforseoLive(
-    "/business_data/google/my_business_info/live",
-    { keyword: query, location_name: DFS_LOCATION, language_code: DFS_LANGUAGE },
+    "/serp/google/maps/live/advanced",
+    {
+      keyword: query,
+      location_name: DFS_LOCATION,
+      language_code: DFS_LANGUAGE,
+      depth: 10,
+    },
     creds,
     log,
+    30000,
   );
-  const place = items[0];
+  const place = items.find(
+    (it) => typeof it["title"] === "string" && (it["title"] as string).trim(),
+  );
   if (!place) return null;
 
   const name = typeof place["title"] === "string" ? place["title"] : query;
