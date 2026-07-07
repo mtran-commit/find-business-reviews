@@ -1851,7 +1851,8 @@
          only inside the report modal, opened via VIEW REPORT.
       ===================================================================== */
 
-      const API_BASE = '/api';
+      const IS_NATIVE_APP = window.location.protocol === 'capacitor:';
+      const API_BASE = IS_NATIVE_APP ? 'https://findbusinessreviews.com/api' : '/api';
 
       async function fetchBusinessReviews(query) {
         const res = await fetch(API_BASE + '/search-business?query=' + encodeURIComponent(query));

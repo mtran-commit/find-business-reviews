@@ -40,11 +40,13 @@ matter for mobile:
 origins, including `capacitor://localhost`). No server change needed; just keep
 the app published.
 
-## One-time setup still to do in this repo
+## One-time repo setup (DONE)
 
-- [ ] Install Capacitor in `artifacts/compare-reviews`:
-      `pnpm --filter @workspace/compare-reviews add -D @capacitor/core @capacitor/ios @capacitor/cli @capacitor/assets`
-- [ ] Create `artifacts/compare-reviews/capacitor.config.json`:
+All of the following is already committed in this repo:
+
+- [x] Capacitor installed in `artifacts/compare-reviews`
+      (`@capacitor/core`, `@capacitor/ios`, `@capacitor/cli`, `@capacitor/assets`).
+- [x] `artifacts/compare-reviews/capacitor.config.json`:
 
   ```json
   {
@@ -54,11 +56,12 @@ the app published.
   }
   ```
 
-- [ ] Add the `API_BASE` native detection shown above to `index.html`.
-- [ ] Add icon/splash source art:
-      `artifacts/compare-reviews/resources/icon.png` (1024×1024) and
-      `resources/splash.png` (2732×2732) — use the existing brand logo on a
-      navy `#071A3D` or white background.
+- [x] `API_BASE` native detection added to `index.html` (native shell calls
+      `https://findbusinessreviews.com/api`).
+- [x] Icon/splash source art generated from the brand logo:
+      `artifacts/compare-reviews/resources/icon.png` (1024×1024, white bg) and
+      `resources/splash.png` (2732×2732, navy `#071A3D` bg).
+- [x] `codemagic.yaml` committed at the repo root.
 
 ## Prerequisites (one-time, outside the repo)
 
@@ -192,7 +195,7 @@ workflows:
         script: |
           set -e
           cd artifacts/compare-reviews
-          BASE_PATH=./ pnpm run build     # outputs to dist/public
+          PORT=8080 BASE_PATH=./ pnpm run build     # outputs to dist/public (PORT is required by vite.config but unused for a static build)
       - name: Add iOS platform (cloud Mac)
         script: |
           set -e
