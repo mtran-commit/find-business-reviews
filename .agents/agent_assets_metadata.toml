@@ -6,3 +6,9 @@ id = "LXoX08a-vnEYVFhvHXTUa"
 uri = "file://docs/review-sources-api-usage.md"
 type = "text"
 title = "Review Sources — API Usage & Implementation"
+
+[[outputs]]
+id = "nkqbStTsFxv7TLQZi-O8H"
+uri = "file://codemagic-ios-guide.md"
+type = "text"
+title = "Find Business Reviews — iOS via Codemagic guide"
