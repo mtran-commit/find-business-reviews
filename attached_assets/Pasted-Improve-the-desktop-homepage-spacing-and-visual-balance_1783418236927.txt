@@ -1,0 +1,156 @@
+Improve the desktop homepage spacing and visual balance.
+
+Current issue:
+The desktop homepage looks clean, but some sections feel slightly too tight:
+- platform logo row is too close to the search bar
+- feature cards are too close to the platform logos
+- footer/disclaimer area feels too close to the feature cards
+- the page needs more premium spacing without becoming too empty
+
+Please update the desktop spacing.
+
+Desktop layout should be:
+
+Logo
+Tagline
+Search bar
+Platform logos
+Feature cards
+Footer/disclaimers
+
+Add more breathing room between each section.
+
+1. Hero logo area
+
+For desktop screens, use:
+
+.hero-logo,
+.logo-hero,
+.brand-logo-section {
+  margin-top: 42px;
+  margin-bottom: 14px;
+}
+
+.hero-logo img {
+  max-width: 520px;
+}
+
+.hero-tagline {
+  margin-top: 10px;
+  margin-bottom: 22px;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+2. Search bar spacing
+
+Bring the search bar slightly below the tagline but not too far.
+
+.search-wrapper,
+.hero-search,
+.search-container {
+  margin-top: 8px;
+  margin-bottom: 28px;
+}
+
+Search bar desktop size:
+- max-width: 980px;
+- height: 76px;
+- border-radius: 999px;
+
+3. Platform logo row spacing
+
+Add more space between search bar and platform logos.
+
+.platform-icons,
+.platform-logo-row,
+.review-platforms {
+  margin-top: 22px;
+  margin-bottom: 34px;
+  gap: 14px;
+}
+
+Platform icons should remain centred.
+
+4. Feature cards spacing
+
+Add more space above the feature cards.
+
+.features-section {
+  margin-top: 26px;
+  margin-bottom: 72px;
+}
+
+Feature card desktop styling:
+.feature-card {
+  padding: 28px 24px;
+  border-radius: 18px;
+  min-height: 220px;
+}
+
+Feature card grid:
+- use 5 columns on large desktop
+- keep gap around 20px to 24px
+- max-width around 1120px
+- centre the grid
+
+Example:
+.features-grid {
+  max-width: 1120px;
+  margin: 0 auto;
+  gap: 22px;
+}
+
+5. Footer spacing
+
+The footer is currently too close to the feature cards.
+
+.footer,
+.site-footer {
+  margin-top: 54px;
+  padding-top: 26px;
+  padding-bottom: 28px;
+}
+
+Footer text should be readable but subtle:
+- max-width: 760px
+- centered
+- line-height: 1.5
+- font-size: 12px to 13px
+
+6. Desktop page height
+
+Do not force everything into one cramped screen.
+
+If the main container has:
+height: 100vh;
+min-height: 100vh;
+
+remove it or change to:
+
+min-height: auto;
+
+The desktop page can scroll slightly if needed.
+
+7. Responsive rules
+
+Apply this for desktop only:
+
+@media (min-width: 1024px) {
+  /* desktop spacing updates here */
+}
+
+Do not negatively affect mobile spacing.
+
+8. Final result
+
+Desktop should feel:
+- premium
+- centred
+- spacious but not empty
+- easy to scan
+- feature cards separated from platform logos
+- footer clearly separated from the main content
+
+Keep the design clean, white, navy and purple.
+Do not add extra colours.

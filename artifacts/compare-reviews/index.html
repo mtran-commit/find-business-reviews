@@ -139,6 +139,16 @@
       }
       @media (max-width: 640px) { .hero { padding: 28px 0 0; } }
 
+      /* ===== Desktop breathing room (spacious, premium — never affects mobile) ===== */
+      @media (min-width: 1024px) {
+        .hero { padding: 44px 0 0; }
+        .search-wrap { padding: 16px 0 0; }        /* tagline → search */
+        .platform-strip { margin: 32px 0 44px; gap: 16px; }  /* search ↔ logos ↔ cards */
+        .feature-grid { max-width: 1140px; gap: 22px; margin: 0 auto 8px; }
+        .feature-card { padding: 26px 22px; min-height: 200px; }
+        .foot-line { margin-top: 48px; padding: 30px 0 56px; }  /* cards → footer */
+      }
+
       /* ===== Feature cards ===== */
       .feature-grid {
         max-width: 1180px; margin: 0 auto 8px;
