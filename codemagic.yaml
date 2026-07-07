@@ -9,7 +9,7 @@ workflows:
       cocoapods: default
       vars:
         BUNDLE_ID: "com.findbusinessreviews.app"
-        APP_STORE_APPLE_ID: 0000000000   # numeric Apple ID of the app from App Store Connect
+        APP_STORE_APPLE_ID: 6788556329   # numeric Apple ID of the app from App Store Connect
       groups: []
     integrations:
       app_store_connect: fbr_app_store   # your Codemagic App Store Connect integration name
