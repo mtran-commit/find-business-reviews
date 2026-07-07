@@ -51,8 +51,12 @@ workflows:
           ls -la ios/App
       - name: Generate icons & splash
         script: |
+          set -e
           cd artifacts/compare-reviews
-          npx capacitor-assets generate --ios || true
+          # Source art lives in assets/ (icon-only.png, splash.png, splash-dark.png)
+          npx capacitor-assets generate --ios
+          echo "=== Generated iOS icons ==="
+          ls ios/App/App/Assets.xcassets/AppIcon.appiconset | head
       - name: Sync web build into iOS
         script: |
           cd artifacts/compare-reviews

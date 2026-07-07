@@ -59,8 +59,9 @@ All of the following is already committed in this repo:
 - [x] `API_BASE` native detection added to `index.html` (native shell calls
       `https://findbusinessreviews.com/api`).
 - [x] Icon/splash source art generated from the brand logo:
-      `artifacts/compare-reviews/resources/icon.png` (1024×1024, white bg) and
-      `resources/splash.png` (2732×2732, navy `#071A3D` bg).
+      `artifacts/compare-reviews/assets/icon-only.png` (1024×1024, white bg)
+      and `assets/splash.png` + `splash-dark.png` (2732×2732, navy `#071A3D`
+      bg) — the layout `@capacitor/assets` expects.
 - [x] `codemagic.yaml` committed at the repo root.
 
 ## Prerequisites (one-time, outside the repo)
@@ -218,8 +219,12 @@ workflows:
           ls -la ios/App
       - name: Generate icons & splash
         script: |
+          set -e
           cd artifacts/compare-reviews
-          npx capacitor-assets generate --ios || true
+          # Source art lives in assets/ (icon-only.png, splash.png, splash-dark.png)
+          npx capacitor-assets generate --ios
+          echo "=== Generated iOS icons ==="
+          ls ios/App/App/Assets.xcassets/AppIcon.appiconset | head
       - name: Sync web build into iOS
         script: |
           cd artifacts/compare-reviews

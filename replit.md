@@ -61,7 +61,7 @@ NEVER show a wrong or generic logo (WordPress/Wix/Squarespace/Shopify/favicon/pl
 Best-effort Facebook/Instagram profile discovery via SerpApi, gated by a `scoreMatch` confidence threshold (≥0.6) so a wrong profile is never attached. 24h in-memory cache; every fetch is try/caught — branding NEVER fails a report generation.
 
 ### iOS mobile app (Capacitor + Codemagic)
-The web app ships to iOS as a Capacitor shell built on Codemagic cloud Macs (no local Mac). Setup lives in: `codemagic.yaml` (repo root, monorepo-aware build), `artifacts/compare-reviews/capacitor.config.json` (appId `com.findbusinessreviews.app`, webDir `dist/public`), `resources/icon.png`+`splash.png`, and native detection in `index.html` (`API_BASE` switches to `https://findbusinessreviews.com/api` when protocol is `capacitor:`). Native build needs `PORT=8080 BASE_PATH=./`. CORS is already open. Full walkthrough: `codemagic-ios-guide.md`. Keep the site published — the native app is a client of the live API.
+The web app ships to iOS as a Capacitor shell built on Codemagic cloud Macs (no local Mac). Setup lives in: `codemagic.yaml` (repo root, monorepo-aware build), `artifacts/compare-reviews/capacitor.config.json` (appId `com.findbusinessreviews.app`, webDir `dist/public`), `assets/icon-only.png`+`splash.png`+`splash-dark.png` (the layout `@capacitor/assets` requires — NOT `resources/`), and native detection in `index.html` (`API_BASE` switches to `https://findbusinessreviews.com/api` when protocol is `capacitor:`). Native build needs `PORT=8080 BASE_PATH=./`. CORS is already open. Full walkthrough: `codemagic-ios-guide.md`. Keep the site published — the native app is a client of the live API.
 
 ## Run & operate
 
