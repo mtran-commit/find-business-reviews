@@ -3,16 +3,9 @@ import type { BusinessReviews, PlatformRating, NearbyBusiness } from "./serpapi"
 
 /** Fixed legal disclaimer required on every report. */
 export const REPORT_DISCLAIMER =
-  "This report is generated using available public review data, third-party " +
-  "platform signals and AI analysis. AI-generated content may contain errors, " +
-  "omissions, incorrect assumptions or incomplete interpretations. Public " +
-  "review data may be incomplete, outdated or unavailable and may change after " +
-  "the report is generated. This report is provided for general business " +
-  "insight purposes only and should not be treated as legal, financial, " +
-  "accounting, marketing or professional advice. Find Business Reviews accepts " +
-  "no liability for decisions made based on this report; important information " +
-  "should be verified independently before acting on it. This report does not " +
-  "guarantee improved ratings, sales, bookings, rankings or revenue.";
+  "This AI report is generated from available public review data and AI " +
+  "analysis. It may contain errors or omissions and is provided for general " +
+  "business insight only. It is not legal, financial or professional advice.";
 
 /** Fixed 'Important Notice' card shown under the KPI cards on page 1. */
 export const REPORT_IMPORTANT_NOTICE =
@@ -565,7 +558,7 @@ export function normalizeReport(raw: unknown): BusinessReport {
     generatedAt: str(r["generatedAt"], new Date().toISOString()),
     metrics: coerceMetrics(r["metrics"]),
     sections,
-    disclaimer: str(r["disclaimer"]) || REPORT_DISCLAIMER,
+    disclaimer: REPORT_DISCLAIMER,
   };
 }
 
