@@ -606,6 +606,7 @@
       }
       .checkbox-row input { width: auto; height: auto; margin-top: 3px; }
       .report-request-form .pre-payment-note { margin-top: 4px; }
+      .payment-disclaimer { font-size: 12px; color: var(--text-2); line-height: 1.55; margin: 2px 0 0; }
       .secure-note { font-size: 12px; color: var(--text-2); text-align: center; margin: 2px 0 0; }
       .form-error {
         margin: 0; padding: 10px 12px; border-radius: 8px; font-size: 13px; font-weight: 700;
@@ -1553,6 +1554,7 @@
             '<label class="checkbox-row"><input name="authorised" type="checkbox" required /><span>I confirm I am the business owner, manager, or authorised representative.</span></label>' +
             '<p class="form-error" id="reportFormError" role="alert" hidden></p>' +
             '<p class="pre-payment-note">After payment, your report will be sent to the email address provided above.</p>' +
+            '<p class="payment-disclaimer">After payment, your report will be prepared using available public review data and AI analysis. AI may make mistakes and public data may be incomplete or change over time. Payment is processed securely by Stripe or another third-party provider.</p>' +
             '<p class="secure-note">Payment is processed securely by Stripe. We do not store credit card details.</p>' +
             '<button type="submit" class="unlock-report-button">Continue to secure payment</button>' +
           '</form>';
