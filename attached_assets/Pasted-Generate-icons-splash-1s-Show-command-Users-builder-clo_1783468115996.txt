@@ -1,0 +1,82 @@
+Generate icons & splash
+1s
+
+
+
+Show command
+/Users/builder/clone/node_modules/.pnpm/sharp@0.32.6/node_modules/sharp/lib/sharp.js:37
+  throw new Error(help.join('\n'));
+  ^
+
+Error: 
+Something went wrong installing the "sharp" module
+
+Cannot find module '../build/Release/sharp-darwin-arm64v8.node'
+Require stack:
+- /Users/builder/clone/node_modules/.pnpm/sharp@0.32.6/node_modules/sharp/lib/sharp.js
+- /Users/builder/clone/node_modules/.pnpm/sharp@0.32.6/node_modules/sharp/lib/constructor.js
+- /Users/builder/clone/node_modules/.pnpm/sharp@0.32.6/node_modules/sharp/lib/index.js
+- /Users/builder/clone/node_modules/.pnpm/@capacitor+assets@3.0.5_@types+node@25.9.4_typescript@5.9.3/node_modules/@capacitor/assets/dist/input-asset.js
+- /Users/builder/clone/node_modules/.pnpm/@capacitor+assets@3.0.5_@types+node@25.9.4_typescript@5.9.3/node_modules/@capacitor/assets/dist/project.js
+- /Users/builder/clone/node_modules/.pnpm/@capacitor+assets@3.0.5_@types+node@25.9.4_typescript@5.9.3/node_modules/@capacitor/assets/dist/ctx.js
+- /Users/builder/clone/node_modules/.pnpm/@capacitor+assets@3.0.5_@types+node@25.9.4_typescript@5.9.3/node_modules/@capacitor/assets/dist/index.js
+- /Users/builder/clone/node_modules/.pnpm/@capacitor+assets@3.0.5_@types+node@25.9.4_typescript@5.9.3/node_modules/@capacitor/assets/bin/capacitor-assets
+
+Possible solutions:
+- Install with verbose logging and look for errors: "npm install --ignore-scripts=false --foreground-scripts --verbose sharp"
+- Install for the current darwin-arm64v8 runtime: "npm install --platform=darwin --arch=arm64v8 sharp"
+- Consult the installation documentation: https://sharp.pixelplumbing.com/install
+    at Object.<anonymous> (/Users/builder/clone/node_modules/.pnpm/sharp@0.32.6/node_modules/sharp/lib/sharp.js:37:9)
+    at Module._compile (node:internal/modules/cjs/loader:1871:14)
+    at Object..js (node:internal/modules/cjs/loader:2002:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1617:12)
+    at require (node:internal/modules/helpers:153:16)
+    at Object.<anonymous> (/Users/builder/clone/node_modules/.pnpm/sharp@0.32.6/node_modules/sharp/lib/constructor.js:11:1)
+    at Module._compile (node:internal/modules/cjs/loader:1871:14)
+
+Node.js v24.18.0
+/Users/builder/clone/node_modules/.pnpm/sharp@0.32.6/node_modules/sharp/lib/sharp.js:37
+  throw new Error(help.join('\n'));
+  ^
+
+Error: 
+Something went wrong installing the "sharp" module
+
+Cannot find module '../build/Release/sharp-darwin-arm64v8.node'
+Require stack:
+- /Users/builder/clone/node_modules/.pnpm/sharp@0.32.6/node_modules/sharp/lib/sharp.js
+- /Users/builder/clone/node_modules/.pnpm/sharp@0.32.6/node_modules/sharp/lib/constructor.js
+- /Users/builder/clone/node_modules/.pnpm/sharp@0.32.6/node_modules/sharp/lib/index.js
+- /Users/builder/clone/node_modules/.pnpm/@capacitor+assets@3.0.5_@types+node@25.9.4_typescript@5.9.3/node_modules/@capacitor/assets/dist/input-asset.js
+- /Users/builder/clone/node_modules/.pnpm/@capacitor+assets@3.0.5_@types+node@25.9.4_typescript@5.9.3/node_modules/@capacitor/assets/dist/project.js
+- /Users/builder/clone/node_modules/.pnpm/@capacitor+assets@3.0.5_@types+node@25.9.4_typescript@5.9.3/node_modules/@capacitor/assets/dist/ctx.js
+- /Users/builder/clone/node_modules/.pnpm/@capacitor+assets@3.0.5_@types+node@25.9.4_typescript@5.9.3/node_modules/@capacitor/assets/dist/index.js
+- /Users/builder/clone/node_modules/.pnpm/@capacitor+assets@3.0.5_@types+node@25.9.4_typescript@5.9.3/node_modules/@capacitor/assets/bin/capacitor-assets
+
+Possible solutions:
+- Install with verbose logging and look for errors: "npm install --ignore-scripts=false --foreground-scripts --verbose sharp"
+- Install for the current darwin-arm64v8 runtime: "npm install --platform=darwin --arch=arm64v8 sharp"
+- Consult the installation documentation: https://sharp.pixelplumbing.com/install
+    at Object.<anonymous> (/Users/builder/clone/node_modules/.pnpm/sharp@0.32.6/node_modules/sharp/lib/sharp.js:37:9)
+    at Module._compile (node:internal/modules/cjs/loader:1871:14)
+    at Object..js (node:internal/modules/cjs/loader:2002:10)
+    at Module.load (node:internal/modules/cjs/loader:1594:32)
+    at Module._load (node:internal/modules/cjs/loader:1396:12)
+    at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+    at Module.require (node:internal/modules/cjs/loader:1617:12)
+    at require (node:internal/modules/helpers:153:16)
+    at Object.<anonymous> (/Users/builder/clone/node_modules/.pnpm/sharp@0.32.6/node_modules/sharp/lib/constructor.js:11:1)
+    at Module._compile (node:internal/modules/cjs/loader:1871:14)
+
+Node.js v24.18.0
+
+
+Build failed :|
+Step 5 script `Generate icons & splash` exited with status code 1
+
+
+Build failed :|
+Step 5 script `Generate icons & splash` exited with status code 1
