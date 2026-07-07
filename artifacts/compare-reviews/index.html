@@ -173,6 +173,7 @@
 
       /* ===== Footer line ===== */
       .foot-line { text-align: center; color: var(--navy); font-weight: 600; padding: 26px 0 54px; font-size: 14.5px; }
+      .foot-disclaimer { max-width: 720px; margin: 12px auto 0; font-size: 12px; font-weight: 400; color: var(--text-2); line-height: 1.55; }
 
       /* ===== Buttons ===== */
       .btn {
@@ -836,7 +837,10 @@
       </section>
     </main>
 
-    <footer class="page-shell foot-line">Independent. Unbiased. Built for smarter decisions.</footer>
+    <footer class="page-shell foot-line">
+      <div>Independent. Unbiased. Built for smarter decisions.</div>
+      <p class="foot-disclaimer">Find Business Reviews uses available public review data and AI analysis. AI may make mistakes. Information may be incomplete, outdated or inaccurate. Please verify information independently before making decisions.</p>
+    </footer>
 
     <!-- Report modal (full AI insights live here, opened from VIEW REPORT) -->
     <div id="reportModal" class="modal-overlay hidden">
