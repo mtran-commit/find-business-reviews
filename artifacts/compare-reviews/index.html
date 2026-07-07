@@ -110,6 +110,11 @@
       .hero-badge::before {
         content: ''; width: 8px; height: 8px; border-radius: 50%; background: var(--purple-2);
       }
+      .hero-logo {
+        display: block; width: 100%; max-width: 520px; height: auto;
+        margin: 0 auto 8px;
+      }
+      @media (max-width: 640px) { .hero-logo { max-width: 360px; } }
       .hero-sub {
         font-size: clamp(16px, 1.7vw, 19px); color: var(--navy);
         max-width: 660px; margin: 6px auto 0; line-height: 1.55;
@@ -745,6 +750,7 @@
     <main class="page-shell">
       <!-- Hero (landing only) -->
       <div id="heroWrap" class="hero">
+        <img class="hero-logo" src="./hero-logo.png" alt="Find Business Reviews — Compare all reviews with one click" />
         <div class="platform-strip">
           <div class="platform-pill">
             <img src="./icons/google.svg" alt="Google logo" class="platform-logo" />
