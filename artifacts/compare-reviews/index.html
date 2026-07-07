@@ -176,7 +176,34 @@
       .foot-disclaimer { max-width: 720px; margin: 12px auto 0; font-size: 12px; font-weight: 400; color: var(--text-2); line-height: 1.55; }
       .foot-affiliation { margin-top: 8px; font-size: 11px; }
       .foot-copyright { max-width: 720px; margin: 14px auto 0; font-size: 11px; font-weight: 400; color: var(--text-2); line-height: 1.55; }
+      .foot-links { margin-top: 14px; font-size: 12px; font-weight: 500; }
+      .foot-links a { color: var(--navy); text-decoration: underline; text-underline-offset: 2px; }
+      .foot-links a:hover { color: var(--purple); }
       .report-disclaimer { margin: 18px 0 2px; padding-top: 14px; border-top: 1px solid var(--border); font-size: 12px; color: var(--text-2); line-height: 1.55; }
+
+      /* ===== Terms & Conditions page (/terms) ===== */
+      .terms-page { max-width: 860px; margin: 0 auto; padding: 40px 24px 80px; color: var(--text); }
+      .terms-topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 34px; }
+      .terms-topbar img { height: 40px; width: auto; display: block; }
+      .terms-back { font-size: 14px; font-weight: 600; color: var(--navy); text-decoration: none; display: inline-flex; align-items: center; gap: 6px; }
+      .terms-back:hover { color: var(--purple); }
+      .terms-page h1 { font-size: 30px; font-weight: 900; color: var(--navy); letter-spacing: -.01em; line-height: 1.15; }
+      .terms-meta { margin: 16px 0 8px; padding: 18px 20px; background: var(--card); border: 1px solid var(--border); border-radius: 14px; font-size: 13.5px; color: var(--text-2); line-height: 1.7; }
+      .terms-meta strong { color: var(--navy); font-weight: 700; }
+      .terms-page h2 { font-size: 19px; font-weight: 800; color: var(--navy); margin: 38px 0 6px; padding-top: 20px; border-top: 1px solid var(--border); }
+      .terms-page h3 { font-size: 15px; font-weight: 700; color: var(--text); margin: 22px 0 8px; }
+      .terms-page p { font-size: 14.5px; line-height: 1.7; color: #2a2f38; margin: 10px 0; }
+      .terms-page ul, .terms-page ol { margin: 10px 0 10px 26px; }
+      .terms-page li { font-size: 14.5px; line-height: 1.7; color: #2a2f38; margin: 5px 0; }
+      .terms-page .terms-def { margin: 12px 0; }
+      .terms-page .terms-def strong { color: var(--navy); }
+      .terms-note { background: var(--purple-soft); border: 1px solid #E4D6FF; border-radius: 12px; padding: 16px 18px; margin: 14px 0; }
+      .terms-note p { margin: 6px 0; }
+      .terms-contact { margin-top: 6px; }
+      @media (max-width: 560px) {
+        .terms-page { padding: 26px 18px 60px; }
+        .terms-page h1 { font-size: 24px; }
+      }
 
       /* ===== Buttons ===== */
       .btn {
@@ -846,7 +873,509 @@
       <p class="foot-disclaimer">Find Business Reviews uses available public review data and AI analysis. AI may make mistakes. Information may be incomplete, outdated or inaccurate. Please verify information independently before making decisions.</p>
       <p class="foot-disclaimer foot-affiliation">Independent platform. Not affiliated with or endorsed by Google, Yelp, TripAdvisor, Trustpilot, ProductReview or Facebook.</p>
       <p class="foot-copyright">© 2026 Find Business Reviews. Powered by Quintessence Visionary Studio Pty Ltd. ACN 678 711 469 | ABN 15 678 711 469.</p>
+      <p class="foot-links"><a href="/terms">Terms &amp; Conditions</a></p>
     </footer>
+
+    <!-- Terms &amp; Conditions page. Rendered only at /terms. -->
+    <section id="termsRoot" class="terms-page hidden">
+      <div class="terms-topbar">
+        <a href="/"><img src="./hero-logo.png" alt="Find Business Reviews" /></a>
+        <a class="terms-back" href="/">&larr; Back to home</a>
+      </div>
+
+      <h1>Terms and Conditions</h1>
+      <div class="terms-meta">
+        Operated by <strong>Quintessence Visionary Studio Pty Ltd</strong><br />
+        ACN 678 711 469 &nbsp;|&nbsp; ABN 15 678 711 469<br />
+        Trading as <strong>Find Business Reviews</strong><br />
+        Governing Law: State of Victoria, Australia<br />
+        Effective Date: 3 July 2026 &nbsp;|&nbsp; Last Updated: 7 July 2026
+      </div>
+
+      <h2>Article 1 — Preliminary</h2>
+      <h3>1.1 Parties</h3>
+      <p>These Terms and Conditions constitute a legally binding agreement between:</p>
+      <ul>
+        <li>Quintessence Visionary Studio Pty Ltd, a company registered in Australia and operating from Victoria, Australia, trading as Find Business Reviews; and</li>
+        <li>the person, business, company, organisation, representative or user accessing, browsing, searching, purchasing, requesting or otherwise using the Find Business Reviews website, platform, reports, tools or services.</li>
+      </ul>
+      <h3>1.2 Acceptance of Terms</h3>
+      <p>By accessing, browsing, searching, purchasing, requesting a report, using the Platform or otherwise interacting with Find Business Reviews, you acknowledge that you have read, understood and agree to be bound by these Terms.</p>
+      <p>If you do not agree with these Terms, you must immediately cease using the Platform and must not purchase, request, use or rely on any report, score, summary, recommendation, comparison or other output generated by the Platform.</p>
+      <h3>1.3 Application</h3>
+      <p>These Terms apply to all users globally, including but not limited to:</p>
+      <ol type="a">
+        <li>users searching for business ratings;</li>
+        <li>users comparing public business reviews;</li>
+        <li>business owners;</li>
+        <li>business managers and employees;</li>
+        <li>marketing agencies and consultants;</li>
+        <li>authorised representatives of businesses;</li>
+        <li>persons purchasing paid reports; and</li>
+        <li>persons accessing AI-generated summaries, Trust Scores or review comparisons.</li>
+      </ol>
+      <h3>1.4 Free Search Without Account</h3>
+      <p>Find Business Reviews allows users to search and compare publicly available business ratings without creating an account.</p>
+      <p>Users of the free search are not required to provide their name, email address, phone number or other contact details.</p>
+      <p>The Company only directly collects personal or business information when a person chooses to submit information through a form, requests a paid Business Reputation Report, contacts us, or makes a payment through a third-party payment provider.</p>
+      <h3>1.5 Australian Consumer Law</h3>
+      <p>Nothing in these Terms excludes, restricts or modifies any consumer guarantee, right, remedy or protection that cannot lawfully be excluded, restricted or modified under the Australian Consumer Law or any other applicable law.</p>
+
+      <h2>Article 2 — Definitions and Interpretation</h2>
+      <h3>2.1 Definitions</h3>
+      <p>In these Terms, unless the context otherwise requires:</p>
+      <p class="terms-def"><strong>AI Content</strong> means any content, analysis, summary, Trust Score, sentiment analysis, risk assessment, recommendation, business insight, competitor comparison, action plan, response template or report generated, assisted or interpreted by artificial intelligence.</p>
+      <p class="terms-def"><strong>Business Report</strong> means any paid or unpaid business reputation report, AI Business Reputation Report, PDF report, dashboard report, Trust Score report, customer sentiment report or similar document generated or supplied by Find Business Reviews.</p>
+      <p class="terms-def"><strong>Company, we, us or our</strong> means Quintessence Visionary Studio Pty Ltd trading as Find Business Reviews.</p>
+      <p class="terms-def"><strong>Customer Data</strong> means information submitted by a user, including name, email address, phone number, business name, business address, website link, Google profile link, payment status, report request details and related information.</p>
+      <p class="terms-def"><strong>Free Search</strong> means the free business search and rating comparison feature available on the Platform without requiring account registration.</p>
+      <p class="terms-def"><strong>Paid Report Request</strong> means a request submitted by a business owner, manager, employee, consultant, agent or authorised representative for a paid Business Report.</p>
+      <p class="terms-def"><strong>Platform</strong> means the Find Business Reviews website, web application, search tools, dashboards, AI reports, paid reports, free summaries, APIs, payment links, admin systems and associated services.</p>
+      <p class="terms-def"><strong>Public Review Data</strong> means publicly available ratings, reviews, review snippets, review tags, platform categories, business listings, review counts, business profile details, customer comments and other information obtained from or relating to third-party platforms or public sources.</p>
+      <p class="terms-def"><strong>Third-Party Platforms</strong> means external platforms, data providers, search engines, directories, review platforms, social media platforms and websites, including but not limited to Google, Yelp, TripAdvisor, Trustpilot, ProductReview, Facebook, business directories, search APIs, payment providers and any similar external service.</p>
+      <p class="terms-def"><strong>Trust Score</strong> means an indicative score or estimate generated by the Platform using available Public Review Data, ratings, review counts, review text, platform availability, platform relevance, competitor signals and AI interpretation.</p>
+      <p class="terms-def"><strong>User, you or your</strong> means any person, business, company, organisation, representative or entity accessing or using the Platform.</p>
+      <h3>2.2 Interpretation</h3>
+      <p>In these Terms:</p>
+      <ol type="a">
+        <li>headings are for convenience only and do not affect interpretation;</li>
+        <li>the singular includes the plural and the plural includes the singular;</li>
+        <li>a reference to a person includes an individual, corporation, partnership, trust, association, government body or other entity;</li>
+        <li>a reference to law includes any amendment, consolidation or replacement of that law;</li>
+        <li>the words &ldquo;including&rdquo; and &ldquo;includes&rdquo; are not words of limitation; and</li>
+        <li>any obligation not to do something includes an obligation not to permit or assist that thing to be done.</li>
+      </ol>
+
+      <h2>Article 3 — Nature of the Platform</h2>
+      <h3>3.1 General Service</h3>
+      <p>Find Business Reviews provides a business review comparison, Trust Score and AI reputation analysis platform.</p>
+      <p>The Platform may allow users to:</p>
+      <ol type="a">
+        <li>search for businesses;</li>
+        <li>compare public ratings from Third-Party Platforms;</li>
+        <li>view Trust Scores;</li>
+        <li>view AI-generated review sentiment summaries;</li>
+        <li>request or purchase Business Reports;</li>
+        <li>view competitor comparisons;</li>
+        <li>receive recommended actions, offers or improvement opportunities;</li>
+        <li>access general business reputation insights; and</li>
+        <li>access information intended to assist with general decision-making.</li>
+      </ol>
+      <h3>3.2 Free Search Service</h3>
+      <p>The Free Search allows users to search for business ratings and public review signals without creating an account.</p>
+      <p>The Free Search may display available information from Third-Party Platforms and AI-generated summaries. Such information is provided for general informational purposes only and must not be treated as guaranteed, complete, current or professional advice.</p>
+      <h3>3.3 Business Report Service</h3>
+      <p>Businesses, authorised representatives or other permitted users may request a paid Business Report.</p>
+      <p>A Business Report is intended to help a business understand how its brand may be perceived across publicly available review platforms and public online sources.</p>
+      <p>Business Reports may identify customer sentiment, review themes, possible trust gaps, improvement opportunities and suggested actions.</p>
+      <h3>3.4 Informational Purpose Only</h3>
+      <p>The Platform and all AI Content are provided for general information, comparison and business insight purposes only.</p>
+      <p>The Platform does not provide legal, financial, accounting, tax, investment, marketing, advertising, reputation-management or professional advice.</p>
+      <h3>3.5 No Guarantee of Outcome</h3>
+      <p>The Company does not warrant, represent or guarantee that use of the Platform or any Business Report will result in:</p>
+      <ol type="a">
+        <li>increased sales;</li>
+        <li>increased bookings;</li>
+        <li>increased foot traffic;</li>
+        <li>improved ratings;</li>
+        <li>improved rankings;</li>
+        <li>removal of negative reviews;</li>
+        <li>improved customer sentiment;</li>
+        <li>additional leads;</li>
+        <li>increased revenue;</li>
+        <li>improved online visibility; or</li>
+        <li>any particular business result.</li>
+      </ol>
+
+      <h2>Article 4 — Third-Party Data and Public Review Information</h2>
+      <h3>4.1 Reliance on Third-Party Platforms</h3>
+      <p>The Platform relies on Public Review Data and Third-Party Platforms. The Company does not own, control or operate those Third-Party Platforms.</p>
+      <h3>4.2 Accuracy of Public Review Data</h3>
+      <p>You acknowledge that Public Review Data may be:</p>
+      <ol type="a">
+        <li>incomplete;</li>
+        <li>outdated;</li>
+        <li>inaccurate;</li>
+        <li>unavailable;</li>
+        <li>delayed;</li>
+        <li>duplicated;</li>
+        <li>incorrectly categorised;</li>
+        <li>limited by API access;</li>
+        <li>affected by search results;</li>
+        <li>affected by platform restrictions; or</li>
+        <li>different from what appears directly on a Third-Party Platform.</li>
+      </ol>
+      <h3>4.3 No Responsibility for Third-Party Content</h3>
+      <p>The Company is not responsible for any review, rating, comment, tag, score, business listing, platform profile, image, logo, ranking, customer statement, complaint or other content appearing on a Third-Party Platform.</p>
+      <h3>4.4 Platform Relevance by Industry</h3>
+      <p>You acknowledge that not every Third-Party Platform is relevant to every business category. For example, TripAdvisor may be highly relevant to hospitality or travel businesses but less relevant to certain professional services, trades or real estate agencies. The absence of data from a platform does not necessarily indicate poor reputation or poor business performance.</p>
+      <h3>4.5 Third-Party Platform Changes</h3>
+      <p>Third-Party Platforms may change their data, ranking systems, access rules, pricing, API terms, display format, rating system or availability at any time. The Company is not responsible for the impact of any such change on the Platform, Free Search, Trust Scores or Business Reports.</p>
+
+      <h2>Article 5 — Artificial Intelligence Disclaimer</h2>
+      <h3>5.1 Use of AI</h3>
+      <p>The Platform may use artificial intelligence systems to generate, summarise, classify, score, rank, compare and interpret Public Review Data.</p>
+      <h3>5.2 AI May Make Mistakes</h3>
+      <p>You expressly acknowledge and agree that AI Content may contain:</p>
+      <ol type="a">
+        <li>errors;</li>
+        <li>omissions;</li>
+        <li>incorrect assumptions;</li>
+        <li>incomplete analysis;</li>
+        <li>inaccurate classifications;</li>
+        <li>incorrect sentiment interpretation;</li>
+        <li>incorrect platform relevance assessments;</li>
+        <li>inaccurate competitor comparisons;</li>
+        <li>outdated data;</li>
+        <li>hallucinated outputs;</li>
+        <li>misleading outputs; or</li>
+        <li>unsuitable recommendations.</li>
+      </ol>
+      <h3>5.3 No Reliance Without Verification</h3>
+      <p>You must independently verify all AI Content, Public Review Data, Trust Scores, recommendations, report conclusions and business insights before relying on them or making any business, legal, financial, marketing, purchasing, booking or operational decision.</p>
+      <h3>5.4 No Liability for AI Errors</h3>
+      <p>To the maximum extent permitted by law, the Company is not liable for any loss, damage, cost, expense, claim, business decision, missed opportunity, reputational harm or other consequence arising from or connected with any AI error, omission, inaccuracy, assumption, recommendation or generated output.</p>
+      <h3>5.5 Human Review Recommended</h3>
+      <p>Business Reports and AI Content should be reviewed by an appropriate human decision-maker before being used for business, operational, marketing, legal or financial purposes.</p>
+
+      <h2>Article 6 — Trust Scores, Ratings and Sentiment Analysis</h2>
+      <h3>6.1 Indicative Nature of Trust Scores</h3>
+      <p>Trust Scores are indicative estimates only. They are not official ratings and are not issued, approved, endorsed or verified by any Third-Party Platform.</p>
+      <h3>6.2 Calculation Method</h3>
+      <p>A Trust Score may be calculated using available data, including:</p>
+      <ol type="a">
+        <li>ratings;</li>
+        <li>review volume;</li>
+        <li>review text or snippets;</li>
+        <li>review tags;</li>
+        <li>platform availability;</li>
+        <li>platform relevance;</li>
+        <li>competitor signals;</li>
+        <li>rating gaps;</li>
+        <li>review recency;</li>
+        <li>customer sentiment; and</li>
+        <li>AI interpretation.</li>
+      </ol>
+      <h3>6.3 No Warranty of Accuracy</h3>
+      <p>The Company does not warrant that any Trust Score, sentiment score, risk level, recommendation, ranking or comparison is accurate, complete, current or suitable for your intended purpose.</p>
+      <h3>6.4 Changes Over Time</h3>
+      <p>Trust Scores, review data, ratings and recommendations may change as new data becomes available or as Third-Party Platforms update, remove, restrict or alter their content.</p>
+      <h3>6.5 Customer Use of Trust Scores</h3>
+      <p>Users searching for businesses must not treat any Trust Score, AI summary or rating comparison as a guarantee that a business is safe, suitable, reliable, professional, compliant or appropriate for any particular transaction.</p>
+      <p>Users should check recent reviews, contact the business directly where appropriate, and make their own independent decision before buying, booking or visiting.</p>
+
+      <h2>Article 7 — Business Reports</h2>
+      <h3>7.1 Nature of Business Reports</h3>
+      <p>A Business Report may include, without limitation:</p>
+      <ol type="a">
+        <li>Trust Score;</li>
+        <li>platform comparison;</li>
+        <li>reputation analytics;</li>
+        <li>customer sentiment analysis;</li>
+        <li>customer voice analysis;</li>
+        <li>customer language insights;</li>
+        <li>review tag analysis;</li>
+        <li>strengths;</li>
+        <li>complaints or risk themes;</li>
+        <li>competitor snapshots;</li>
+        <li>platform checklist;</li>
+        <li>recommended offers;</li>
+        <li>action plans;</li>
+        <li>response templates;</li>
+        <li>commercial impact commentary;</li>
+        <li>confidence levels; and</li>
+        <li>final recommendations.</li>
+      </ol>
+      <h3>7.2 Report Limitations</h3>
+      <p>Business Reports are generated from available Public Review Data and AI analysis. They may not reflect all customer experiences, private customer feedback, deleted reviews, hidden reviews, unpublished reviews, confidential business records or data unavailable through Third-Party Platforms.</p>
+      <h3>7.3 No Defamatory or Conclusive Purpose</h3>
+      <p>Business Reports are not intended to defame, attack, guarantee, certify, rank conclusively or make final determinations about a business. Reports are intended to provide general insight and suggested actions based on available data.</p>
+      <h3>7.4 Data Quality</h3>
+      <p>Reports may include a data quality label such as High, Medium or Low. A lower data quality label means the report may have been generated from limited public data, limited review text, missing platform results or incomplete third-party information.</p>
+      <h3>7.5 Data Cut-Off</h3>
+      <p>A Business Report reflects available public data at or around the time the report is generated.</p>
+      <p>Public ratings, review counts, review text, business information and competitor data may change after the report is produced.</p>
+      <h3>7.6 Report Delivery</h3>
+      <p>Reports may be generated automatically, semi-automatically or manually. Reports may be delivered by email, download link, PDF or dashboard access.</p>
+      <h3>7.7 No Review Removal Service</h3>
+      <p>Find Business Reviews does not remove, edit, suppress or control reviews on Third-Party Platforms.</p>
+      <p>Any review removal, correction, dispute or appeal process must be handled directly with the relevant Third-Party Platform.</p>
+
+      <h2>Article 8 — Payment Terms</h2>
+      <h3>8.1 Paid Reports</h3>
+      <p>Certain Business Reports may require payment before generation, access, delivery or download.</p>
+      <h3>8.2 Pricing</h3>
+      <p>Prices are displayed on the Platform or payment page. Unless otherwise stated, prices are in Australian dollars.</p>
+      <h3>8.3 GST</h3>
+      <p>Where applicable, prices may include or exclude GST as stated at checkout or on the payment page.</p>
+      <h3>8.4 Payment Processing</h3>
+      <p>Payments may be processed by third-party payment processors, including Stripe or any other provider used by the Company.</p>
+      <p>The Company does not store full credit card details.</p>
+      <h3>8.5 Payment Before Report Generation</h3>
+      <p>You acknowledge that paid Business Reports may not be generated until payment has been received or manually confirmed.</p>
+      <h3>8.6 Report Request Information</h3>
+      <p>Before being directed to payment, a user requesting a paid Business Report may be required to provide:</p>
+      <ol type="a">
+        <li>full name;</li>
+        <li>email address;</li>
+        <li>phone number;</li>
+        <li>business name;</li>
+        <li>business address;</li>
+        <li>business website;</li>
+        <li>Google profile link or other business listing link;</li>
+        <li>report request details; and</li>
+        <li>confirmation that the requester is authorised to request the report.</li>
+      </ol>
+      <h3>8.7 Delivery Timeframes</h3>
+      <p>Any delivery timeframe is an estimate only unless expressly stated otherwise. Manual report generation may take additional time depending on available data and system availability.</p>
+
+      <h2>Article 9 — Refunds and Cancellation</h2>
+      <h3>9.1 Digital Nature of Reports</h3>
+      <p>Business Reports are digital products and are generated using data processing, AI analysis and report preparation.</p>
+      <h3>9.2 Refunds After Generation</h3>
+      <p>Subject to applicable law, refunds will generally not be provided once a report has been generated, delivered, downloaded or substantially prepared.</p>
+      <h3>9.3 Refunds May Be Considered</h3>
+      <p>A refund may be considered where:</p>
+      <ol type="a">
+        <li>payment was made in error;</li>
+        <li>duplicate payment occurred;</li>
+        <li>the Company is unable to supply the report;</li>
+        <li>the report request is refused before generation; or</li>
+        <li>a refund is required by law.</li>
+      </ol>
+      <h3>9.4 Consumer Guarantees</h3>
+      <p>Nothing in this Article excludes any consumer guarantee or statutory right that cannot be excluded under Australian Consumer Law.</p>
+
+      <h2>Article 10 — User Warranties and Authorised Representatives</h2>
+      <h3>10.1 Accuracy of Information</h3>
+      <p>You warrant that all information you provide to the Company is true, accurate, complete, current and not misleading.</p>
+      <h3>10.2 Authority to Request Business Reports</h3>
+      <p>Where you request or purchase a Business Report for a business, you warrant that you are:</p>
+      <ol type="a">
+        <li>the business owner;</li>
+        <li>a director, officer or manager of the business;</li>
+        <li>an employee authorised to act for the business; or</li>
+        <li>an authorised agent, consultant or representative of the business.</li>
+      </ol>
+      <h3>10.3 Verification</h3>
+      <p>The Company may request further information to verify your authority before generating, releasing or delivering a Business Report.</p>
+      <h3>10.4 Refusal of Service</h3>
+      <p>The Company may refuse, suspend or cancel a report request where it reasonably suspects that:</p>
+      <ol type="a">
+        <li>the request is unauthorised;</li>
+        <li>the information provided is false or misleading;</li>
+        <li>the report may be misused;</li>
+        <li>the request is fraudulent or abusive;</li>
+        <li>the request may create legal, privacy, reputational or safety concerns; or</li>
+        <li>there is insufficient public data to generate a meaningful report.</li>
+      </ol>
+
+      <h2>Article 11 — User Conduct</h2>
+      <p>You must not:</p>
+      <ol type="a">
+        <li>use the Platform unlawfully;</li>
+        <li>submit false or malicious information;</li>
+        <li>attempt to access admin systems without permission;</li>
+        <li>copy, scrape, reverse engineer or misuse the Platform;</li>
+        <li>interfere with Platform security or availability;</li>
+        <li>use bots, scrapers, automated scripts or bulk search tools without written permission;</li>
+        <li>use reports to harass, threaten, defame or damage another party;</li>
+        <li>falsely represent AI Content as verified fact;</li>
+        <li>remove disclaimers from Business Reports;</li>
+        <li>resell reports without permission; or</li>
+        <li>use the Platform in a way that may expose the Company to legal liability.</li>
+      </ol>
+
+      <h2>Article 12 — Fair Use</h2>
+      <h3>12.1 Fair Use of Free Search</h3>
+      <p>The Free Search is provided for ordinary, reasonable use.</p>
+      <p>The Company may limit, restrict, suspend or block access where usage appears excessive, automated, abusive, fraudulent, harmful or inconsistent with the intended use of the Platform.</p>
+      <h3>12.2 API and System Protection</h3>
+      <p>The Company may implement technical restrictions, rate limits, usage limits, security controls or access blocks to protect the Platform, manage costs and prevent misuse.</p>
+
+      <h2>Article 13 — Intellectual Property</h2>
+      <h3>13.1 Ownership</h3>
+      <p>All intellectual property in the Platform, including software, designs, templates, prompts, reports, Trust Score systems, branding, graphics, layouts, databases, workflows and content, is owned by or licensed to the Company.</p>
+      <h3>13.2 Limited Licence</h3>
+      <p>When you purchase or receive a Business Report, the Company grants you a limited, non-exclusive, non-transferable licence to use that report for your internal business insight purposes.</p>
+      <h3>13.3 Restrictions</h3>
+      <p>You must not reproduce, modify, sell, commercialise, redistribute, copy, adapt, reverse engineer or create derivative works from the Platform or report templates without written permission.</p>
+
+      <h2>Article 14 — Privacy and Data</h2>
+      <h3>14.1 No Customer Account Requirement</h3>
+      <p>Users are not required to create an account to use the Free Search.</p>
+      <p>The Company does not directly collect a Free Search user&rsquo;s name, email address or phone number unless the user voluntarily submits that information through a form, contact request, report request or payment process.</p>
+      <h3>14.2 Information Collected for Paid Reports</h3>
+      <p>The Company may collect information including your name, email address, phone number, business name, business address, business website, Google profile link, payment status, report request details and usage information when you request or purchase a paid Business Report.</p>
+      <h3>14.3 Technical Information</h3>
+      <p>The Company may collect limited technical information automatically, including IP address, browser type, device information, usage data, cookies, analytics data and server logs, depending on the tools used to operate and improve the Platform.</p>
+      <h3>14.4 Use of Information</h3>
+      <p>The Company may use information to:</p>
+      <ol type="a">
+        <li>provide the Platform;</li>
+        <li>process report requests;</li>
+        <li>generate and deliver Business Reports;</li>
+        <li>contact users;</li>
+        <li>manage payments;</li>
+        <li>improve services;</li>
+        <li>maintain records;</li>
+        <li>prevent misuse; and</li>
+        <li>comply with legal obligations.</li>
+      </ol>
+      <h3>14.5 Privacy Policy</h3>
+      <p>The handling of personal information is also governed by the Company&rsquo;s Privacy Policy.</p>
+      <p>APP 1 requires an APP entity to have a clearly expressed and up-to-date privacy policy about how it manages personal information.</p>
+
+      <h2>Article 15 — Third-Party Links, Logos and Trademarks</h2>
+      <h3>15.1 Third-Party Links</h3>
+      <p>The Platform may contain links to Third-Party Platforms. The Company is not responsible for those platforms, their content, policies, availability, security or accuracy.</p>
+      <h3>15.2 Third-Party Trademarks</h3>
+      <p>Names, trademarks, logos and brands of Third-Party Platforms remain the property of their respective owners.</p>
+      <h3>15.3 No Affiliation</h3>
+      <p>Unless expressly stated, the Company is not affiliated with, endorsed by, sponsored by, approved by or officially connected with Google, Yelp, TripAdvisor, Trustpilot, ProductReview, Facebook, Stripe or any other Third-Party Platform.</p>
+      <h3>15.4 Use of Third-Party Logos</h3>
+      <p>Where Third-Party Platform logos or names appear on the Platform, they are used only to identify the public review platforms or sources that may be compared, referenced or analysed.</p>
+      <p>Such use must not be interpreted as an endorsement, partnership, sponsorship or official relationship.</p>
+
+      <h2>Article 16 — Offers, Recommendations and Marketing Suggestions</h2>
+      <h3>16.1 Suggested Offers</h3>
+      <p>The Platform may suggest offers, promotions, discounts or business actions. These are suggestions only.</p>
+      <h3>16.2 User Responsibility</h3>
+      <p>You are responsible for determining whether any suggested offer or campaign is lawful, suitable, commercially viable and compliant with any applicable advertising, consumer, industry or platform rules.</p>
+      <h3>16.3 No Guarantee</h3>
+      <p>The Company does not guarantee that any suggested offer will increase bookings, sales, reputation, leads, reviews or revenue.</p>
+
+      <h2>Article 17 — Marketing Communications</h2>
+      <h3>17.1 Service Communications</h3>
+      <p>Where you submit a report request, payment or enquiry, the Company may contact you about that request, payment, delivery, support or related service matter.</p>
+      <h3>17.2 Marketing Communications</h3>
+      <p>The Company may send marketing communications where permitted by law or where you have consented.</p>
+      <p>You may unsubscribe from marketing communications at any time using the unsubscribe method provided or by contacting the Company.</p>
+
+      <h2>Article 18 — Limitation of Liability</h2>
+      <h3>18.1 Exclusion</h3>
+      <p>To the maximum extent permitted by law, the Company excludes all liability for any loss or damage arising out of or in connection with:</p>
+      <ol type="a">
+        <li>use of the Platform;</li>
+        <li>reliance on AI Content;</li>
+        <li>inaccurate or incomplete Public Review Data;</li>
+        <li>Third-Party Platform errors;</li>
+        <li>incorrect Trust Scores;</li>
+        <li>business decisions made using a report;</li>
+        <li>customer decisions made using Free Search;</li>
+        <li>loss of revenue, profit, goodwill, reputation or opportunity;</li>
+        <li>system downtime;</li>
+        <li>payment processor issues;</li>
+        <li>unauthorised access caused by factors outside the Company&rsquo;s reasonable control; or</li>
+        <li>any indirect, consequential, special or punitive loss.</li>
+      </ol>
+      <h3>18.2 Liability Cap</h3>
+      <p>To the maximum extent permitted by law, the Company&rsquo;s total aggregate liability in connection with any paid report is limited to the amount paid by you for that specific report.</p>
+      <h3>18.3 Non-Excludable Rights</h3>
+      <p>Nothing in these Terms excludes, restricts or modifies any liability, right or remedy that cannot lawfully be excluded, restricted or modified.</p>
+
+      <h2>Article 19 — Indemnity</h2>
+      <p>You agree to indemnify the Company, its directors, officers, employees, contractors and agents from and against any claim, loss, damage, liability, cost or expense arising from:</p>
+      <ol type="a">
+        <li>your breach of these Terms;</li>
+        <li>your misuse of the Platform;</li>
+        <li>your unauthorised report request;</li>
+        <li>information you submit;</li>
+        <li>your reliance on or use of AI Content;</li>
+        <li>your publication, distribution or misuse of a Business Report; or</li>
+        <li>your breach of any applicable law or third-party right.</li>
+      </ol>
+
+      <h2>Article 20 — Suspension and Termination</h2>
+      <p>The Company may suspend, restrict or terminate access to the Platform, refuse report generation, cancel a request or remove access to reports if it reasonably believes that:</p>
+      <ol type="a">
+        <li>you breached these Terms;</li>
+        <li>your conduct may cause harm;</li>
+        <li>your use is fraudulent, abusive or unlawful;</li>
+        <li>payment has not been received;</li>
+        <li>the report request is unauthorised;</li>
+        <li>continued access may expose the Company to legal, commercial or reputational risk; or</li>
+        <li>your use places unreasonable burden on the Platform or its third-party API costs.</li>
+      </ol>
+
+      <h2>Article 21 — International Use</h2>
+      <h3>21.1 Global Access</h3>
+      <p>The Platform may be accessed globally. However, the Company operates from Victoria, Australia.</p>
+      <h3>21.2 Local Laws</h3>
+      <p>You are responsible for complying with laws applicable in your location.</p>
+      <h3>21.3 No Representation</h3>
+      <p>The Company does not represent that the Platform is appropriate, lawful or available in every jurisdiction.</p>
+
+      <h2>Article 22 — Dispute Resolution</h2>
+      <h3>22.1 Good Faith Negotiation</h3>
+      <p>Before commencing formal proceedings, a party must notify the other party of the dispute and allow a reasonable opportunity to resolve the matter in good faith.</p>
+      <h3>22.2 Contact</h3>
+      <p>Dispute notices should be sent to:</p>
+      <p class="terms-contact">Email: hello@findbusinessreviews.com</p>
+      <h3>22.3 Injunctive Relief</h3>
+      <p>Nothing prevents the Company from seeking urgent injunctive or equitable relief where necessary to protect its rights, systems, intellectual property, confidential information or reputation.</p>
+
+      <h2>Article 23 — Governing Law and Jurisdiction</h2>
+      <h3>23.1 Governing Law</h3>
+      <p>These Terms are governed by and construed in accordance with the laws of the State of Victoria, Australia.</p>
+      <h3>23.2 Jurisdiction</h3>
+      <p>Subject to any non-excludable rights under applicable law, the parties submit to the exclusive jurisdiction of the courts and tribunals of Victoria, Australia.</p>
+
+      <h2>Article 24 — Amendments</h2>
+      <p>The Company may amend these Terms at any time by publishing an updated version on the Platform.</p>
+      <p>Your continued use of the Platform after publication of updated Terms constitutes acceptance of those updated Terms.</p>
+
+      <h2>Article 25 — Severability</h2>
+      <p>If any provision of these Terms is invalid, void, illegal or unenforceable, that provision is severed to the extent necessary and the remaining provisions continue in full force and effect.</p>
+
+      <h2>Article 26 — Entire Agreement</h2>
+      <p>These Terms, together with any Privacy Policy, payment terms, report disclaimer, cookie notice or additional terms published by the Company, constitute the entire agreement between the parties in relation to the Platform.</p>
+
+      <h2>Article 27 — Notices</h2>
+      <p>The Company may provide notices by email, Platform notification, website publication or any other reasonable method.</p>
+      <p>You may contact the Company at:</p>
+      <p class="terms-contact">Quintessence Visionary Studio Pty Ltd<br />Trading as Find Business Reviews<br />Victoria, Australia<br />Email: hello@findbusinessreviews.com</p>
+
+      <h2>Schedule 1 — AI Report Disclaimer</h2>
+      <p>The following disclaimer applies to every Trust Score, AI Review Sentiment summary and Business Report:</p>
+      <div class="terms-note">
+        <p>This report is generated using available public review data, third-party platform signals and artificial intelligence analysis. AI-generated content may contain errors, omissions, incorrect assumptions or incomplete interpretations. Public review data may be incomplete, outdated or unavailable and may change after the report is generated.</p>
+        <p>This report is provided for general business insight purposes only and should not be treated as legal, financial, accounting, marketing, reputation-management or professional advice. Find Business Reviews does not guarantee improved ratings, reviews, rankings, sales, bookings, revenue, customer trust or business outcomes. You should independently verify all information before relying on it or making business decisions.</p>
+      </div>
+
+      <h2>Schedule 2 — Free Search Notice</h2>
+      <p>The following notice should appear near the Free Search or Trust Score results:</p>
+      <div class="terms-note">
+        <p>Free search results are generated from available public review data and AI analysis. AI may make mistakes and public data may be incomplete or change over time. Trust Scores are indicative estimates only. Please check recent reviews and verify information independently before buying, booking or visiting.</p>
+      </div>
+
+      <h2>Schedule 3 — Payment and Delivery Notice</h2>
+      <p>Before purchasing a paid Business Report, users should be shown the following notice:</p>
+      <div class="terms-note">
+        <p>Payment is processed securely by a third-party payment provider. Find Business Reviews does not store full credit card details. After payment, your report will be prepared using available public review data and AI analysis. AI may make mistakes and public review data may be incomplete or change over time. Unless otherwise stated, your report will be sent to the email address provided during the request process.</p>
+      </div>
+
+      <h2>Schedule 4 — Authorised Representative Declaration</h2>
+      <p>Before requesting a Business Report, the user should confirm:</p>
+      <div class="terms-note">
+        <p>I confirm that I am the business owner, manager, employee, consultant, agent or authorised representative of the business for which I am requesting this report. I confirm that the information I have provided is true, accurate and not misleading.</p>
+      </div>
+
+      <h2>Schedule 5 — Platform Relevance Notice</h2>
+      <div class="terms-note">
+        <p>Not all review platforms are equally relevant to every industry. Find Business Reviews may analyse available data from platforms such as Google, Yelp, TripAdvisor, Trustpilot, ProductReview, Facebook and other public sources, but the relevance of those platforms may vary depending on the business category. Missing or low-volume data from a less relevant platform should not be treated as a conclusive negative indicator.</p>
+      </div>
+
+      <h2>Schedule 6 — Trademark and Independence Notice</h2>
+      <div class="terms-note">
+        <p>Find Business Reviews is independent and is not affiliated with, endorsed by, sponsored by, approved by or officially connected with Google, Yelp, TripAdvisor, Trustpilot, ProductReview, Facebook, Stripe or any other third-party platform. All trademarks, logos and brand names belong to their respective owners.</p>
+      </div>
+
+      <h2>Schedule 7 — Data Cut-Off Notice</h2>
+      <div class="terms-note">
+        <p>Any Business Report reflects available public review data at or around the generated date. Ratings, review counts, review text, platform information, business information and competitor data may change after the report is produced.</p>
+      </div>
+    </section>
 
     <!-- Report modal (full AI insights live here, opened from VIEW REPORT) -->
     <div id="reportModal" class="modal-overlay hidden">
@@ -2462,9 +2991,28 @@
         loadAdminRequests();
       }
 
-      // Route: render the admin page OR the public app, never both.
+      // ---------------------------------------------------------------------
+      // Terms & Conditions page — /terms
+      // Static legal content; rendered instead of the public app.
+      // ---------------------------------------------------------------------
+      function isTermsPath() {
+        return /\/terms\/?$/.test(window.location.pathname);
+      }
+
+      function initTermsPage() {
+        // Hide the public app entirely, show the terms content.
+        document.querySelectorAll('body > header, body > main, body > footer, #reportModal, #adminRoot')
+          .forEach(function (el) { el.classList.add('hidden'); });
+        document.getElementById('termsRoot').classList.remove('hidden');
+        document.title = 'Terms & Conditions — Find Business Reviews';
+        window.scrollTo(0, 0);
+      }
+
+      // Route: render the admin page, terms page, OR the public app — never more than one.
       if (isAdminPath()) {
         initAdminPage();
+      } else if (isTermsPath()) {
+        initTermsPage();
       } else {
         // Deep-link: ?q=<business> auto-runs a search on load.
         (function () {
