@@ -1912,10 +1912,33 @@
       // Resolve a trustworthy logo URL for a business object, or "" for initials.
       // The backend only sets high/medium confidence for a logo scraped from the
       // business's own official website; we trust that plus the safety net above.
+      // Reads the structured `logo` object; tolerates the old flat shape too.
+      function logoInfo(biz) {
+        if (!biz) return { url: '', source: 'fallback', confidence: 'none', reason: 'no business' };
+        var l = biz.logo || {};
+        return {
+          url: l.url || biz.logoUrl || '',
+          source: l.source || biz.logoSource || 'fallback',
+          confidence: l.confidence || biz.logoConfidence || 'none',
+          reason: l.reason || ''
+        };
+      }
       function safeLogoUrl(biz) {
-        if (!biz) return '';
-        if (biz.logoConfidence !== 'high' && biz.logoConfidence !== 'medium') return '';
-        return isValidBusinessLogo(biz.logoUrl) ? biz.logoUrl : '';
+        var info = logoInfo(biz);
+        var url = '';
+        if (info.confidence === 'high' || info.confidence === 'medium') {
+          url = isValidBusinessLogo(info.url) ? info.url : '';
+        }
+        // Debug: surface the logo decision + whether initials will be used.
+        try {
+          if (biz && biz.name && window.console && console.debug) {
+            console.debug('[logo]', biz.name, {
+              url: info.url, source: info.source, confidence: info.confidence,
+              reason: info.reason, initialsFallback: !url
+            });
+          }
+        } catch (e) {}
+        return url;
       }
 
       // ---- Logo rendering: real logo if present, else initials fallback ----

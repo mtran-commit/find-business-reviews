@@ -7,7 +7,12 @@ import {
   dataforseoTrustpilotReviews,
   type DataforseoCreds,
 } from "./dataforseo";
-import { resolveWebsiteLogo, type LogoConfidence } from "./logo";
+import {
+  resolveWebsiteLogo,
+  type LogoConfidence,
+  type LogoSource,
+  type ResolvedLogo,
+} from "./logo";
 
 /**
  * Business reviews lookup across a split of two providers.
@@ -58,17 +63,25 @@ export interface Offer {
   demo: boolean;
 }
 
+/**
+ * Structured brand-logo decision. `url` is null (confidence "none") whenever no
+ * trustworthy logo was found — the UI shows initials in that case. Only show the
+ * image when `confidence` is "high" or "medium". `reason` aids debugging.
+ */
+export interface BusinessLogo {
+  url: string | null;
+  source: LogoSource;
+  confidence: LogoConfidence;
+  reason: string;
+}
+
 /** A nearby business for the comparison rows. `demo` flags fallback data. */
 export interface NearbyBusiness {
   name: string;
   category: string;
   location: string;
-  /** Brand logo URL; only trust it when `logoConfidence` is high/medium. */
-  logoUrl: string;
-  /** high/medium only when the logo is confidently the business's own mark. */
-  logoConfidence: LogoConfidence;
-  /** Where the logo came from ("website" | "favicon" | "" when none). */
-  logoSource: string;
+  /** Structured brand-logo decision (show only when high/medium confidence). */
+  logo: BusinessLogo;
   /** Colour business photo when available (optional for rows). */
   imageUrl: string;
   google: PlatformRating | null;
@@ -99,12 +112,8 @@ export interface BusinessReviews {
   name: string;
   address: string;
   logoText: string;
-  /** Brand logo URL; only trust it when `logoConfidence` is high/medium. */
-  logoUrl: string;
-  /** high/medium only when the logo is confidently the business's own mark. */
-  logoConfidence: LogoConfidence;
-  /** Where the logo came from ("website" | "favicon" | "" when none). */
-  logoSource: string;
+  /** Structured brand-logo decision (show only when high/medium confidence). */
+  logo: BusinessLogo;
   /** Colour business photo when available (Google Maps thumbnail). */
   imageUrl: string;
   website: string;
@@ -163,6 +172,33 @@ function initials(name: string): string {
     .slice(0, 2)
     .map((w) => w[0]?.toUpperCase() ?? "")
     .join("");
+}
+
+/** A "no trustworthy logo" decision (UI shows initials). */
+function makeFallbackLogo(reason: string): ResolvedLogo {
+  return { url: null, source: "fallback", confidence: "none", reason };
+}
+
+/** True when the UI will fall back to initials for this logo decision. */
+function usesInitialsFallback(logo: BusinessLogo): boolean {
+  return (
+    !logo.url || (logo.confidence !== "high" && logo.confidence !== "medium")
+  );
+}
+
+/** Structured per-result logging of the logo decision, for debugging. */
+function logLogoDecision(name: string, logo: BusinessLogo, log?: Logger): void {
+  log?.info(
+    {
+      business: name,
+      logoUrl: logo.url,
+      logoSource: logo.source,
+      logoConfidence: logo.confidence,
+      logoReason: logo.reason,
+      initialsFallback: usesInitialsFallback(logo),
+    },
+    "logo decision",
+  );
 }
 
 /** Derive a Yelp `find_loc` (city/region) from a Google-style address. */
@@ -313,14 +349,13 @@ export async function fetchBusinessReviews(
     fetchSimilarBusinesses(category, locality, name, creds, log),
     resolveWebsiteLogo(website, log),
   ]);
+  logLogoDecision(name, logo, log);
 
   return {
     name,
     address,
     logoText: initials(name),
-    logoUrl: logo?.url ?? "",
-    logoConfidence: logo?.confidence ?? "low",
-    logoSource: logo?.source ?? "",
+    logo,
     imageUrl,
     website,
     phone,
@@ -661,9 +696,7 @@ export function buildCategoryDemoNearby(
       name: nm,
       category: `${category.rowLabel} · ${place}`,
       location: place,
-      logoUrl: "",
-      logoConfidence: "low",
-      logoSource: "",
+      logo: makeFallbackLogo("demo row (no real business)"),
       imageUrl: "",
       google: demoRating(seed + "g", 60, 360),
       yelp: yelp ? demoRating(seed + "y", 20, 180) : null,
@@ -745,9 +778,7 @@ export async function fetchSimilarBusinesses(
         name: title,
         category: `${category.rowLabel} · ${rowSuburb}`,
         location: rowSuburb,
-        logoUrl: "",
-        logoConfidence: "low",
-        logoSource: "",
+        logo: makeFallbackLogo("logo not yet resolved"),
         imageUrl: rowThumb,
         google: dfsRating(r),
         yelp: null,
@@ -765,15 +796,15 @@ export async function fetchSimilarBusinesses(
   // Best-effort brand logos for real peers, resolved concurrently from each
   // peer's own website (cached; misses simply leave the initials fallback).
   const logos = await Promise.all(
-    sites.map((site) => resolveWebsiteLogo(site, log).catch(() => null)),
+    sites.map((site) =>
+      resolveWebsiteLogo(site, log).catch(
+        (): ResolvedLogo => makeFallbackLogo("logo lookup failed"),
+      ),
+    ),
   );
   results.forEach((row, i) => {
-    const lg = logos[i];
-    if (lg) {
-      row.logoUrl = lg.url;
-      row.logoConfidence = lg.confidence;
-      row.logoSource = lg.source;
-    }
+    row.logo = logos[i] ?? row.logo;
+    logLogoDecision(row.name, row.logo, log);
   });
   return results;
 }

@@ -22,12 +22,36 @@ import type { Logger } from "pino";
  * memory for 24h so we never refetch the same site during a session.
  */
 
-export type LogoConfidence = "high" | "medium" | "low";
+export type LogoConfidence = "high" | "medium" | "low" | "none";
+
+/**
+ * Where a logo came from. Only the `website_*` and `favicon` sources are
+ * actually produced by this scraper (the business's own domain = our allow
+ * list). `google`/`facebook` exist in the union so downstream code and future
+ * confidence-gated brand sources can be represented, but platform images are
+ * NEVER auto-trusted here — see the banned list below.
+ */
+export type LogoSource =
+  | "website_schema"
+  | "website_icon"
+  | "website_og"
+  | "favicon"
+  | "google"
+  | "facebook"
+  | "fallback";
 
 export interface ResolvedLogo {
-  url: string;
-  source: "website" | "favicon";
+  /** Absolute http(s) URL, or null when nothing trustworthy was found. */
+  url: string | null;
+  source: LogoSource;
   confidence: LogoConfidence;
+  /** Human-readable explanation of the decision, for logging/debugging. */
+  reason: string;
+}
+
+/** The "no trustworthy logo" result — the UI shows initials for this. */
+function fallbackLogo(reason: string): ResolvedLogo {
+  return { url: null, source: "fallback", confidence: "none", reason };
 }
 
 /**
@@ -65,7 +89,7 @@ const BANNED = [
 ];
 
 const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const cache = new Map<string, { value: ResolvedLogo | null; expires: number }>();
+const cache = new Map<string, { value: ResolvedLogo; expires: number }>();
 
 const FETCH_TIMEOUT_MS = 3000;
 const MAX_HTML_BYTES = 512 * 1024;
@@ -287,23 +311,26 @@ function attr(tag: string, name: string): string {
 
 /** Fetch the homepage HTML (bounded time + size); "" on any failure. */
 async function fetchHtml(url: string, log?: Logger): Promise<{ html: string; finalUrl: string }> {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
-  try {
-    // Follow redirects manually so every hop's host can be SSRF-checked — a
-    // public URL must never be able to redirect us into a private network.
-    let current = url;
-    for (let hop = 0; hop < MAX_REDIRECTS; hop++) {
-      let host: string;
-      try {
-        host = new URL(current).hostname;
-      } catch {
-        return { html: "", finalUrl: current };
-      }
-      if (!isPublicHost(host)) {
-        log?.debug({ url: current }, "logo: blocked non-public host");
-        return { html: "", finalUrl: current };
-      }
+  // Follow redirects manually so every hop's host can be SSRF-checked — a
+  // public URL must never be able to redirect us into a private network. Each
+  // hop gets its own timeout budget (many sites do http->https->www, and one
+  // shared budget across all hops made real sites time out and fall to
+  // initials).
+  let current = url;
+  for (let hop = 0; hop < MAX_REDIRECTS; hop++) {
+    let host: string;
+    try {
+      host = new URL(current).hostname;
+    } catch {
+      return { html: "", finalUrl: current };
+    }
+    if (!isPublicHost(host)) {
+      log?.debug({ url: current }, "logo: blocked non-public host");
+      return { html: "", finalUrl: current };
+    }
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
       const res = await fetch(current, {
         redirect: "manual",
         signal: controller.signal,
@@ -331,26 +358,27 @@ async function fetchHtml(url: string, log?: Logger): Promise<{ html: string; fin
         buf.byteLength > MAX_HTML_BYTES ? buf.slice(0, MAX_HTML_BYTES) : buf;
       const html = new TextDecoder("utf-8", { fatal: false }).decode(bytes);
       return { html, finalUrl: current };
+    } catch (err) {
+      log?.debug({ err, url: current }, "logo: homepage fetch failed");
+      return { html: "", finalUrl: current };
+    } finally {
+      clearTimeout(timer);
     }
-    return { html: "", finalUrl: current };
-  } catch (err) {
-    log?.debug({ err, url }, "logo: homepage fetch failed");
-    return { html: "", finalUrl: url };
-  } finally {
-    clearTimeout(timer);
   }
+  return { html: "", finalUrl: current };
 }
 
 /**
  * Resolve a trustworthy brand logo for a business from its official website.
- * Returns null (→ initials in the UI) when nothing safe is found.
+ * Always returns a structured result; `url: null` (confidence "none") means the
+ * UI should show initials. The `reason` explains the decision for logging.
  */
 export async function resolveWebsiteLogo(
   website: string,
   log?: Logger,
-): Promise<ResolvedLogo | null> {
+): Promise<ResolvedLogo> {
   const site = normalizeSite(website);
-  if (!site) return null;
+  if (!site) return fallbackLogo("no usable website on record");
 
   const cacheKey = (() => {
     try {
@@ -372,23 +400,25 @@ export async function resolveWebsiteLogo(
 async function resolveUncached(
   site: string,
   log?: Logger,
-): Promise<ResolvedLogo | null> {
+): Promise<ResolvedLogo> {
   const { html, finalUrl } = await fetchHtml(site, log);
-  if (!html) return null;
+  if (!html) return fallbackLogo("homepage unreachable or not HTML");
 
-  // Priority order: JSON-LD logo (high) -> apple-touch-icon (high) ->
-  // icon link png/svg (medium) -> og:image / twitter:image (medium).
+  // Allow-list model: candidates are only sourced from the business's OWN
+  // homepage, in priority order. JSON-LD logo (high) -> apple-touch-icon
+  // (high) -> icon link png/svg (medium) -> og:image / twitter:image (medium).
   // og/twitter images may be served extensionless from CDNs; all other
   // sources must carry an image file extension.
   const candidates: Array<{
     raw: string;
+    source: LogoSource;
     confidence: LogoConfidence;
     requireImageExt: boolean;
   }> = [
-    { raw: findJsonLdLogo(html), confidence: "high", requireImageExt: true },
-    { raw: findAppleTouchIcon(html), confidence: "high", requireImageExt: true },
-    { raw: findIconLink(html), confidence: "medium", requireImageExt: true },
-    { raw: findMetaImage(html), confidence: "medium", requireImageExt: false },
+    { raw: findJsonLdLogo(html), source: "website_schema", confidence: "high", requireImageExt: true },
+    { raw: findAppleTouchIcon(html), source: "website_icon", confidence: "high", requireImageExt: true },
+    { raw: findIconLink(html), source: "favicon", confidence: "medium", requireImageExt: true },
+    { raw: findMetaImage(html), source: "website_og", confidence: "medium", requireImageExt: false },
   ];
 
   for (const cand of candidates) {
@@ -397,11 +427,13 @@ async function resolveUncached(
     if (!abs || !isAllowed(abs, cand.requireImageExt)) continue;
     // A high-confidence mark that lives off the business's own domain is less
     // certain — keep it, but downgrade to medium.
+    const offDomain = !sameSite(abs, finalUrl);
     const confidence: LogoConfidence =
-      cand.confidence === "high" && !sameSite(abs, finalUrl)
-        ? "medium"
-        : cand.confidence;
-    return { url: abs, source: "website", confidence };
+      cand.confidence === "high" && offDomain ? "medium" : cand.confidence;
+    const reason = offDomain
+      ? `${cand.source} found off the business's own domain (downgraded)`
+      : `${cand.source} on the business's own domain`;
+    return { url: abs, source: cand.source, confidence, reason };
   }
-  return null;
+  return fallbackLogo("no trustworthy logo on homepage");
 }

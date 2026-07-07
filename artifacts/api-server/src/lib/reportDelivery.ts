@@ -128,6 +128,26 @@ export async function runReportGeneration(
       throw new Error("No review data available for this business.");
     }
 
+    // Back-compat: an old saved snapshot may predate the structured `logo`
+    // object and only carry the legacy flat `logoUrl`/`logoConfidence`/
+    // `logoSource` fields (or nothing). Normalise to a `logo` object so the
+    // report renderer can always read `data.logo.*` without throwing.
+    if (!data.logo) {
+      const legacy = data as unknown as {
+        logoUrl?: string | null;
+        logoSource?: string;
+        logoConfidence?: string;
+      };
+      data.logo = {
+        url: legacy.logoUrl ?? null,
+        source: (legacy.logoSource as BusinessReviews["logo"]["source"]) ?? "fallback",
+        confidence:
+          (legacy.logoConfidence as BusinessReviews["logo"]["confidence"]) ??
+          (legacy.logoUrl ? "medium" : "none"),
+        reason: "normalised from legacy snapshot",
+      };
+    }
+
     // Best-effort review snippets for richer AI theme analysis. A failure here
     // just yields fewer snippets (and a lower data-quality score), never aborts.
     let snippets: ReviewSnippets = {
@@ -185,6 +205,10 @@ export async function runReportGeneration(
       snippets,
     );
 
+    // Only a high/medium-confidence own-website logo is trusted here.
+    const websiteLogoTrusted =
+      data.logo.confidence === "high" || data.logo.confidence === "medium";
+
     const report: BusinessReport = {
       businessName: row.businessName,
       businessAddress: row.businessAddress,
@@ -199,12 +223,12 @@ export async function runReportGeneration(
       // show a neat initials tile.
       businessLogo:
         branding.businessLogo ||
-        (data.logoConfidence !== "low" && data.logoUrl ? data.logoUrl : ""),
+        (websiteLogoTrusted && data.logo.url ? data.logo.url : ""),
       businessLogoSource:
         branding.businessLogo && branding.businessLogoSource
           ? branding.businessLogoSource
-          : data.logoConfidence !== "low" && data.logoUrl
-            ? data.logoSource || "website"
+          : websiteLogoTrusted && data.logo.url
+            ? data.logo.source || "website"
             : "",
       businessImage: data.imageUrl || branding.businessImage || "",
       socialPresence: {
