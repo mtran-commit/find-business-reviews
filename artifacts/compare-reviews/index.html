@@ -91,9 +91,10 @@
       .search-field input::placeholder { color: var(--text-2); }
       .search-divider { width: 1px; align-self: stretch; margin: 10px 4px; background: var(--border); flex-shrink: 0; }
       .search-cta {
-        flex-shrink: 0; height: 56px; font-family: inherit; font-weight: 800; font-size: 14.5px;
-        letter-spacing: .3px; color: #fff; background: var(--navy); border: none; cursor: pointer;
-        border-radius: 999px; padding: 0 28px; white-space: nowrap;
+        flex-shrink: 0; width: 58px; height: 58px; font-family: inherit;
+        color: #fff; background: var(--navy); border: none; cursor: pointer;
+        border-radius: 50%; padding: 0;
+        display: grid; place-items: center;
         transition: opacity .15s, transform .05s;
       }
       .search-cta:hover { opacity: .9; }
@@ -766,7 +767,9 @@
             <input id="locationInput" type="search" autocomplete="off"
                    placeholder="Enter location or suburb..." />
           </div>
-          <button id="searchBtn" class="search-cta">SEARCH</button>
+          <button id="searchBtn" class="search-cta" aria-label="Search">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          </button>
         </div>
       </div>
 
