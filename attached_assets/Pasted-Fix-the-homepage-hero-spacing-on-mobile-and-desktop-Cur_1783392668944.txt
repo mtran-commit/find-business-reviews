@@ -1,0 +1,145 @@
+Fix the homepage hero spacing on mobile and desktop.
+
+Current issue:
+There is too much vertical gap between:
+1. the logo/tagline area
+2. the search bar
+3. the platform logo icons
+
+The page feels empty and the search bar is pushed too far down.
+
+Please reduce the vertical spacing and make the hero more compact.
+
+Update the CSS for the homepage hero section.
+
+Requirements:
+
+1. Reduce top padding of the hero section
+Current spacing is too large.
+Set mobile hero padding to approximately:
+
+padding-top: 40px;
+padding-bottom: 24px;
+
+Desktop can be:
+
+padding-top: 70px;
+padding-bottom: 40px;
+
+2. Reduce space below the logo/tagline
+
+The logo block should have smaller margin-bottom.
+
+Use:
+
+.logo-hero,
+.hero-logo,
+.brand-logo-section {
+  margin-bottom: 28px;
+}
+
+On mobile:
+
+.logo-hero,
+.hero-logo,
+.brand-logo-section {
+  margin-bottom: 22px;
+}
+
+3. Bring search bar closer to the logo
+
+The search section should not have large top margin.
+
+Use:
+
+.search-section,
+.hero-search,
+.search-container {
+  margin-top: 0;
+  margin-bottom: 24px;
+}
+
+4. Bring platform icons closer to the search bar
+
+The platform logo row should sit directly under the search bar.
+
+Use:
+
+.platform-icons,
+.platform-logo-row,
+.review-platforms {
+  margin-top: 18px;
+}
+
+On mobile:
+
+.platform-icons,
+.platform-logo-row,
+.review-platforms {
+  margin-top: 14px;
+}
+
+5. Reduce unnecessary min-height
+
+If the hero section has:
+
+min-height: 100vh;
+height: 100vh;
+padding-top: 160px;
+margin-top: 120px;
+
+Remove or reduce these.
+
+Use:
+
+.hero {
+  min-height: auto;
+}
+
+6. Mobile layout should be compact
+
+For screens under 768px:
+
+.hero {
+  padding-top: 36px;
+  padding-bottom: 24px;
+}
+
+.hero-logo img {
+  max-width: 210px;
+}
+
+.hero-tagline {
+  margin-top: 6px;
+  font-size: 12px;
+}
+
+.search-wrapper {
+  margin-top: 22px;
+}
+
+.platform-icons {
+  margin-top: 14px;
+}
+
+7. Search bar position
+
+The search bar should appear visually close to the logo, like this order:
+
+Logo
+Tagline
+small gap
+Search bar
+small gap
+Platform logos
+
+Do not leave a large blank white space between tagline and search bar.
+
+8. Final result
+
+The homepage should look tighter and more professional:
+- logo near top
+- search bar directly underneath
+- platform logos close below
+- no large empty white gap
+- works well on mobile
