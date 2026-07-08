@@ -10,7 +10,6 @@ workflows:
       vars:
         BUNDLE_ID: "com.findbusinessreviews.app"
         APP_STORE_APPLE_ID: 6788556329   # numeric Apple ID of the app from App Store Connect
-        APP_VERSION: "1.1"               # marketing version (CFBundleShortVersionString); must be HIGHER than the last App Store-approved version
       groups: []
     integrations:
       app_store_connect: fbr_app_store   # your Codemagic App Store Connect integration name
@@ -91,13 +90,9 @@ workflows:
           keychain add-certificates
       - name: Apply provisioning profiles to the project
         script: xcode-project use-profiles
-      - name: Set app version & build number
+      - name: Increment build number
         script: |
-          set -e
           cd artifacts/compare-reviews/ios/App
-          # Marketing version: the generated Capacitor project always defaults to 1.0,
-          # which Apple rejects once 1.0 has been approved on the App Store.
-          agvtool new-marketing-version "$APP_VERSION"
           agvtool new-version -all $(($BUILD_NUMBER))
       - name: Build & archive (.ipa)
         script: |

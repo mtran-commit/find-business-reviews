@@ -258,14 +258,9 @@ workflows:
           keychain add-certificates
       - name: Apply provisioning profiles to the project
         script: xcode-project use-profiles
-      - name: Set app version & build number
+      - name: Increment build number
         script: |
-          set -e
           cd artifacts/compare-reviews/ios/App
-          # Marketing version: the generated Capacitor project always defaults to 1.0,
-          # which Apple rejects once 1.0 has been approved on the App Store.
-          # Bump APP_VERSION (in vars above) for each new App Store release.
-          agvtool new-marketing-version "$APP_VERSION"
           agvtool new-version -all $(($BUILD_NUMBER))
       - name: Build & archive (.ipa)
         script: |
