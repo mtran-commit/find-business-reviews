@@ -390,8 +390,6 @@
       .platform-row-meta b { font-size: 13.5px; font-weight: 800; }
       .platform-row-meta .count { color: var(--text-2); font-size: 12px; }
       .platform-row-na-text { justify-self: end; font-size: 12.5px; color: var(--text-2); }
-      .platform-row-checking { animation: checkingPulse 1.4s ease-in-out infinite; }
-      @keyframes checkingPulse { 0%, 100% { opacity: 0.9; } 50% { opacity: 0.35; } }
 
       /* Trust score panel (white, right side) */
       .score-panel {
@@ -1856,31 +1854,14 @@
       const IS_NATIVE_APP = window.location.protocol === 'capacitor:';
       const API_BASE = IS_NATIVE_APP ? 'https://findbusinessreviews.com/api' : '/api';
 
-      // Phase-1: fast core lookup (Google profile + rating, logo, nearby).
-      // The five slow platforms come back `pending` and are resolved one-by-one
-      // via fetchPlatformRating below — keeping every request well under the
-      // ~60s hard timeout iPhones apply to web requests.
       async function fetchBusinessReviews(query) {
-        const res = await fetch(API_BASE + '/search-business?phase=core&query=' + encodeURIComponent(query));
+        const res = await fetch(API_BASE + '/search-business?query=' + encodeURIComponent(query));
         let body = null;
         try { body = await res.json(); } catch (e) { /* not JSON */ }
         if (!res.ok) {
           const msg = body && body.error ? body.error : 'Lookup failed (' + res.status + ').';
           throw new Error(msg);
         }
-        return body;
-      }
-
-      // Phase-2: resolve ONE slow platform's rating for the found business.
-      async function fetchPlatformRating(platform, query, name, address) {
-        const res = await fetch(API_BASE + '/search-business-platform' +
-          '?platform=' + encodeURIComponent(platform) +
-          '&query=' + encodeURIComponent(query) +
-          '&name=' + encodeURIComponent(name) +
-          '&address=' + encodeURIComponent(address || ''));
-        let body = null;
-        try { body = await res.json(); } catch (e) { /* not JSON */ }
-        if (!res.ok) throw new Error(body && body.error ? body.error : 'Platform lookup failed');
         return body;
       }
 
@@ -2110,10 +2091,6 @@
       let currentMetrics = null;
 
       // ---- Main search flow ----
-      // Bumped on every new search so late platform responses from an older
-      // search can never paint into the current results.
-      let searchToken = 0;
-
       async function runSearch(query, displayValue) {
         const q = (query != null ? query : els.input.value).trim();
         if (!q) { els.input.focus(); return; }
@@ -2124,127 +2101,16 @@
         show('loading');
         window.scrollTo({ top: 0, behavior: 'smooth' });
 
-        const token = ++searchToken;
         const started = performance.now();
         try {
           const data = await fetchBusinessReviews(q);
-          if (token !== searchToken) return;
           const metrics = computeMetrics(data);
           const seconds = Math.max(0.1, (performance.now() - started) / 1000);
           currentData = data; currentMetrics = metrics;
           renderResults(data, metrics, seconds);
           show('results');
-          loadPendingPlatforms(data, q, token);
         } catch (err) {
-          if (token !== searchToken) return;
           showError(err && err.message ? err.message : 'Something went wrong. Please try again.');
-        }
-      }
-
-      // Phase-2: fire one request per pending platform, in parallel. Each
-      // result updates its row and the Trust Score as it lands.
-      function loadPendingPlatforms(data, q, token) {
-        const pending = Array.isArray(data.pending) ? data.pending.slice() : [];
-        if (!pending.length) return;
-        if (!data.notes) data.notes = {};
-        pending.forEach(function (key) {
-          fetchPlatformRating(key, q, data.name, data.address)
-            .then(function (body) {
-              if (token !== searchToken) return;
-              data[key] = (body && body.rating && typeof body.rating.rating === 'number') ? body.rating : null;
-              if (body && body.note) data.notes[key] = body.note;
-            })
-            .catch(function () {
-              if (token !== searchToken) return;
-              data[key] = null;
-              data.notes[key] = 'Lookup unavailable';
-            })
-            .then(function () {
-              if (token !== searchToken) return;
-              data.pending = (data.pending || []).filter(function (k) { return k !== key; });
-              if (!data[key]) {
-                if (!Array.isArray(data.unavailable)) data.unavailable = [];
-                if (data.unavailable.indexOf(key) === -1) data.unavailable.push(key);
-              }
-              currentMetrics = computeMetrics(data);
-              refreshLiveResults(data, currentMetrics);
-            });
-        });
-      }
-
-      function isPending(data, key) {
-        return Array.isArray(data.pending) && data.pending.indexOf(key) !== -1;
-      }
-
-      // Build the "Ratings by platform" rows. Platforms still being looked up
-      // (phase-2 in flight) show a small "Checking…" state instead of a note.
-      function buildPlatformRows(data) {
-        return PLATFORMS.map(function (p) {
-          const r = data[p.key];
-          const demo = isDemo(data, p.key);
-          if (!hasRating(r)) {
-            if (isPending(data, p.key)) {
-              return '' +
-                '<div class="platform-row platform-row--na">' +
-                  platformIcon(p) +
-                  '<div class="platform-row-name">' + p.label + '</div>' +
-                  '<div class="platform-row-na-text platform-row-checking">Checking&hellip;</div>' +
-                '</div>';
-            }
-            const note = (data.notes && data.notes[p.key]) ? data.notes[p.key] : 'Not available yet';
-            return '' +
-              '<div class="platform-row platform-row--na">' +
-                platformIcon(p) +
-                '<div class="platform-row-name">' + p.label + '</div>' +
-                '<div class="platform-row-na-text">&mdash; ' + escapeHtml(note) + '</div>' +
-              '</div>';
-          }
-          return '' +
-            '<div class="platform-row">' +
-              platformIcon(p) +
-              '<div class="platform-row-name">' + p.label + (demo ? ' <span class="demo-badge">Demo</span>' : '') + '</div>' +
-              '<div class="platform-row-meta">' +
-                '<span class="star1">&#9733;</span>' +
-                '<b>' + r.rating.toFixed(1) + '</b>' +
-                (r.reviews > 0 ? '<span class="count">(' + r.reviews.toLocaleString() + ')</span>' : '') +
-              '</div>' +
-            '</div>';
-        }).join('');
-      }
-
-      // Targeted update as phase-2 platform results land: refresh the platform
-      // rows, Trust Score, tags and averages WITHOUT rebuilding the whole page
-      // (so photos don't flicker and button listeners stay wired).
-      function refreshLiveResults(data, m) {
-        const panel = els.results.querySelector('.platform-panel');
-        if (!panel) return;
-        panel.innerHTML = '<div class="panel-title">Ratings by platform ' + ICO.info + '</div>' + buildPlatformRows(data);
-        const scoreNum = els.results.querySelector('.score-number');
-        if (scoreNum) scoreNum.innerHTML = m.score + '<span>/100</span>';
-        const scoreSub = els.results.querySelector('.score-sub');
-        if (scoreSub) {
-          scoreSub.textContent = m.labels.length
-            ? (m.labels.length === 3
-                ? 'Average across available Google, Yelp and TripAdvisor ratings'
-                : 'Average across ' + listToText(m.labels) + ' where available')
-            : 'No public ratings available yet';
-        }
-        const overall = els.results.querySelector('.overall-rating');
-        if (overall) {
-          overall.innerHTML = starsHtml(m.avg) +
-            '<span class="txt"><b>' + m.avg.toFixed(1) + '</b> average across ' + m.totalReviews.toLocaleString() + ' reviews</span>';
-        }
-        const tagsEl = els.results.querySelector('.tags');
-        if (tagsEl) {
-          tagsEl.innerHTML = featuredTags(m).map(function (t) {
-            return '<span class="tag ' + (t.aqua ? 'tag-aqua' : '') + '">' + escapeHtml(t.t) + '</span>';
-          }).join('');
-        }
-        const meta = els.results.querySelector('.results-meta');
-        if (meta) {
-          const stillChecking = Array.isArray(data.pending) && data.pending.length > 0;
-          meta.textContent = 'AI checked ' + m.count + ' review platform' + (m.count === 1 ? '' : 's') +
-            (stillChecking ? ' \u00b7 still checking ' + data.pending.length + ' more\u2026' : '');
         }
       }
 
@@ -2273,7 +2139,29 @@
         }).join('');
 
         // Ratings-by-platform rows
-        const platformRows = buildPlatformRows(data);
+        const platformRows = PLATFORMS.map(function (p) {
+          const r = data[p.key];
+          const demo = isDemo(data, p.key);
+          if (!hasRating(r)) {
+            const note = (data.notes && data.notes[p.key]) ? data.notes[p.key] : 'Not available yet';
+            return '' +
+              '<div class="platform-row platform-row--na">' +
+                platformIcon(p) +
+                '<div class="platform-row-name">' + p.label + '</div>' +
+                '<div class="platform-row-na-text">&mdash; ' + escapeHtml(note) + '</div>' +
+              '</div>';
+          }
+          return '' +
+            '<div class="platform-row">' +
+              platformIcon(p) +
+              '<div class="platform-row-name">' + p.label + (demo ? ' <span class="demo-badge">Demo</span>' : '') + '</div>' +
+              '<div class="platform-row-meta">' +
+                '<span class="star1">&#9733;</span>' +
+                '<b>' + r.rating.toFixed(1) + '</b>' +
+                (r.reviews > 0 ? '<span class="count">(' + r.reviews.toLocaleString() + ')</span>' : '') +
+              '</div>' +
+            '</div>';
+        }).join('');
 
         // Similar businesses (matched by category + suburb)
         const nearby = Array.isArray(data.nearby) ? data.nearby : [];
