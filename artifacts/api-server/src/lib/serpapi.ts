@@ -137,6 +137,11 @@ export interface BusinessReviews {
   /** Similar nearby businesses: same category + suburb. `demo` flags fallbacks. */
   nearby: NearbyBusiness[];
   unavailable: string[];
+  /**
+   * Platform keys not yet resolved (phase-1 core lookup only). The client
+   * resolves each via `/search-business-platform`. Absent on full lookups.
+   */
+  pending?: string[];
   /** Platform keys whose data is demo/placeholder (excluded from metrics). */
   demo: string[];
   /** Per-platform status note shown when a platform has no rating. */
@@ -238,10 +243,78 @@ export async function serpapiGet(
  * Look up a business by free-text query and return its ratings across the
  * supported platforms. Returns `null` when no business matches the query.
  */
+/** Platform keys resolvable individually via `resolvePlatformRating`. */
+export const SLOW_PLATFORM_KEYS = [
+  "yelp",
+  "tripadvisor",
+  "trustpilot",
+  "productReview",
+  "facebook",
+] as const;
+export type SlowPlatformKey = (typeof SLOW_PLATFORM_KEYS)[number];
+
+/**
+ * Resolve ONE non-Google platform's rating for a business already identified
+ * by the core lookup. Used by the phased search flow so each HTTP request
+ * stays well under mobile WebView timeouts (~60s on iOS).
+ */
+export async function resolvePlatformRating(
+  platform: SlowPlatformKey,
+  name: string,
+  address: string,
+  query: string,
+  creds: DataforseoCreds,
+  serpApiKey: string | null,
+  log?: Logger,
+): Promise<PlatformLookup> {
+  const loc = deriveLocation(address);
+  const nameTokens = distinctiveTokens(name);
+  const suburb = extractLocality(address, query).suburb;
+  switch (platform) {
+    case "yelp":
+      return resolveYelp(name, loc, nameTokens, serpApiKey, log);
+    case "tripadvisor":
+      return resolveTripadvisor(name, address, nameTokens, creds, log);
+    case "trustpilot":
+      return resolveTrustpilot(name, address, nameTokens, creds, log);
+    case "productReview":
+      return resolveProductReview(name, suburb, nameTokens, creds, log);
+    case "facebook":
+      return resolveFacebook(name, suburb, nameTokens, creds, log);
+  }
+}
+
 export async function fetchBusinessReviews(
   query: string,
   creds: DataforseoCreds,
   serpApiKey: string | null,
+  log?: Logger,
+): Promise<BusinessReviews | null> {
+  const core = await fetchBusinessCore(query, creds, log);
+  if (!core) return null;
+  const results = await Promise.all(
+    SLOW_PLATFORM_KEYS.map((k) =>
+      resolvePlatformRating(k, core.name, core.address, query, creds, serpApiKey, log),
+    ),
+  );
+  SLOW_PLATFORM_KEYS.forEach((k, i) => {
+    const r = results[i]!;
+    core[k] = r.rating;
+    if (r.note) core.notes[k] = r.note;
+    if (!r.rating) core.unavailable.push(k);
+  });
+  delete core.pending;
+  return core;
+}
+
+/**
+ * Fast phase-1 lookup: Google business profile + rating, logo, category and
+ * nearby businesses. The five slow platforms are left null and listed in
+ * `pending` for the client to resolve via `resolvePlatformRating`.
+ */
+export async function fetchBusinessCore(
+  query: string,
+  creds: DataforseoCreds,
   log?: Logger,
 ): Promise<BusinessReviews | null> {
   // ---- Google business profile + rating (DataForSEO Google Maps search) ----
@@ -305,42 +378,19 @@ export async function fetchBusinessReviews(
   }
 
   const notes: Record<string, string> = {};
-  const loc = deriveLocation(address);
-  const nameTokens = distinctiveTokens(name);
-  const suburb = extractLocality(address, query).suburb;
 
-  // All non-Google platform lookups run concurrently — each is fully isolated so
-  // one platform failing never blocks the others, and each reports its own
-  // status note. Yelp stays on SerpApi (DataForSEO has no Yelp source);
-  // TripAdvisor + Trustpilot use DataForSEO async search; Product Review and
-  // Facebook have no review API, so we best-effort read the Google rich-snippet
-  // rating from an organic SERP scoped to their domain.
-  const [yelpR, tripR, trustR, prR, fbR] = await Promise.all([
-    resolveYelp(name, loc, nameTokens, serpApiKey, log),
-    resolveTripadvisor(name, address, nameTokens, creds, log),
-    resolveTrustpilot(name, address, nameTokens, creds, log),
-    resolveProductReview(name, suburb, nameTokens, creds, log),
-    resolveFacebook(name, suburb, nameTokens, creds, log),
-  ]);
-
-  const yelp = yelpR.rating;
-  const tripadvisor = tripR.rating;
-  const trustpilot = trustR.rating;
-  const productReview = prR.rating;
-  const facebook = fbR.rating;
-  if (yelpR.note) notes["yelp"] = yelpR.note;
-  if (tripR.note) notes["tripadvisor"] = tripR.note;
-  if (trustR.note) notes["trustpilot"] = trustR.note;
-  if (prR.note) notes["productReview"] = prR.note;
-  if (fbR.note) notes["facebook"] = fbR.note;
+  // The five non-Google platforms are slow (some need async task queues). They
+  // are resolved separately — either by `fetchBusinessReviews` (full lookup for
+  // reports) or per-platform by the client via `/search-business-platform` —
+  // so this core response returns in a few seconds.
+  const yelp = null;
+  const tripadvisor = null;
+  const trustpilot = null;
+  const productReview = null;
+  const facebook = null;
 
   const unavailable: string[] = [];
   if (!google) unavailable.push("google");
-  if (!yelp) unavailable.push("yelp");
-  if (!tripadvisor) unavailable.push("tripadvisor");
-  if (!trustpilot) unavailable.push("trustpilot");
-  if (!productReview) unavailable.push("productReview");
-  if (!facebook) unavailable.push("facebook");
 
   // ---- Similar businesses + brand logo (resolved concurrently) ----
   const category = detectBusinessCategory(name, query, placeTypes);
@@ -373,6 +423,7 @@ export async function fetchBusinessReviews(
     unavailable,
     demo: [],
     notes,
+    pending: [...SLOW_PLATFORM_KEYS],
     source: "dataforseo",
   };
 }
