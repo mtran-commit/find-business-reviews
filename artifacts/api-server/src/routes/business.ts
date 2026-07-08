@@ -2,6 +2,9 @@ import { Router, type IRouter } from "express";
 import { z } from "zod/v4";
 import {
   fetchBusinessReviews,
+  fetchBusinessCore,
+  resolvePlatformRating,
+  SLOW_PLATFORM_KEYS,
   buildDemoOffer,
   detectBusinessCategory,
   fetchSimilarBusinesses,
@@ -13,6 +16,10 @@ const router: IRouter = Router();
 
 const SearchQuery = z.object({
   query: z.string().trim().min(1).max(200),
+  // `phase=core` returns the fast Google-only profile (a few seconds); the
+  // client then resolves the slow platforms one-by-one. Omitted = full lookup
+  // (kept for backwards compatibility and report generation).
+  phase: z.enum(["core", "full"]).optional().default("full"),
 });
 
 /**
@@ -38,12 +45,15 @@ router.get("/search-business", async (req, res): Promise<void> => {
   const serpApiKey = process.env["SERPAPI_API_KEY"] ?? null;
 
   try {
-    const data = await fetchBusinessReviews(
-      parsed.data.query,
-      creds,
-      serpApiKey,
-      req.log,
-    );
+    const data =
+      parsed.data.phase === "core"
+        ? await fetchBusinessCore(parsed.data.query, creds, req.log)
+        : await fetchBusinessReviews(
+            parsed.data.query,
+            creds,
+            serpApiKey,
+            req.log,
+          );
     if (!data) {
       res
         .status(404)
@@ -56,6 +66,73 @@ router.get("/search-business", async (req, res): Promise<void> => {
     res
       .status(502)
       .json({ error: "Could not fetch reviews right now. Please try again." });
+  }
+});
+
+const PlatformQuery = z.object({
+  query: z.string().trim().min(1).max(200),
+  name: z.string().trim().min(1).max(200),
+  address: z.string().trim().max(300).optional().default(""),
+  platform: z.enum(SLOW_PLATFORM_KEYS),
+});
+
+// Server-side cap so a single platform lookup can never exceed a mobile
+// WebView's ~60s hard request timeout; a timed-out platform degrades honestly.
+const PLATFORM_LOOKUP_TIMEOUT_MS = 50_000;
+
+/**
+ * Phase-2 lookup: resolve ONE slow platform's rating for a business already
+ * identified by the core lookup. The client fires these in parallel and fills
+ * results in as each lands, so no request approaches the iOS 60s limit.
+ */
+router.get("/search-business-platform", async (req, res): Promise<void> => {
+  const parsed = PlatformQuery.safeParse(req.query);
+  if (!parsed.success) {
+    res
+      .status(400)
+      .json({ error: "query, name and platform are required." });
+    return;
+  }
+
+  const creds = getDataforseoCreds();
+  if (!creds) {
+    req.log.error("DataForSEO credentials are not configured");
+    res
+      .status(503)
+      .json({ error: "Reviews service is not configured on the server." });
+    return;
+  }
+  const serpApiKey = process.env["SERPAPI_API_KEY"] ?? null;
+  const { platform, name, address, query } = parsed.data;
+
+  try {
+    let timer: NodeJS.Timeout | undefined;
+    const timeout = new Promise<{ rating: null; note: string }>((resolve) => {
+      timer = setTimeout(
+        () => resolve({ rating: null, note: "Lookup timed out" }),
+        PLATFORM_LOOKUP_TIMEOUT_MS,
+      );
+    });
+    const result = await Promise.race([
+      resolvePlatformRating(
+        platform,
+        name,
+        address,
+        query,
+        creds,
+        serpApiKey,
+        req.log,
+      ),
+      timeout,
+    ]).finally(() => clearTimeout(timer));
+    res.json({
+      platform,
+      rating: result.rating ?? null,
+      note: result.note ?? null,
+    });
+  } catch (err) {
+    req.log.error({ err, platform }, "Platform lookup failed");
+    res.status(502).json({ error: "Could not fetch this platform right now." });
   }
 });
 

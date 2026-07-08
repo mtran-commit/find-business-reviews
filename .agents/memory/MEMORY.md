@@ -8,5 +8,6 @@
 - [Gmail connector email sending](gmail-connector-sending.md) — send via raw MIME to the Gmail REST API through connectors.proxy; SDK only resolves inside its workspace package.
 - [Stripe connector + bundling](stripe-connector-and-bundling.md) — connector key is `settings.secret` (not `secret_key`); stripe-replit-sync must be esbuild-external or its migrations silently no-op.
 - [pdf-lib drawSvgPath icons](pdf-lib-svg-icons.md) — icons must be single path-`d` strings (no rect/circle/transform); y = icon TOP; stroke via borderColor/borderLineCap.
+- [iOS ~60s request timeout](ios-60s-request-timeout.md) — WKWebView kills any fetch at ~60s; split slow endpoints into a fast core + parallel sub-60s follow-ups with token-guarded merges.
 - [AI output grounding](ai-output-grounding.md) — "never invent" rules must be enforced deterministically post-parse (overwrite facts from source data), never prompt-only.
 - [Website logo scraping](website-logo-scraping.md) — only confident logo source is the business's own homepage; keep SSRF host checks per redirect hop, full-host same-site check, image-ext + banned-list guards.
