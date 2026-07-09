@@ -419,6 +419,54 @@
         .featured-image-wrap { width: 100%; }
       }
 
+      /* ===== Wowlette offers card ===== */
+      .wowlette-card {
+        background: #fff; border: 1.5px solid var(--purple); border-radius: 12px;
+        padding: 20px 22px; margin-top: 16px;
+      }
+      .wowlette-head {
+        display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+        margin-bottom: 4px;
+      }
+      .wowlette-head h3 { font-size: 17px; font-weight: 900; letter-spacing: -.3px; color: var(--navy); }
+      .wowlette-badge {
+        background: var(--purple); color: #fff;
+        font-size: 10.5px; font-weight: 900; letter-spacing: .7px; text-transform: uppercase;
+        padding: 5px 10px; border-radius: 999px;
+      }
+      .wowlette-sub { font-size: 13px; color: var(--text-2); margin-bottom: 14px; }
+      .wowlette-offer {
+        display: flex; align-items: flex-start; justify-content: space-between;
+        gap: 16px; flex-wrap: wrap;
+        border: 1px solid var(--border); border-radius: 10px;
+        background: var(--purple-soft); padding: 14px 16px;
+      }
+      .wowlette-offer + .wowlette-offer { margin-top: 10px; }
+      .wowlette-offer-info { flex: 1 1 320px; min-width: 0; }
+      .wowlette-offer-title { font-size: 15px; font-weight: 800; color: var(--text); }
+      .wowlette-offer-type {
+        display: inline-block; margin-left: 8px; vertical-align: 2px;
+        background: #fff; color: var(--purple); border: 1px solid var(--purple);
+        font-size: 10px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase;
+        padding: 3px 8px; border-radius: 5px;
+      }
+      .wowlette-offer-desc { font-size: 13.5px; color: var(--text); margin-top: 5px; line-height: 1.5; }
+      .wowlette-offer-meta { font-size: 12px; color: var(--text-2); margin-top: 6px; }
+      .wowlette-offer-btn {
+        flex-shrink: 0; align-self: center;
+        background: var(--purple); color: #fff; border: 1px solid var(--purple);
+        font-family: inherit; font-weight: 800; font-size: 13px; letter-spacing: .2px;
+        padding: 11px 16px; border-radius: 8px; cursor: pointer;
+        display: inline-flex; align-items: center; gap: 8px;
+        transition: opacity .15s, transform .05s;
+      }
+      .wowlette-offer-btn:hover { opacity: .9; }
+      .wowlette-offer-btn:active { transform: translateY(1px); }
+      @media (max-width: 560px) {
+        .wowlette-offer { flex-direction: column; }
+        .wowlette-offer-btn { align-self: stretch; justify-content: center; }
+      }
+
       /* ===== Similar business rows ===== */
       .similar-head { font-size: 13px; font-weight: 700; color: var(--text-2); margin: 26px 0 12px; display: flex; align-items: center; gap: 8px; }
       .similar-head .demo-badge { margin: 0; }
@@ -2135,6 +2183,7 @@
           renderResults(data, metrics, seconds);
           show('results');
           loadPendingPlatforms(data, q, token);
+          loadWowletteOffers(data, token);
         } catch (err) {
           if (token !== searchToken) return;
           showError(err && err.message ? err.message : 'Something went wrong. Please try again.');
@@ -2170,6 +2219,73 @@
               refreshLiveResults(data, currentMetrics);
             });
         });
+      }
+
+      // Best-effort check for live offers on Wowlette (partner app). Runs in
+      // parallel with the platform lookups and NEVER affects the review search:
+      // any failure or empty result simply leaves the page unchanged.
+      function loadWowletteOffers(data, token) {
+        const name = (data && data.name ? String(data.name) : '').trim();
+        if (!name) return;
+        fetch(API_BASE + '/wowlette-offers?name=' + encodeURIComponent(name))
+          .then(function (res) { return res.ok ? res.json() : null; })
+          .then(function (body) {
+            if (token !== searchToken) return;
+            if (!body || !body.available || !Array.isArray(body.businesses) || !body.businesses.length) return;
+            renderWowletteOffers(body.businesses);
+          })
+          .catch(function () { /* silent: offers are a bonus, never an error */ });
+      }
+
+      function renderWowletteOffers(businesses) {
+        const slot = els.results.querySelector('.wowlette-slot');
+        if (!slot) return;
+        const cards = businesses.map(function (biz) {
+          const offers = (biz.offers || []).map(function (o) {
+            const expiry = o.expiryDate ? 'Valid until ' + formatOfferDate(o.expiryDate) : '';
+            return '' +
+              '<div class="wowlette-offer">' +
+                '<div class="wowlette-offer-info">' +
+                  '<div class="wowlette-offer-title">' + escapeHtml(o.title) +
+                    (o.offerType ? '<span class="wowlette-offer-type">' + escapeHtml(o.offerType) + '</span>' : '') +
+                  '</div>' +
+                  (o.description ? '<div class="wowlette-offer-desc">' + escapeHtml(o.description) + '</div>' : '') +
+                  ((expiry || o.terms) ? '<div class="wowlette-offer-meta">' +
+                    escapeHtml([expiry, o.terms].filter(Boolean).join(' \u00b7 ')) + '</div>' : '') +
+                '</div>' +
+                '<button class="wowlette-offer-btn" data-wallet-url="' + escapeHtml(o.addToWalletUrl || '') + '">' +
+                  'Add offer to Wowlette Wallet ' + ICO.arrow +
+                '</button>' +
+              '</div>';
+          }).join('');
+          if (!offers) return '';
+          return '' +
+            '<div class="wowlette-card fade-in">' +
+              '<div class="wowlette-head">' +
+                '<h3>Live offers for ' + escapeHtml(biz.name) + '</h3>' +
+                '<span class="wowlette-badge">On Wowlette</span>' +
+              '</div>' +
+              '<div class="wowlette-sub">Found on Wowlette \u2014 add an offer to your Wowlette Wallet and redeem it with the business.</div>' +
+              offers +
+            '</div>';
+        }).join('');
+        if (!cards) return;
+        slot.innerHTML = cards;
+        slot.querySelectorAll('.wowlette-offer-btn').forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            if (!safeOpen(btn.getAttribute('data-wallet-url'))) {
+              alert('This offer link is unavailable right now.');
+            }
+          });
+        });
+      }
+
+      function formatOfferDate(iso) {
+        const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(iso || ''));
+        if (!m) return String(iso || '');
+        const d = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+        if (isNaN(d.getTime())) return String(iso);
+        return d.toLocaleDateString('en-AU', { day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC' });
       }
 
       function isPending(data, key) {
@@ -2359,6 +2475,9 @@
               '</div>' +
             '</div>' +
           '</div>' +
+
+          // Wowlette offers land here asynchronously (see loadWowletteOffers)
+          '<div class="wowlette-slot"></div>' +
 
           // Similar businesses (matched by category + suburb)
           (similarRows ?

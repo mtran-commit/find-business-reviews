@@ -11,6 +11,7 @@ import {
 } from "../lib/serpapi";
 import { fetchBusinessBranding } from "../lib/branding";
 import { getDataforseoCreds } from "../lib/dataforseo";
+import { fetchWowletteOffers } from "../lib/wowlette";
 
 const router: IRouter = Router();
 
@@ -153,6 +154,26 @@ router.get("/find-offers", (req, res): void => {
     return;
   }
   res.json(buildDemoOffer(parsed.data.businessName, parsed.data.website));
+});
+
+const WowletteQuery = z.object({
+  name: z.string().trim().min(1).max(200),
+});
+
+/**
+ * Live offers for a business on Wowlette (the user's partner app). Proxied
+ * server-side so the Wowlette domain stays configurable via WOWLETTE_BASE_URL.
+ * Always 200 with `{ available, businesses }` — never an error, never slows
+ * the review search (the frontend calls this in parallel, fire-and-forget).
+ */
+router.get("/wowlette-offers", async (req, res): Promise<void> => {
+  const parsed = WowletteQuery.safeParse(req.query);
+  if (!parsed.success) {
+    res.status(400).json({ error: "A business name is required." });
+    return;
+  }
+  const result = await fetchWowletteOffers(parsed.data.name, req.log);
+  res.json(result);
 });
 
 const SimilarQuery = z.object({
