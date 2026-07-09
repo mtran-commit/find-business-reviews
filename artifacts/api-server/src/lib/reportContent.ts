@@ -457,6 +457,13 @@ export interface BusinessReport {
   socialPresence: SocialPresence;
   /** Live Wowlette offers found at generation time ([] when none/unavailable). */
   wowletteOffers: WowletteOfferHighlight[];
+  /**
+   * True only when Wowlette was configured AND the lookup succeeded at
+   * generation time. Distinguishes "no offers" (invite the business to
+   * publish) from "lookup unavailable" (say nothing). Defaults to false
+   * for old persisted reports.
+   */
+  wowletteAvailable: boolean;
   generatedAt: string;
   metrics: ReportMetrics;
   sections: AiSections;
@@ -586,6 +593,7 @@ export function normalizeReport(raw: unknown): BusinessReport {
     businessImage: str(r["businessImage"]),
     socialPresence: coerceSocialPresence(r["socialPresence"]),
     wowletteOffers: coerceWowletteOffers(r["wowletteOffers"]),
+    wowletteAvailable: r["wowletteAvailable"] === true,
     generatedAt: str(r["generatedAt"], new Date().toISOString()),
     metrics: coerceMetrics(r["metrics"]),
     sections,

@@ -768,7 +768,17 @@ function finalSection(s: AiSections): string {
  */
 function wowletteSection(report: BusinessReport): string {
   const offers = safeArr(report.wowletteOffers);
-  if (!offers.length) return "";
+  if (!offers.length) {
+    // No live offers: when the Wowlette lookup actually succeeded at
+    // generation time, include a short cross-promotion note inviting the
+    // business to publish offers. When Wowlette was unconfigured or the
+    // lookup failed, say nothing — never promote a broken flow.
+    if (!report.wowletteAvailable) return "";
+    return `<div class="tpl-card" style="border-top:3px solid #1F2937">
+      <div class="tpl-title" style="color:#1F2937">${icon("gift", 14)} No live offers yet</div>
+      <div class="tpl-body">This business has no live offers published on Wowlette. Publishing customer offers on Wowlette is a simple way to convert the trust built by strong reviews into bookings and repeat visits.</div>
+    </div>`;
+  }
   const cards = offers
     .map(
       (o) => `<div class="tpl-card" style="border-top:3px solid #1F2937">

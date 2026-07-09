@@ -14,7 +14,7 @@ const log = {
 let n = 0;
 const uniqueName = () => `test business ${Date.now()}-${++n}`;
 
-const EMPTY = { available: false, businesses: [] };
+const EMPTY = { available: false, businesses: [], lookupSucceeded: false };
 
 describe("fetchWowletteOffers degrades to {available:false, businesses:[]}", () => {
   const realFetch = globalThis.fetch;
@@ -146,7 +146,23 @@ describe("fetchWowletteOffers degrades to {available:false, businesses:[]}", () 
 
     const result = await fetchWowletteOffers(uniqueName(), log);
     expect(result.available).toBe(true);
+    expect(result.lookupSucceeded).toBe(true);
     expect(result.businesses).toHaveLength(1);
     expect(result.businesses[0]?.name).toBe("Good Biz");
+  });
+
+  it("a valid payload with zero offers reports lookupSucceeded but not available", async () => {
+    globalThis.fetch = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ businesses: [] }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+    ) as typeof fetch;
+
+    const result = await fetchWowletteOffers(uniqueName(), log);
+    expect(result.available).toBe(false);
+    expect(result.lookupSucceeded).toBe(true);
+    expect(result.businesses).toHaveLength(0);
   });
 });

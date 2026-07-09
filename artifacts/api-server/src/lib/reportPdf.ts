@@ -1570,6 +1570,23 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   // Live Wowlette offers — only rendered when offers were captured at
   // generation time; absence changes nothing.
   const wowOffers = report.wowletteOffers || [];
+  if (!wowOffers.length && report.wowletteAvailable) {
+    // Lookup succeeded but the business has no live offers: include a
+    // short, tasteful cross-promotion note. If Wowlette was unconfigured
+    // or the lookup failed, say nothing — never promote a broken flow.
+    drawSectionHeading(l, "Live Offers on Wowlette");
+    drawContentCard(
+      l,
+      [
+        { text: "No live offers yet", size: 11, color: NAVY, bold: true, gapAfter: 3 },
+        {
+          text: "This business has no live offers published on Wowlette. Publishing customer offers on Wowlette is a simple way to convert the trust built by strong reviews into bookings and repeat visits.",
+          size: 9.5,
+        },
+      ],
+      PURPLE,
+    );
+  }
   if (wowOffers.length) {
     drawSectionHeading(l, "Live Offers on Wowlette");
     drawParagraph(

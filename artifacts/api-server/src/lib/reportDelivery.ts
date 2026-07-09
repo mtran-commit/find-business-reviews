@@ -202,8 +202,10 @@ export async function runReportGeneration(
     // Best-effort live Wowlette offers (partner app). Any failure or missing
     // config degrades to [] — the report simply omits the section.
     let wowletteOffers: WowletteOfferHighlight[] = [];
+    let wowletteAvailable = false;
     try {
       const wowlette = await fetchWowletteOffers(row.businessName, log);
+      wowletteAvailable = wowlette.lookupSucceeded;
       wowletteOffers = wowlette.businesses
         .flatMap((b) => b.offers)
         .filter((o) => o.title.trim().length > 0)
@@ -275,6 +277,7 @@ export async function runReportGeneration(
         confidenceScore: branding.confidenceScore,
       },
       wowletteOffers,
+      wowletteAvailable,
       generatedAt: new Date().toISOString(),
       metrics,
       sections,

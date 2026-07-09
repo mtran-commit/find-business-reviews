@@ -42,11 +42,22 @@ const SearchResponseSchema = z.object({
 export type WowletteBusiness = z.infer<typeof BusinessSchema>;
 
 export interface WowletteOffersResult {
+  /** True when at least one matched business has live offers. */
   available: boolean;
   businesses: WowletteBusiness[];
+  /**
+   * True only when Wowlette was configured AND the HTTP lookup succeeded
+   * (valid response) — even if zero offers matched. Distinguishes "no
+   * offers" from "lookup unavailable/failed".
+   */
+  lookupSucceeded: boolean;
 }
 
-const EMPTY: WowletteOffersResult = { available: false, businesses: [] };
+const EMPTY: WowletteOffersResult = {
+  available: false,
+  businesses: [],
+  lookupSucceeded: false,
+};
 
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const FETCH_TIMEOUT_MS = 8_000;
@@ -91,7 +102,11 @@ export async function fetchWowletteOffers(
         const businesses = parsed.data.businesses.filter(
           (b) => b.offers.length > 0,
         );
-        result = { available: businesses.length > 0, businesses };
+        result = {
+          available: businesses.length > 0,
+          businesses,
+          lookupSucceeded: true,
+        };
       } else {
         log.warn(
           { err: parsed.error.message },
