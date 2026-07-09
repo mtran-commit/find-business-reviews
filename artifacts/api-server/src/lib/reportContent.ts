@@ -431,6 +431,14 @@ export function emptySocialPresence(): SocialPresence {
   return { facebook: null, instagram: null, brandingSource: "none", confidenceScore: 0 };
 }
 
+/** A live Wowlette offer captured at report-generation time (persisted). */
+export interface WowletteOfferHighlight {
+  title: string;
+  offerType: string;
+  description: string;
+  expiryDate: string;
+}
+
 /** Full structured report persisted to report_json and rendered to HTML/PDF. */
 export interface BusinessReport {
   businessName: string;
@@ -447,6 +455,8 @@ export interface BusinessReport {
   businessImage: string;
   /** Confidently-matched public social profiles (empty shape when none). */
   socialPresence: SocialPresence;
+  /** Live Wowlette offers found at generation time ([] when none/unavailable). */
+  wowletteOffers: WowletteOfferHighlight[];
   generatedAt: string;
   metrics: ReportMetrics;
   sections: AiSections;
@@ -521,6 +531,26 @@ function coerceSocialPresence(raw: unknown): SocialPresence {
   return out;
 }
 
+/** Coerce arbitrary persisted JSON into valid WowletteOfferHighlight[] (never throws). */
+function coerceWowletteOffers(raw: unknown): WowletteOfferHighlight[] {
+  if (!Array.isArray(raw)) return [];
+  const str = (v: unknown): string => (typeof v === "string" ? v : "");
+  const out: WowletteOfferHighlight[] = [];
+  for (const item of raw) {
+    if (!item || typeof item !== "object") continue;
+    const o = item as Record<string, unknown>;
+    const title = str(o["title"]).trim();
+    if (!title) continue;
+    out.push({
+      title,
+      offerType: str(o["offerType"]).trim(),
+      description: str(o["description"]).trim(),
+      expiryDate: str(o["expiryDate"]).trim(),
+    });
+  }
+  return out.slice(0, 6);
+}
+
 /**
  * Normalise arbitrary persisted `reportJson` (including older shapes or partial
  * JSON) into a valid BusinessReport so the HTML/PDF renderers never crash. New-
@@ -555,6 +585,7 @@ export function normalizeReport(raw: unknown): BusinessReport {
     businessLogoSource: str(r["businessLogoSource"]),
     businessImage: str(r["businessImage"]),
     socialPresence: coerceSocialPresence(r["socialPresence"]),
+    wowletteOffers: coerceWowletteOffers(r["wowletteOffers"]),
     generatedAt: str(r["generatedAt"], new Date().toISOString()),
     metrics: coerceMetrics(r["metrics"]),
     sections,

@@ -19,6 +19,8 @@ import {
   type BusinessBranding,
 } from "./branding";
 import { getDataforseoCreds } from "./dataforseo";
+import { fetchWowletteOffers } from "./wowlette";
+import type { WowletteOfferHighlight } from "./reportContent";
 import { buildReportPdf } from "./reportPdf";
 import { sendReportEmail } from "./reportEmail";
 import type { Logger } from "pino";
@@ -197,6 +199,25 @@ export async function runReportGeneration(
       }
     }
 
+    // Best-effort live Wowlette offers (partner app). Any failure or missing
+    // config degrades to [] — the report simply omits the section.
+    let wowletteOffers: WowletteOfferHighlight[] = [];
+    try {
+      const wowlette = await fetchWowletteOffers(row.businessName, log);
+      wowletteOffers = wowlette.businesses
+        .flatMap((b) => b.offers)
+        .filter((o) => o.title.trim().length > 0)
+        .slice(0, 6)
+        .map((o) => ({
+          title: o.title.trim(),
+          offerType: o.offerType.trim(),
+          description: o.description.trim(),
+          expiryDate: o.expiryDate.trim(),
+        }));
+    } catch (err) {
+      log.warn({ err }, "Wowlette offers fetch failed; continuing without");
+    }
+
     const sections = await generateAiSections(
       row.businessName,
       metrics,
@@ -253,6 +274,7 @@ export async function runReportGeneration(
         brandingSource: branding.brandingSource,
         confidenceScore: branding.confidenceScore,
       },
+      wowletteOffers,
       generatedAt: new Date().toISOString(),
       metrics,
       sections,

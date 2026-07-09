@@ -762,6 +762,27 @@ function finalSection(s: AiSections): string {
   return `<div class="final-card">${body}</div>`;
 }
 
+/**
+ * Live Wowlette offers section — rendered ONLY when the report captured
+ * offers at generation time. Monochrome, matching the rest of the report.
+ */
+function wowletteSection(report: BusinessReport): string {
+  const offers = safeArr(report.wowletteOffers);
+  if (!offers.length) return "";
+  const cards = offers
+    .map(
+      (o) => `<div class="tpl-card" style="border-top:3px solid #1F2937">
+        <div class="tpl-title" style="color:#1F2937">${icon("gift", 14)} ${esc(o.title)}</div>
+        ${o.offerType ? `<div class="muted" style="font-size:12px;margin:2px 0 6px;text-transform:uppercase;letter-spacing:.04em">${esc(o.offerType)}</div>` : ""}
+        ${o.description ? `<div class="tpl-body">${esc(o.description)}</div>` : ""}
+        ${o.expiryDate ? `<div class="muted" style="font-size:12px;margin-top:6px">Expires: ${esc(o.expiryDate)}</div>` : ""}
+      </div>`,
+    )
+    .join("");
+  return `<p class="muted" style="margin-top:0">This business has live customer offers published on Wowlette. Promoting active offers alongside strong reviews is a proven way to convert trust into bookings.</p>
+    <div class="tpl-grid">${cards}</div>`;
+}
+
 /* ===== Business Analytics (8 dashboard widgets) ===== */
 
 const TREND_STYLES: Record<string, [string, string]> = {
@@ -1270,6 +1291,7 @@ export function buildReportHtml(report: BusinessReport): string {
     ${section(16, "30-Day Reputation Plan", thirtyDaySection(s))}
     ${section(17, "Suggested Response Templates", templatesSection(s))}
     ${section(18, "Final Recommendation", finalSection(s))}
+    ${wowletteSection(report) ? section(19, "Live Offers on Wowlette", wowletteSection(report)) : ""}
     <div class="disclaimer"><strong>Data Cut-Off:</strong> ${esc(REPORT_DATA_CUTOFF)}</div>
     <div class="disclaimer">${esc(report.disclaimer)}</div>
   </div>

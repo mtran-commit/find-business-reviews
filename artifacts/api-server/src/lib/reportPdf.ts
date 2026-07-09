@@ -1567,6 +1567,30 @@ export async function buildReportPdf(report: BusinessReport): Promise<Uint8Array
   if (finalRows.length) drawNavyCard(l, finalRows);
   else drawParagraph(l, "Continue monitoring reviews and encourage satisfied customers to leave feedback.", { color: GREY });
 
+  // Live Wowlette offers — only rendered when offers were captured at
+  // generation time; absence changes nothing.
+  const wowOffers = report.wowletteOffers || [];
+  if (wowOffers.length) {
+    drawSectionHeading(l, "Live Offers on Wowlette");
+    drawParagraph(
+      l,
+      "This business has live customer offers published on Wowlette. Promoting active offers alongside strong reviews is a proven way to convert trust into bookings.",
+      { size: 9.5, color: GREY, gap: 8 },
+    );
+    for (const o of wowOffers) {
+      drawContentCard(
+        l,
+        [
+          { text: o.title, size: 11, color: NAVY, bold: true, gapAfter: 3 },
+          { text: o.offerType ? o.offerType.toUpperCase() : "", size: 8, color: GREY, gapAfter: 3 },
+          { text: o.description, size: 9.5 },
+          { text: o.expiryDate ? "Expires: " + o.expiryDate : "", size: 8.5, color: GREY },
+        ],
+        PURPLE,
+      );
+    }
+  }
+
   // Data cut-off + disclaimer (unnumbered muted boxes).
   l.y -= 4;
   for (const boxText of [`Data Cut-Off: ${REPORT_DATA_CUTOFF}`, report.disclaimer]) {
