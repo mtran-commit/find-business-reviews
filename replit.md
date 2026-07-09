@@ -75,6 +75,7 @@ The web app ships to iOS as a Capacitor shell built on Codemagic cloud Macs (no 
 - `pnpm run build` — typecheck + build all packages
 - `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks + Zod schemas from the OpenAPI spec
 - `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
+- `pnpm run test` — vitest suites (root `vitest.config.ts`): Wowlette lib degradation tests + a jsdom harness that loads the real `index.html` to prove the search-token guard drops stale offers (`artifacts/compare-reviews/tests/wowlette-offers.test.ts`)
 - Required env: `DATABASE_URL`. Secrets in use: `DATAFORSEO_LOGIN`/`DATAFORSEO_PASSWORD`, `SERPAPI_API_KEY` (optional), `REPORT_ADMIN_TOKEN`, `SESSION_SECRET`. Integrations: Stripe, Gmail, OpenAI (via Replit AI Integrations).
 
 ## Stack

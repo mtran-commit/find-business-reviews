@@ -10,4 +10,5 @@
 - [pdf-lib drawSvgPath icons](pdf-lib-svg-icons.md) — icons must be single path-`d` strings (no rect/circle/transform); y = icon TOP; stroke via borderColor/borderLineCap.
 - [iOS ~60s request timeout](ios-60s-request-timeout.md) — WKWebView kills any fetch at ~60s; split slow endpoints into a fast core + parallel sub-60s follow-ups with token-guarded merges.
 - [AI output grounding](ai-output-grounding.md) — "never invent" rules must be enforced deterministically post-parse (overwrite facts from source data), never prompt-only.
+- [jsdom tests for the single-file app](jsdom-single-file-app-tests.md) — load index.html with runScripts:"dangerously" + fetch stubs to test token-guard races; mutation-check new guard tests.
 - [Website logo scraping](website-logo-scraping.md) — only confident logo source is the business's own homepage; keep SSRF host checks per redirect hop, full-host same-site check, image-ext + banned-list guards.
