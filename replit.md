@@ -65,6 +65,18 @@ NEVER show a wrong or generic logo (WordPress/Wix/Squarespace/Shopify/favicon/pl
 ### Social branding — `branding.ts`
 Best-effort Facebook/Instagram profile discovery via SerpApi, gated by a `scoreMatch` confidence threshold (≥0.6) so a wrong profile is never attached. 24h in-memory cache; every fetch is try/caught — branding NEVER fails a report generation.
 
+### SEO foundations
+Technical SEO only — no visible UI/copy/layout changes.
+
+- `artifacts/compare-reviews/public/robots.txt` allows all crawlers and points to the sitemap; `public/sitemap.xml` lists the homepage and `/terms` (static, hand-maintained — add new indexable routes here if any are added later).
+- `<head>` has a canonical `<link>` (`https://findbusinessreviews.com/`) and a `WebApplication` JSON-LD block describing the product (invisible, for Google's Rich Results).
+- `updateSearchMeta()` (called at the top of `renderResults`) rewrites `document.title` + the `description`/`og:title`/`og:description` meta tags to include the searched business name (and suburb, if known) — this only affects the browser tab title and link-preview cards, never the visible page DOM. Best-effort/try-caught so it can never block rendering.
+- **Submitting the sitemap to Google Search Console (manual, one-time, user must do this):**
+  1. Go to https://search.google.com/search-console and add `findbusinessreviews.com` as a property (Domain or URL-prefix).
+  2. Verify ownership (DNS TXT record is easiest for a domain property).
+  3. Under "Sitemaps", submit `sitemap.xml` (Search Console appends it to the verified domain).
+  4. Optionally use "URL Inspection" → "Request indexing" for the homepage to speed up first crawl.
+
 ### iOS mobile app (Capacitor + Codemagic)
 The web app ships to iOS as a Capacitor shell built on Codemagic cloud Macs (no local Mac). Setup lives in: `codemagic.yaml` (repo root, monorepo-aware build), `artifacts/compare-reviews/capacitor.config.json` (appId `com.findbusinessreviews.app`, webDir `dist/public`), `assets/icon-only.png`+`splash.png`+`splash-dark.png` (the layout `@capacitor/assets` requires — NOT `resources/`), and native detection in `index.html` (`API_BASE` switches to `https://findbusinessreviews.com/api` when protocol is `capacitor:`). Native build needs `PORT=8080 BASE_PATH=./`. CORS is already open. Full walkthrough: `codemagic-ios-guide.md`. Keep the site published — the native app is a client of the live API.
 

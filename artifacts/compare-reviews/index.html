@@ -6,10 +6,28 @@
     <title>Find Business Reviews — Compare Google, TripAdvisor & Yelp ratings</title>
     <meta name="description" content="Don't trust one rating. Compare Google, TripAdvisor and Yelp reviews and get an AI Trust Score before you buy, book or visit." />
     <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://findbusinessreviews.com/" />
     <meta property="og:title" content="Find Business Reviews" />
     <meta property="og:description" content="Compare Google, TripAdvisor and Yelp reviews and get an AI Trust Score before you buy, book or visit." />
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://findbusinessreviews.com/" />
     <meta name="twitter:card" content="summary_large_image" />
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Find Business Reviews",
+      "url": "https://findbusinessreviews.com/",
+      "description": "Compare a business's public review ratings across Google, Yelp, TripAdvisor, Trustpilot, Product Review and Facebook, with a computed 0-100 Trust Score.",
+      "applicationCategory": "BusinessApplication",
+      "operatingSystem": "Web",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "AUD"
+      }
+    }
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -2365,7 +2383,28 @@
       }
 
       // ---- Render main results ----
+      function updateSearchMeta(data) {
+        // Metadata-only: updates the browser tab title + meta description so
+        // shared/search-engine links show the searched business. Never touches
+        // visible page content.
+        try {
+          const name = (data && data.name) ? String(data.name) : '';
+          if (!name) return;
+          const suburb = (data.locality && data.locality.suburb) ? String(data.locality.suburb) : '';
+          const place = suburb ? (name + ' in ' + suburb) : name;
+          document.title = name + ' Reviews — Google, Yelp, TripAdvisor & More | Find Business Reviews';
+          const descEl = document.querySelector('meta[name="description"]');
+          const desc = 'See ' + place + '\u2019s ratings across Google, Yelp, TripAdvisor, Trustpilot and more, plus an AI Trust Score, in one place.';
+          if (descEl) descEl.setAttribute('content', desc);
+          const ogTitle = document.querySelector('meta[property="og:title"]');
+          if (ogTitle) ogTitle.setAttribute('content', name + ' — Find Business Reviews');
+          const ogDesc = document.querySelector('meta[property="og:description"]');
+          if (ogDesc) ogDesc.setAttribute('content', desc);
+        } catch (e) { /* metadata is best-effort, never block rendering */ }
+      }
+
       function renderResults(data, m, seconds) {
+        updateSearchMeta(data);
         // Featured visual: large business photo + small brand logo overlay.
         // Show both when available; degrade gracefully to initials otherwise.
         const photoInit = escapeHtml(initials(data.name));
