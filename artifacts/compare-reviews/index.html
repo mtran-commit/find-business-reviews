@@ -283,6 +283,31 @@
       .state-icon { width: 48px; height: 48px; margin: 0 auto 16px; color: var(--text); opacity: .8; }
       .state h3 { font-size: 20px; font-weight: 800; letter-spacing: -.3px; }
       .state p { color: var(--text-2); margin-top: 8px; max-width: 460px; margin-left: auto; margin-right: auto; }
+      .no-match-hint { font-size: 13px !important; color: var(--text-2); margin-top: 6px !important; }
+      .no-match-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; margin-top: 22px; }
+      .btn-outline { background: transparent; border: 2px solid var(--navy); color: var(--navy); padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; }
+      .btn-outline:hover { background: var(--navy); color: #fff; }
+      .btn-purple { background: var(--purple,#7B3CFF); color: #fff; border: none; padding: 11px 22px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; }
+      .btn-purple:hover { background: #6930e6; }
+      .btn-purple:disabled { opacity: .6; cursor: default; }
+      /* Claim form */
+      .claim-form-box { background: var(--soft-purple,#F1E8FF); border: 1.5px solid #c9b0ff; border-radius: 12px; padding: 28px 24px; margin-top: 20px; text-align: left; max-width: 580px; margin-left: auto; margin-right: auto; }
+      .claim-form-box h4 { font-size: 17px; font-weight: 800; color: var(--navy); margin: 0 0 4px; }
+      .claim-intro { font-size: 13px; color: var(--text-2); margin: 0 0 18px; }
+      .claim-form { display: flex; flex-direction: column; gap: 12px; }
+      .claim-field { display: flex; flex-direction: column; gap: 4px; }
+      .claim-field label { font-size: 12px; font-weight: 700; color: var(--navy); letter-spacing: .3px; }
+      .claim-field input { padding: 9px 12px; border: 1.5px solid #d0c0ff; border-radius: 7px; font-size: 14px; background: #fff; color: var(--text); width: 100%; box-sizing: border-box; }
+      .claim-field input:focus { outline: none; border-color: var(--purple,#7B3CFF); }
+      .claim-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+      .req { color: #d63031; }
+      .claim-msg { margin-top: 6px; font-size: 13px; padding: 8px 12px; border-radius: 6px; }
+      .claim-err { background: #fff3f3; border: 1px solid #ffb3b3; color: #c0392b; }
+      .claim-success { text-align: center; padding: 18px 0; }
+      .claim-success svg { width: 40px; height: 40px; color: #27ae60; margin: 0 auto 10px; display: block; }
+      .claim-success p { color: #27ae60; font-weight: 700; font-size: 15px; }
+      .claim-submit { margin-top: 6px; width: 100%; }
+      @media (max-width: 480px) { .claim-row { grid-template-columns: 1fr; } }
       .hidden { display: none !important; }
       .spinner {
         width: 42px; height: 42px; margin: 0 auto 18px;
@@ -777,6 +802,13 @@
       .admin-count { font-size: 13px; color: var(--text-2); font-weight: 700; margin: 0 0 14px; }
       .admin-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 14px; background: #fff; }
       table.admin-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1100px; }
+      .admin-claims-section { margin-top: 40px; padding-top: 24px; border-top: 2px solid var(--border); }
+      .admin-claims-title { font-size: 18px; font-weight: 800; color: var(--navy,#071A3D); margin: 0 0 14px; display: flex; align-items: center; gap: 8px; }
+      .admin-claims-count { background: var(--purple,#7B3CFF); color: #fff; border-radius: 20px; padding: 2px 10px; font-size: 13px; font-weight: 700; }
+      .admin-claim-actions { display: flex; gap: 6px; align-items: center; }
+      .admin-claim-status-sel { border: 1.5px solid var(--border); border-radius: 6px; padding: 5px 8px; font-size: 12px; background: #fff; color: var(--text); cursor: pointer; }
+      .admin-link { color: var(--purple,#7B3CFF); text-decoration: none; font-size: 12px; }
+      .admin-link:hover { text-decoration: underline; }
       .admin-table th {
         text-align: left; font-weight: 800; color: var(--text-2); font-size: 11.5px; text-transform: uppercase;
         letter-spacing: .03em; padding: 12px 14px; border-bottom: 1px solid var(--border); white-space: nowrap;
@@ -951,6 +983,19 @@
           <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9L1.8 18a2 2 0 001.7 3h17a2 2 0 001.7-3L13.7 3.9a2 2 0 00-3.4 0z"/></svg>
           <h3>Couldn't load that business</h3>
           <p id="errorMsg"></p>
+        </div>
+
+        <!-- No match -->
+        <div id="noMatchState" class="state hidden">
+          <svg class="state-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/><path d="M11 8v3M11 14h.01"/></svg>
+          <h3>No exact business found</h3>
+          <p id="noMatchMsg">We couldn't find an exact match at that location. Please check the business name and address.</p>
+          <p class="no-match-hint">Try including: business name, street address, and city or country.</p>
+          <div class="no-match-actions">
+            <button class="btn btn-outline" id="noMatchRetryBtn">← Try another search</button>
+            <button class="btn-purple" id="noMatchClaimBtn">Submit business details</button>
+          </div>
+          <div id="noMatchClaimFormWrap" class="hidden"></div>
         </div>
 
         <!-- Results -->
@@ -1926,10 +1971,17 @@
       // The five slow platforms come back `pending` and are resolved one-by-one
       // via fetchPlatformRating below — keeping every request well under the
       // ~60s hard timeout iPhones apply to web requests.
-      async function fetchBusinessReviews(query) {
-        const res = await fetch(API_BASE + '/search-business?phase=core&query=' + encodeURIComponent(query));
+      // `location` is kept separate from `query` so the server can detect the
+      // country and score/reject wrong-country results.
+      // Returns null (instead of throwing) when the server signals noMatch=true,
+      // so the caller can show the "submit business" form rather than an error.
+      async function fetchBusinessReviews(query, location) {
+        var url = API_BASE + '/search-business?phase=core&query=' + encodeURIComponent(query);
+        if (location) url += '&location=' + encodeURIComponent(location);
+        const res = await fetch(url);
         let body = null;
         try { body = await res.json(); } catch (e) { /* not JSON */ }
+        if (res.status === 404 && body && body.noMatch) return null; // no match — caller shows claim form
         if (!res.ok) {
           const msg = body && body.error ? body.error : 'Lookup failed (' + res.status + ').';
           throw new Error(msg);
@@ -2150,6 +2202,7 @@
         hero: document.getElementById('heroWrap'),
         loading: document.getElementById('loadingState'),
         error: document.getElementById('errorState'),
+        noMatch: document.getElementById('noMatchState'),
         results: document.getElementById('results'),
         modal: document.getElementById('reportModal'),
         modalClose: document.getElementById('reportClose'),
@@ -2163,6 +2216,7 @@
         els.hero.classList.toggle('hidden', which !== 'empty');
         els.loading.classList.toggle('hidden', which !== 'loading');
         els.error.classList.toggle('hidden', which !== 'error');
+        els.noMatch.classList.toggle('hidden', which !== 'noMatch');
         els.results.classList.toggle('hidden', which !== 'results');
       }
       function showError(message) {
@@ -2180,7 +2234,7 @@
       // search can never paint into the current results.
       let searchToken = 0;
 
-      async function runSearch(query, displayValue) {
+      async function runSearch(query, displayValue, location) {
         const q = (query != null ? query : els.input.value).trim();
         if (!q) { els.input.focus(); return; }
         // Keep the business field showing just the business term the user typed
@@ -2193,8 +2247,13 @@
         const token = ++searchToken;
         const started = performance.now();
         try {
-          const data = await fetchBusinessReviews(q);
+          const data = await fetchBusinessReviews(q, location || '');
           if (token !== searchToken) return;
+          if (data === null) {
+            // No exact match found — show the "submit business" form
+            showNoMatch(displayValue || q, location || '');
+            return;
+          }
           const metrics = computeMetrics(data);
           const seconds = Math.max(0.1, (performance.now() - started) / 1000);
           currentData = data; currentMetrics = metrics;
@@ -2205,6 +2264,126 @@
         } catch (err) {
           if (token !== searchToken) return;
           showError(err && err.message ? err.message : 'Something went wrong. Please try again.');
+        }
+      }
+
+      // Show the no-match state pre-filled with the searched business name and
+      // location, then wire up the "Submit business details" claim form.
+      function showNoMatch(businessQuery, locationQuery) {
+        const msgEl = document.getElementById('noMatchMsg');
+        if (msgEl) {
+          var parts = [escapeHtml(businessQuery)];
+          if (locationQuery) parts.push('at ' + escapeHtml(locationQuery));
+          msgEl.innerHTML = 'We couldn\'t find an exact match for <strong>' + parts.join(' ') + '</strong>. Please check the business name and address.';
+        }
+        show('noMatch');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        var retryBtn = document.getElementById('noMatchRetryBtn');
+        if (retryBtn) retryBtn.onclick = function () { show('empty'); };
+
+        var claimBtn = document.getElementById('noMatchClaimBtn');
+        var claimWrap = document.getElementById('noMatchClaimFormWrap');
+        if (claimBtn && claimWrap) {
+          claimBtn.onclick = function () {
+            claimBtn.style.display = 'none';
+            claimWrap.classList.remove('hidden');
+            claimWrap.innerHTML = renderClaimForm(businessQuery, locationQuery);
+            var form = document.getElementById('claimForm');
+            if (form) form.addEventListener('submit', handleClaimSubmit);
+          };
+        }
+      }
+
+      function renderClaimForm(businessQuery, locationQuery) {
+        var loc = (locationQuery || '').trim();
+        // Try to pre-split "address, city, postcode, country" for convenience
+        var parts = loc.split(',').map(function(p) { return p.trim(); });
+        var preAddress = parts[0] || '';
+        var preCity = parts[1] || '';
+        var prePostcode = '';
+        var preCountry = '';
+        // Detect postcode-like token and country from remaining parts
+        for (var i = 2; i < parts.length; i++) {
+          var p = parts[i] || '';
+          if (/^[A-Z]{1,2}\d[\dA-Z]?\s*\d[A-Z]{2}$/i.test(p) || /^\d{4,5}$/.test(p)) {
+            prePostcode = p;
+          } else if (p.length > 0) {
+            preCountry = p;
+          }
+        }
+        return '<div class="claim-form-box">' +
+          '<h4>Can\'t find your business?</h4>' +
+          '<p class="claim-intro">Submit your details and we\'ll review it.</p>' +
+          '<form id="claimForm" class="claim-form" novalidate>' +
+            '<div class="claim-field"><label>Business name <span class="req">*</span></label>' +
+              '<input type="text" name="businessName" required maxlength="200" value="' + escapeAttr(businessQuery) + '" /></div>' +
+            '<div class="claim-field"><label>Street address</label>' +
+              '<input type="text" name="address" maxlength="500" value="' + escapeAttr(preAddress) + '" /></div>' +
+            '<div class="claim-row">' +
+              '<div class="claim-field"><label>City / suburb</label>' +
+                '<input type="text" name="city" maxlength="200" value="' + escapeAttr(preCity) + '" /></div>' +
+              '<div class="claim-field"><label>Postcode</label>' +
+                '<input type="text" name="postcode" maxlength="20" value="' + escapeAttr(prePostcode) + '" /></div>' +
+            '</div>' +
+            '<div class="claim-field"><label>Country</label>' +
+              '<input type="text" name="country" maxlength="100" value="' + escapeAttr(preCountry) + '" /></div>' +
+            '<div class="claim-field"><label>Website</label>' +
+              '<input type="url" name="website" maxlength="500" placeholder="https://..." /></div>' +
+            '<div class="claim-field"><label>Phone</label>' +
+              '<input type="tel" name="phone" maxlength="50" /></div>' +
+            '<div class="claim-field"><label>Google Business Profile link</label>' +
+              '<input type="url" name="googleProfileUrl" maxlength="500" placeholder="https://maps.google.com/..." /></div>' +
+            '<div class="claim-row">' +
+              '<div class="claim-field"><label>Contact name</label>' +
+                '<input type="text" name="contactName" maxlength="200" /></div>' +
+              '<div class="claim-field"><label>Email <span class="req">*</span></label>' +
+                '<input type="email" name="email" required maxlength="300" /></div>' +
+            '</div>' +
+            '<div id="claimFormMsg" class="claim-msg hidden"></div>' +
+            '<button type="submit" class="btn-purple claim-submit" id="claimSubmitBtn">Submit details</button>' +
+          '</form>' +
+        '</div>';
+      }
+
+      async function handleClaimSubmit(e) {
+        e.preventDefault();
+        var form = e.target;
+        var msgEl = document.getElementById('claimFormMsg');
+        var submitBtn = document.getElementById('claimSubmitBtn');
+        var data = {
+          businessName: (form.businessName && form.businessName.value || '').trim(),
+          address: (form.address && form.address.value || '').trim(),
+          city: (form.city && form.city.value || '').trim(),
+          postcode: (form.postcode && form.postcode.value || '').trim(),
+          country: (form.country && form.country.value || '').trim(),
+          website: (form.website && form.website.value || '').trim(),
+          phone: (form.phone && form.phone.value || '').trim(),
+          googleProfileUrl: (form.googleProfileUrl && form.googleProfileUrl.value || '').trim(),
+          contactName: (form.contactName && form.contactName.value || '').trim(),
+          email: (form.email && form.email.value || '').trim(),
+        };
+        if (!data.businessName || !data.email) {
+          if (msgEl) { msgEl.textContent = 'Please fill in the required fields (business name and email).'; msgEl.className = 'claim-msg claim-err'; }
+          return;
+        }
+        if (submitBtn) submitBtn.disabled = true;
+        try {
+          const res = await fetch(API_BASE + '/business-claim-requests', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+          });
+          const json = await res.json().catch(function() { return {}; });
+          if (res.ok) {
+            form.innerHTML = '<div class="claim-success"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><polyline points="22 4 12 15.01 9 12.01"/></svg><p>Thank you! We\'ve received your submission and will review it shortly.</p></div>';
+          } else {
+            if (msgEl) { msgEl.textContent = json.error || 'Could not submit. Please try again.'; msgEl.className = 'claim-msg claim-err'; }
+            if (submitBtn) submitBtn.disabled = false;
+          }
+        } catch (err) {
+          if (msgEl) { msgEl.textContent = 'Network error. Please check your connection and try again.'; msgEl.className = 'claim-msg claim-err'; }
+          if (submitBtn) submitBtn.disabled = false;
         }
       }
 
@@ -3110,7 +3289,7 @@
             }
           }
           const finalQuery = locationQuery ? (businessQuery + ' ' + locationQuery) : businessQuery;
-          runSearch(finalQuery, businessQuery);
+          runSearch(finalQuery, businessQuery, locationQuery);
         } finally {
           landingSearchInFlight = false;
         }
@@ -3233,25 +3412,30 @@
           '<div class="spinner"></div><h3>Loading report requests…</h3></div></div>';
       }
 
+      let adminClaims = [];
+
       async function loadAdminRequests() {
         const token = localStorage.getItem(ADMIN_TOKEN_KEY);
         if (!token) { renderAdminGate(false); return; }
         renderAdminLoading();
         try {
-          const res = await fetch(API_BASE + '/report-requests', {
-            headers: { 'x-admin-token': token }
-          });
-          if (res.status === 401 || res.status === 403) {
+          // Load report requests and missing-business claims in parallel
+          const [reportRes, claimRes] = await Promise.all([
+            fetch(API_BASE + '/report-requests', { headers: { 'x-admin-token': token } }),
+            fetch(API_BASE + '/admin/business-claim-requests', { headers: { 'x-admin-token': token } }),
+          ]);
+          if (reportRes.status === 401 || reportRes.status === 403) {
             localStorage.removeItem(ADMIN_TOKEN_KEY);
             renderAdminGate(true);
             return;
           }
-          if (!res.ok) {
-            const body = await res.json().catch(function () { return {}; });
+          if (!reportRes.ok) {
+            const body = await reportRes.json().catch(function () { return {}; });
             renderAdminError(body && body.error ? body.error : 'Could not load report requests.');
             return;
           }
-          adminRequests = await res.json();
+          adminRequests = await reportRes.json();
+          adminClaims = claimRes.ok ? await claimRes.json().catch(function () { return []; }) : [];
           renderAdminTable();
         } catch (err) {
           renderAdminError('Could not reach the server. Please try again.');
@@ -3376,6 +3560,7 @@
               'placeholder="Search name, email, phone, business, address or ID…" value="' + escapeAttr(adminSearch) + '" />' +
           '</div>' +
           '<div id="adminRowsHolder"></div>' +
+          renderClaimsSection() +
         '</div>';
         wireAdminHeader();
         adminRoot.querySelectorAll('[data-admin-filter]').forEach(function (btn) {
@@ -3393,6 +3578,77 @@
           renderAdminRows();
         });
         renderAdminRows();
+        wireClaimsSection();
+      }
+
+      function renderClaimsSection() {
+        if (!adminClaims.length) {
+          return '<div class="admin-claims-section"><h2 class="admin-claims-title">Missing Business Requests <span class="admin-claims-count">0</span></h2>' +
+            '<p style="color:var(--admin-text-2,#666);font-size:13px;padding:18px 0;">No submissions yet.</p></div>';
+        }
+        const rows = adminClaims.map(function (c) {
+          const statusMap = { pending: ['badge-pending','Pending'], reviewed: ['badge-generating','Reviewed'], added: ['badge-paid','Added'], rejected: ['badge-neutral','Rejected'] };
+          const b = statusMap[c.status] || statusMap.pending;
+          const badge = '<span class="admin-badge ' + b[0] + '">' + b[1] + '</span>';
+          const gpUrl = safeHttpUrl(c.googleProfileUrl);
+          const gpLink = gpUrl ? '<a href="' + escapeAttr(gpUrl) + '" target="_blank" rel="noopener noreferrer" class="admin-link">Open Google profile</a>' : '';
+          const siteUrl = safeHttpUrl(c.website);
+          const siteLink = siteUrl ? '<a href="' + escapeAttr(siteUrl) + '" target="_blank" rel="noopener noreferrer" class="admin-link">' + escapeHtml(c.website) + '</a>' : escapeHtml(c.website || '—');
+          return '<tr class="admin-claim-row" data-claim-id="' + escapeAttr(c.id) + '">' +
+            '<td><strong>' + escapeHtml(c.businessName) + '</strong>' +
+              (c.contactName ? '<br><span class="admin-meta">' + escapeHtml(c.contactName) + '</span>' : '') + '</td>' +
+            '<td>' + [c.address, c.city, c.postcode, c.country].filter(Boolean).map(escapeHtml).join(', ') + '</td>' +
+            '<td>' + escapeHtml(c.email || '—') + (c.phone ? '<br>' + escapeHtml(c.phone) : '') + '</td>' +
+            '<td>' + siteLink + (gpLink ? '<br>' + gpLink : '') + '</td>' +
+            '<td>' + badge + '</td>' +
+            '<td>' + escapeHtml(fmtDate(c.createdAt)) + '</td>' +
+            '<td class="admin-claim-actions">' +
+              '<select class="admin-claim-status-sel" data-claim-id="' + escapeAttr(c.id) + '">' +
+                ['pending','reviewed','added','rejected'].map(function(s) {
+                  return '<option value="' + s + '"' + (c.status === s ? ' selected' : '') + '>' + s.charAt(0).toUpperCase() + s.slice(1) + '</option>';
+                }).join('') +
+              '</select>' +
+              '<button class="admin-btn admin-claim-save" data-claim-id="' + escapeAttr(c.id) + '">Save</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('');
+        return '<div class="admin-claims-section">' +
+          '<h2 class="admin-claims-title">Missing Business Requests <span class="admin-claims-count">' + adminClaims.length + '</span></h2>' +
+          '<div class="admin-table-wrap"><table class="admin-table">' +
+            '<thead><tr><th>Business</th><th>Address</th><th>Contact</th><th>Website / Profile</th><th>Status</th><th>Submitted</th><th>Action</th></tr></thead>' +
+            '<tbody>' + rows + '</tbody>' +
+          '</table></div></div>';
+      }
+
+      function wireClaimsSection() {
+        adminRoot.querySelectorAll('.admin-claim-save').forEach(function (btn) {
+          btn.addEventListener('click', async function () {
+            const id = btn.getAttribute('data-claim-id');
+            const sel = adminRoot.querySelector('.admin-claim-status-sel[data-claim-id="' + id + '"]');
+            if (!sel) return;
+            const status = sel.value;
+            btn.disabled = true;
+            try {
+              const token = localStorage.getItem(ADMIN_TOKEN_KEY);
+              const res = await fetch(API_BASE + '/admin/business-claim-requests/' + encodeURIComponent(id), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json', 'x-admin-token': token || '' },
+                body: JSON.stringify({ status }),
+              });
+              if (res.ok) {
+                const claim = adminClaims.find(function (c) { return c.id === id; });
+                if (claim) claim.status = status;
+                adminToast('Status updated to ' + status);
+              } else {
+                adminToast('Could not update status.');
+              }
+            } catch (err) {
+              adminToast('Network error.');
+            } finally {
+              btn.disabled = false;
+            }
+          });
+        });
       }
 
       // Only treat http(s) URLs as clickable — never javascript:/data: schemes.

@@ -108,6 +108,15 @@ export interface Locality {
   state: string;
 }
 
+/** Detected country context derived from a user-supplied location string. */
+export interface LocationContext {
+  countryName: string;   // e.g. "United Kingdom"
+  countryCode: string;   // ISO-2: "GB", "AU", "NZ", "US", "CA", etc.
+  /** DataForSEO `location_name` value for this country. */
+  locationName: string;
+  confidence: "high" | "medium" | "low";
+}
+
 export interface BusinessReviews {
   name: string;
   address: string;
@@ -289,8 +298,9 @@ export async function fetchBusinessReviews(
   creds: DataforseoCreds,
   serpApiKey: string | null,
   log?: Logger,
+  location?: string,
 ): Promise<BusinessReviews | null> {
-  const core = await fetchBusinessCore(query, creds, log);
+  const core = await fetchBusinessCore(query, creds, log, location);
   if (!core) return null;
   const results = await Promise.all(
     SLOW_PLATFORM_KEYS.map((k) =>
@@ -316,7 +326,26 @@ export async function fetchBusinessCore(
   query: string,
   creds: DataforseoCreds,
   log?: Logger,
+  location?: string,
 ): Promise<BusinessReviews | null> {
+  // Detect country from location for correct DataForSEO location scoping.
+  // Falls back to DFS_LOCATION ("Australia") when no location is provided or
+  // when confidence is too low to override.
+  const locationCtx = location ? detectCountryFromLocation(location) : null;
+  const dfsLocation = locationCtx?.locationName ?? DFS_LOCATION;
+
+  log?.info(
+    {
+      searchQuery: query,
+      locationQuery: location ?? "",
+      dfsLocation,
+      detectedCountry: locationCtx?.countryName ?? "(default)",
+      detectedCountryCode: locationCtx?.countryCode ?? "",
+      detectedConfidence: locationCtx?.confidence ?? "none",
+    },
+    "business search start",
+  );
+
   // ---- Google business profile + rating (DataForSEO Google Maps search) ----
   // We use the Maps SERP endpoint (not `my_business_info/live`) as the primary
   // lookup: it accepts free-text/search-style queries (e.g. "Apple Melbourne"),
@@ -330,7 +359,7 @@ export async function fetchBusinessCore(
     "/serp/google/maps/live/advanced",
     {
       keyword: query,
-      location_name: DFS_LOCATION,
+      location_name: dfsLocation,
       language_code: DFS_LANGUAGE,
       depth: 10,
     },
@@ -338,9 +367,54 @@ export async function fetchBusinessCore(
     log,
     30000,
   );
-  const place = items.find(
-    (it) => typeof it["title"] === "string" && (it["title"] as string).trim(),
-  );
+
+  let place: Record<string, unknown> | undefined;
+
+  if (location && locationCtx) {
+    // With explicit location: score all candidates and pick the best above the
+    // acceptance threshold. Wrong-country candidates score -100, which always
+    // drops them below the threshold regardless of name match quality.
+    const businessName = extractBusinessName(query, location);
+
+    log?.info(
+      { businessName, location, dfsLocation, candidates: items.length },
+      "scoring candidates",
+    );
+
+    let bestScore = -Infinity;
+    let bestCandidate: Record<string, unknown> | undefined;
+
+    for (const item of items) {
+      const title = typeof item["title"] === "string" ? (item["title"] as string) : "";
+      if (!title.trim()) continue;
+      const sc = calculateBusinessMatchScore(item, businessName, location, locationCtx, log);
+      if (sc > bestScore) { bestScore = sc; bestCandidate = item; }
+    }
+
+    if (bestCandidate && bestScore >= MATCH_THRESHOLD) {
+      log?.info(
+        { accepted: bestCandidate["title"] as string, score: bestScore, threshold: MATCH_THRESHOLD },
+        "candidate accepted",
+      );
+      place = bestCandidate;
+    } else {
+      log?.info(
+        { bestScore, threshold: MATCH_THRESHOLD, primaryQuery: query },
+        "no candidate above threshold; trying fallbacks",
+      );
+      place = await tryLocationFallbacks(query, location, locationCtx, creds, log);
+      if (!place) {
+        log?.info({ query, location }, "no match found — returning null");
+        return null;
+      }
+    }
+  } else {
+    // No location provided: keep original first-result behaviour (AU-focused default).
+    place = items.find(
+      (it) => typeof it["title"] === "string" && (it["title"] as string).trim(),
+    );
+  }
+
   if (!place) return null;
 
   const name = typeof place["title"] === "string" ? place["title"] : query;
@@ -700,6 +774,380 @@ export function extractLocality(address: string, query = ""): Locality {
   }
 
   return { suburb, state };
+}
+
+// ---------------------------------------------------------------------------
+// Country detection + match scoring (fixes wrong-country search results)
+// ---------------------------------------------------------------------------
+
+// UK postcode: covers full formats e.g. N20 0UZ, SW1A 1AA, EC1A 1BB
+const UK_POSTCODE_RE = /\b[A-Z]{1,2}\d[\dA-Z]?\s*\d[A-Z]{2}\b/i;
+// Canadian postal code: e.g. K1A 0A6, V6B 4N8
+const CA_POSTCODE_RE = /\b[A-Z]\d[A-Z]\s*\d[A-Z]\d\b/i;
+// US ZIP: 5-digit (± hyphen+4). Only used as a medium-confidence fallback.
+const US_ZIP_RE = /\b\d{5}(?:-\d{4})?\b/;
+
+// Unambiguous AU state abbreviations (WA excluded — overlaps with Washington state)
+const AU_STATES_UNAMBIGUOUS = new Set(["VIC", "NSW", "QLD", "SA", "TAS", "NT", "ACT"]);
+
+// Well-known UK city names for medium-confidence detection
+const UK_CITIES_SET = new Set([
+  "london", "manchester", "birmingham", "liverpool", "leeds", "sheffield",
+  "edinburgh", "glasgow", "bristol", "nottingham", "leicester", "coventry",
+  "bradford", "cardiff", "belfast", "newcastle", "brighton", "hull",
+  "wolverhampton", "southampton", "portsmouth", "derby", "reading",
+  "northampton", "york", "middlesbrough", "peterborough", "oxford",
+  "cambridge", "exeter", "norwich", "sunderland", "barnet", "croydon",
+  "islington", "lambeth", "lewisham", "southwark", "wandsworth",
+]);
+
+// Well-known NZ city names for medium-confidence detection
+const NZ_CITIES_SET = new Set([
+  "auckland", "wellington", "christchurch", "hamilton", "tauranga",
+  "napier", "hastings", "palmerston north", "nelson", "rotorua",
+  "dunedin", "new plymouth", "whangarei", "invercargill", "whanganui",
+]);
+
+// European + other key countries — matched by full country name in location string
+const EU_COUNTRY_MAP: Record<string, { code: string; location: string }> = {
+  italy: { code: "IT", location: "Italy" },
+  france: { code: "FR", location: "France" },
+  spain: { code: "ES", location: "Spain" },
+  germany: { code: "DE", location: "Germany" },
+  netherlands: { code: "NL", location: "Netherlands" },
+  ireland: { code: "IE", location: "Ireland" },
+  portugal: { code: "PT", location: "Portugal" },
+  greece: { code: "GR", location: "Greece" },
+  switzerland: { code: "CH", location: "Switzerland" },
+  austria: { code: "AT", location: "Austria" },
+  belgium: { code: "BE", location: "Belgium" },
+  sweden: { code: "SE", location: "Sweden" },
+  norway: { code: "NO", location: "Norway" },
+  denmark: { code: "DK", location: "Denmark" },
+  finland: { code: "FI", location: "Finland" },
+  poland: { code: "PL", location: "Poland" },
+  singapore: { code: "SG", location: "Singapore" },
+  india: { code: "IN", location: "India" },
+  japan: { code: "JP", location: "Japan" },
+  "south africa": { code: "ZA", location: "South Africa" },
+  "united arab emirates": { code: "AE", location: "United Arab Emirates" },
+  dubai: { code: "AE", location: "United Arab Emirates" },
+  uae: { code: "AE", location: "United Arab Emirates" },
+};
+
+/**
+ * Detect the country from a user-supplied location string. Returns null when
+ * no confident signal is found (searches then fall back to the default AU bias).
+ * Used to set the correct DataForSEO `location_name` and to score / reject
+ * wrong-country candidates in `calculateBusinessMatchScore`.
+ */
+export function detectCountryFromLocation(location: string): LocationContext | null {
+  if (!location) return null;
+  const loc = location.trim();
+  const lower = loc.toLowerCase();
+
+  // 1. High-confidence explicit country keywords
+  if (/\b(united kingdom|england|scotland|wales|northern ireland)\b/i.test(loc)) {
+    return mk("United Kingdom", "GB", "high");
+  }
+  // "\buk\b" — must be a standalone word
+  if (/(?:^|[\s,/])uk(?:[\s,/]|$)/i.test(loc)) {
+    return mk("United Kingdom", "GB", "high");
+  }
+  if (/\b(united states of america|united states|usa)\b/i.test(loc)) {
+    return mk("United States", "US", "high");
+  }
+  if (/\bnew zealand\b/i.test(loc)) {
+    return mk("New Zealand", "NZ", "high");
+  }
+  // "\bnz\b" as a standalone token
+  if (/(?:^|[\s,/])nz(?:[\s,/]|$)/i.test(loc)) {
+    return mk("New Zealand", "NZ", "high");
+  }
+  if (/\bcanada\b/i.test(loc)) {
+    return mk("Canada", "CA", "high");
+  }
+  if (/\baustralia\b/i.test(loc)) {
+    return mk("Australia", "AU", "high");
+  }
+
+  // 2. European + other countries by full name
+  for (const [name, meta] of Object.entries(EU_COUNTRY_MAP)) {
+    if (new RegExp(`\\b${name}\\b`, "i").test(loc)) {
+      return { countryName: meta.location, countryCode: meta.code, locationName: meta.location, confidence: "high" };
+    }
+  }
+
+  // 3. UK postcode pattern (unambiguous, high confidence)
+  if (UK_POSTCODE_RE.test(loc)) {
+    return mk("United Kingdom", "GB", "high");
+  }
+
+  // 4. Canadian postal code (unambiguous, high confidence)
+  if (CA_POSTCODE_RE.test(loc)) {
+    return mk("Canada", "CA", "high");
+  }
+
+  // 5. Unambiguous Australian state abbreviations
+  const tokens = loc.toUpperCase().split(/[\s,./()[\]-]+/).filter(Boolean);
+  for (const tok of tokens) {
+    if (AU_STATES_UNAMBIGUOUS.has(tok)) {
+      return mk("Australia", "AU", "high");
+    }
+  }
+  // WA is ambiguous — only use it if another AU token is also present
+  if (
+    tokens.includes("WA") &&
+    (loc.toUpperCase().includes("AUSTRALIA") || tokens.some((t) => AU_STATES_UNAMBIGUOUS.has(t)))
+  ) {
+    return mk("Australia", "AU", "high");
+  }
+
+  // 6. UK city names (medium confidence)
+  const words = lower.split(/[\s,./()[\]-]+/);
+  for (const city of UK_CITIES_SET) {
+    if (city.includes(" ") ? lower.includes(city) : words.includes(city)) {
+      return mk("United Kingdom", "GB", "medium");
+    }
+  }
+
+  // 7. NZ city names (medium confidence)
+  for (const city of NZ_CITIES_SET) {
+    if (city.includes(" ") ? lower.includes(city) : words.includes(city)) {
+      return mk("New Zealand", "NZ", "medium");
+    }
+  }
+
+  // 8. US ZIP code (medium confidence — 5-digit numbers appear elsewhere too)
+  if (US_ZIP_RE.test(loc)) {
+    return mk("United States", "US", "medium");
+  }
+
+  return null;
+}
+
+function mk(countryName: string, countryCode: string, confidence: LocationContext["confidence"]): LocationContext {
+  return { countryName, countryCode, locationName: countryName, confidence };
+}
+
+/** Minimum score for a candidate to be accepted as the search result. */
+const MATCH_THRESHOLD = 55;
+
+/** Extract postcode-like strings from a location query (all formats). */
+function extractPostcodes(location: string): string[] {
+  const seen = new Set<string>();
+  const add = (s: string) => seen.add(s.toUpperCase().replace(/\s+/, " "));
+  let m: RegExpExecArray | null;
+  const re1 = /[A-Z]{1,2}\d[\dA-Z]?\s*\d[A-Z]{2}/gi;
+  while ((m = re1.exec(location)) !== null) add(m[0]);
+  const re2 = /\b[A-Z]\d[A-Z]\s*\d[A-Z]\d\b/gi;
+  while ((m = re2.exec(location)) !== null) add(m[0]);
+  const re3 = /\b\d{5}(?:-\d{4})?\b/g;
+  while ((m = re3.exec(location)) !== null) add(m[0]);
+  const re4 = /\b\d{4}\b/g;
+  while ((m = re4.exec(location)) !== null) add(m[0]);
+  return [...seen];
+}
+
+/** Extract the street name from the first comma segment (minus leading number). */
+function extractStreetName(location: string): string {
+  const firstSeg = location.split(",")[0]?.trim() ?? "";
+  return firstSeg.replace(/^\d+\w*\s+/, "").trim();
+}
+
+/** Extract city/suburb tokens from the middle comma-segments of a location. */
+function extractCityTokens(location: string): string[] {
+  const parts = location.split(",").map((p) => p.trim()).filter(Boolean);
+  if (parts.length >= 3) {
+    return parts
+      .slice(1, -1)
+      .map((p) =>
+        p.replace(/[A-Z]{1,2}\d[\dA-Z]?\s*\d[A-Z]{2}/gi, "")
+          .replace(/\b\d{4,5}\b/g, "")
+          .trim(),
+      )
+      .filter(Boolean);
+  }
+  if (parts.length === 2) {
+    return [
+      (parts[0] ?? "")
+        .replace(/[A-Z]{1,2}\d[\dA-Z]?\s*\d[A-Z]{2}/gi, "")
+        .replace(/\b\d{4,5}\b/g, "")
+        .trim(),
+    ].filter(Boolean);
+  }
+  return [];
+}
+
+/**
+ * Strip the location suffix from a combined "businessName + location" query
+ * to recover just the business name portion. The frontend always concatenates
+ * as `businessQuery + ' ' + locationQuery`, so the location is a suffix.
+ */
+function extractBusinessName(combinedQuery: string, location: string): string {
+  if (!location) return combinedQuery.trim();
+  const q = combinedQuery.trim();
+  const loc = location.trim();
+  if (q.endsWith(loc)) return q.slice(0, q.length - loc.length).trim();
+  if (q.toLowerCase().endsWith(loc.toLowerCase())) return q.slice(0, q.length - loc.length).trim();
+  return q;
+}
+
+/**
+ * Score a DataForSEO Maps candidate against the searched business + location.
+ * Higher is better. Key rule: wrong-country candidates receive -100, which
+ * drops them below `MATCH_THRESHOLD` regardless of name quality.
+ */
+function calculateBusinessMatchScore(
+  item: Record<string, unknown>,
+  businessQuery: string,
+  locationQuery: string,
+  ctx: LocationContext,
+  log?: Logger,
+): number {
+  let score = 0;
+  const reasons: string[] = [];
+
+  const title = typeof item["title"] === "string" ? (item["title"] as string) : "";
+  const address = dfsAddress(item);
+  const upperAddr = address.toUpperCase();
+
+  // ---- Name scoring ----
+  const normTitle = normalizeName(title);
+  const normQuery = normalizeName(businessQuery);
+  const titleTokens = new Set(distinctiveTokens(title));
+  const queryTokens = distinctiveTokens(businessQuery);
+
+  if (queryTokens.length > 0) {
+    const matchCount = queryTokens.filter((t) => titleTokens.has(t)).length;
+    const matchRatio = matchCount / queryTokens.length;
+    if (normTitle === normQuery || normTitle.startsWith(normQuery + " ")) {
+      score += 50; reasons.push("exact name +50");
+    } else if (normQuery.length > 2 && normTitle.includes(normQuery)) {
+      score += 40; reasons.push("title contains query +40");
+    } else if (normTitle.length > 3 && normQuery.includes(normTitle)) {
+      score += 30; reasons.push("query contains title +30");
+    } else if (matchRatio >= 0.6) {
+      score += 25; reasons.push(`name tokens ${Math.round(matchRatio * 100)}% +25`);
+    } else if (matchRatio > 0) {
+      score += 15; reasons.push(`partial name +15`);
+    } else {
+      score -= 30; reasons.push("no name match -30");
+    }
+  }
+
+  // ---- Country scoring ----
+  const addrInfo = item["address_info"];
+  let resultCC = "";
+  if (addrInfo && typeof addrInfo === "object") {
+    const cc = (addrInfo as Record<string, unknown>)["country_code"];
+    if (typeof cc === "string") resultCC = cc.toUpperCase();
+  }
+
+  const expectedCC = ctx.countryCode;
+  const countryInAddr =
+    upperAddr.includes(ctx.countryName.toUpperCase()) ||
+    (expectedCC === "GB" && /UNITED KINGDOM|ENGLAND|SCOTLAND|WALES/i.test(address)) ||
+    (expectedCC === "AU" && upperAddr.includes("AUSTRALIA")) ||
+    (expectedCC === "NZ" && upperAddr.includes("NEW ZEALAND")) ||
+    (expectedCC === "US" && /UNITED STATES|USA/i.test(address));
+
+  if (resultCC === expectedCC || countryInAddr) {
+    score += 40; reasons.push(`country match ${expectedCC} +40`);
+  } else if (resultCC !== "" && resultCC !== expectedCC) {
+    score -= 100; reasons.push(`wrong country: got ${resultCC}, want ${expectedCC} -100`);
+  } else if (!resultCC && !address) {
+    reasons.push("no address info (neutral)");
+  } else {
+    score -= 30; reasons.push("country not confirmed -30");
+  }
+
+  // ---- Postcode scoring ----
+  const postcodes = extractPostcodes(locationQuery);
+  for (const pc of postcodes) {
+    if (upperAddr.includes(pc)) {
+      score += 50; reasons.push(`postcode exact "${pc}" +50`); break;
+    }
+    const prefix = pc.split(/\s/)[0] ?? "";
+    if (prefix.length >= 2 && upperAddr.includes(prefix)) {
+      score += 20; reasons.push(`postcode prefix "${prefix}" +20`); break;
+    }
+  }
+
+  // ---- Street scoring ----
+  const street = extractStreetName(locationQuery);
+  if (street.length > 2 && upperAddr.includes(street.toUpperCase())) {
+    score += 30; reasons.push(`street match "${street}" +30`);
+  }
+
+  // ---- City/suburb scoring ----
+  const cities = extractCityTokens(locationQuery);
+  let cityHit = false;
+  for (const city of cities) {
+    if (city.length > 1 && upperAddr.includes(city.toUpperCase())) {
+      score += 25; reasons.push(`city match "${city}" +25`); cityHit = true; break;
+    }
+  }
+  if (cities.length > 0 && !cityHit && postcodes.length === 0) {
+    score -= 20; reasons.push("location city not in address -20");
+  }
+
+  log?.debug(
+    { candidate: title, candidateAddress: address, countryCode: resultCC || "(none)", score, reasons },
+    "candidate scored",
+  );
+  return score;
+}
+
+/**
+ * Try progressively simpler fallback queries when the primary search returns
+ * no candidate above the match threshold. Tries: postcode-only, street+city,
+ * city+country, then businessName+country.
+ */
+async function tryLocationFallbacks(
+  originalQuery: string,
+  location: string,
+  ctx: LocationContext,
+  creds: DataforseoCreds,
+  log?: Logger,
+): Promise<Record<string, unknown> | undefined> {
+  const businessName = extractBusinessName(originalQuery, location);
+  const postcodes = extractPostcodes(location);
+  const cities = extractCityTokens(location);
+  const street = extractStreetName(location);
+
+  const candidates = [
+    postcodes[0] ? `${businessName} ${postcodes[0]}` : null,
+    street && cities[0] ? `${businessName} ${street} ${cities[0]}` : null,
+    cities[0] ? `${businessName} ${cities[0]} ${ctx.countryName}` : null,
+    `${businessName} ${ctx.countryName}`,
+  ].filter((q): q is string => !!q && q.trim() !== originalQuery.trim());
+
+  for (const fb of [...new Set(candidates)]) {
+    if (!fb.trim()) continue;
+    log?.info({ fallbackQuery: fb, locationName: ctx.locationName }, "trying location fallback");
+    try {
+      const items = await dataforseoLive(
+        "/serp/google/maps/live/advanced",
+        { keyword: fb, location_name: ctx.locationName, language_code: DFS_LANGUAGE, depth: 10 },
+        creds,
+        log,
+        20000,
+      );
+      for (const item of items) {
+        const title = typeof item["title"] === "string" ? (item["title"] as string) : "";
+        if (!title.trim()) continue;
+        const sc = calculateBusinessMatchScore(item, businessName, location, ctx, log);
+        if (sc >= MATCH_THRESHOLD) {
+          log?.info({ fallbackQuery: fb, accepted: title, score: sc }, "fallback match accepted");
+          return item;
+        }
+      }
+    } catch (err) {
+      log?.warn({ err, fallbackQuery: fb }, "fallback query failed");
+    }
+  }
+  return undefined;
 }
 
 /** Which platforms carry demo ratings for a category's fallback rows. */

@@ -17,6 +17,9 @@ const router: IRouter = Router();
 
 const SearchQuery = z.object({
   query: z.string().trim().min(1).max(200),
+  // Optional raw location string (address / postcode / city) kept separate from
+  // the combined keyword so the backend can detect the country and score candidates.
+  location: z.string().trim().max(300).optional().default(""),
   // `phase=core` returns the fast Google-only profile (a few seconds); the
   // client then resolves the slow platforms one-by-one. Omitted = full lookup
   // (kept for backwards compatibility and report generation).
@@ -45,20 +48,24 @@ router.get("/search-business", async (req, res): Promise<void> => {
   }
   const serpApiKey = process.env["SERPAPI_API_KEY"] ?? null;
 
+  const location = parsed.data.location || undefined;
+
   try {
     const data =
       parsed.data.phase === "core"
-        ? await fetchBusinessCore(parsed.data.query, creds, req.log)
+        ? await fetchBusinessCore(parsed.data.query, creds, req.log, location)
         : await fetchBusinessReviews(
             parsed.data.query,
             creds,
             serpApiKey,
             req.log,
+            location,
           );
     if (!data) {
-      res
-        .status(404)
-        .json({ error: "No matching business found. Try a more specific name." });
+      res.status(404).json({
+        error: "No exact business found for that name and location. Check the spelling or try adding the suburb and country.",
+        noMatch: true,
+      });
       return;
     }
     res.json(data);
