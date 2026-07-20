@@ -1,0 +1,160 @@
+Fix the business search matching logic.
+
+Current issue:
+When searching for an exact business name and address, the app sometimes returns the wrong business in another country.
+
+Example:
+Search input:
+Business: Organic Hairdressing
+Location: 95 Raleigh Dr, London N20 0UZ
+
+Expected result:
+Organic Hairdressing
+95 Raleigh Dr, London N20 0UZ, United Kingdom
+
+Actual wrong result:
+Organic Hair & Beauty
+136 Chadwick Road, Greerton, Tauranga 3112, New Zealand
+
+This is incorrect.
+
+The search must prioritise exact business name + exact address/location matching.
+
+Requirements:
+
+1. Combine business and location into a strict search query
+
+If both fields are provided, search using:
+
+"${businessQuery} ${locationQuery}"
+
+Example:
+"Organic Hairdressing 95 Raleigh Dr London N20 0UZ"
+
+Do not search only the business name when a location is provided.
+
+2. Strong location matching
+
+When the user enters a location/address/postcode/country, results must be filtered and ranked by location relevance.
+
+The correct result should match at least one of:
+- postcode
+- suburb/city
+- street name
+- country
+- state/region
+
+For this example:
+- Raleigh Dr
+- London
+- N20 0UZ
+- United Kingdom / UK
+
+3. Reject wrong-country results
+
+If the user enters a UK address or UK postcode, do not return businesses from New Zealand, Australia, USA or any other country.
+
+Add country detection from the location field.
+
+Examples:
+N20 0UZ = United Kingdom
+VIC / NSW / QLD = Australia
+Auckland / Tauranga = New Zealand
+CA / NY / FL etc = USA
+
+If detectedCountry exists, filter results to that country.
+
+4. Add match scoring
+
+Create a function:
+
+calculateBusinessMatchScore(result, businessQuery, locationQuery)
+
+Scoring:
+- exact business name match: +50
+- partial business name match: +25
+- exact street match: +30
+- postcode match: +40
+- city/suburb match: +25
+- country match: +25
+- wrong country: -100
+- different city with no postcode match: -50
+- similar business name but wrong location: reject or very low score
+
+Only show the top result if score is above a safe threshold.
+
+Example threshold:
+score >= 60
+
+5. If no correct match is found
+
+Do not show a random similar business.
+
+Instead show:
+
+"No exact business match found. Please check the business name or address."
+
+Also show:
+"Try searching with the business name, street address and city."
+
+6. Provider search
+
+For DataForSEO and/or SerpApi, pass the full query including address.
+
+Example query:
+Organic Hairdressing 95 Raleigh Dr London N20 0UZ United Kingdom
+
+If using DataForSEO Google Maps/Business data, use location_name or location_code for United Kingdom when UK postcode/address is detected.
+
+If using SerpApi, set location/search parameters to United Kingdom or London when the address indicates UK.
+
+7. Exact business fallback
+
+If the first search fails, try these fallback queries:
+
+1. "${businessQuery} ${locationQuery}"
+2. "${businessQuery} ${postcode}"
+3. "${businessQuery} ${street} ${city}"
+4. "${businessQuery} ${city} ${country}"
+
+For the example:
+1. Organic Hairdressing 95 Raleigh Dr London N20 0UZ
+2. Organic Hairdressing N20 0UZ
+3. Organic Hairdressing Raleigh Dr London
+4. Organic Hairdressing London United Kingdom
+
+8. Display correct business name
+
+Google may show the official listing title as:
+
+Organic Hairdressing - Hairdresser in Barnet, Woodside Park, Friern Barnet & North London
+
+This should still match the searched business name:
+Organic Hairdressing
+
+9. Debug logging
+
+Add backend logs showing:
+- original business query
+- original location query
+- combined search query
+- detected country
+- candidate business names
+- candidate addresses
+- match score for each candidate
+- reason why a candidate was accepted or rejected
+
+10. Final behaviour
+
+If user searches:
+Business: Organic Hairdressing
+Location: 95 Raleigh Dr, London N20 0UZ
+
+The app must return:
+Organic Hairdressing
+95 Raleigh Dr, London N20 0UZ, United Kingdom
+
+It must not return:
+Organic Hair & Beauty in Tauranga, New Zealand.
+
+Never return a business from the wrong country when the location clearly identifies another country.

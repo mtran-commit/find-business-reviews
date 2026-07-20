@@ -1,0 +1,322 @@
+Build a global business search matching system.
+
+The app must work worldwide and must not return the wrong business from another country when the user enters a business name and location.
+
+Current problem:
+The user searched:
+Business: Organic Hairdressing
+Location: 95 Raleigh Dr, London N20 0UZ
+
+Expected:
+Organic Hairdressing
+95 Raleigh Dr, London N20 0UZ, United Kingdom
+
+Wrong result returned:
+Organic Hair & Beauty
+Tauranga, New Zealand
+
+This must never happen.
+
+GLOBAL SEARCH REQUIREMENTS
+
+1. Treat business name and location as two separate fields
+
+Field 1:
+businessQuery
+
+Field 2:
+locationQuery
+
+If both fields are provided, create a strict query:
+
+const strictQuery = `${businessQuery} ${locationQuery}`;
+
+Example:
+Organic Hairdressing 95 Raleigh Dr London N20 0UZ
+
+Do not search businessQuery alone if locationQuery exists.
+
+2. Detect country from location
+
+Create a function:
+
+detectCountryFromLocation(locationQuery)
+
+It should detect common country signals:
+
+United Kingdom:
+- UK postcode pattern such as N20 0UZ, SW1A 1AA, E1, W1, M1, etc.
+- London
+- United Kingdom
+- UK
+- England
+- Scotland
+- Wales
+- Northern Ireland
+
+Australia:
+- VIC, NSW, QLD, SA, WA, TAS, ACT, NT
+- Australian postcode patterns
+- Australia
+
+New Zealand:
+- Auckland
+- Wellington
+- Christchurch
+- Tauranga
+- New Zealand
+- NZ
+
+United States:
+- USA
+- United States
+- US state abbreviations
+- ZIP codes
+
+Canada:
+- Canadian postcode pattern
+- Canada
+
+Europe:
+- recognise major countries such as Italy, France, Spain, Germany, Netherlands, Ireland, Portugal, Greece, Switzerland, Austria, Belgium.
+
+Return:
+{
+  countryName,
+  countryCode,
+  confidence
+}
+
+3. Provider query must include country/location
+
+When calling DataForSEO or SerpApi, pass:
+- full strict query
+- detected country
+- city if available
+- postcode if available
+
+Example:
+Organic Hairdressing 95 Raleigh Dr London N20 0UZ United Kingdom
+
+If using DataForSEO:
+- use country/location settings when possible
+- for UK postcode, use United Kingdom location
+- do not use default Australia or global location if the query contains a UK postcode
+
+If using SerpApi:
+- set location to the detected city/country when available
+- query must include full address and country
+
+4. Return multiple candidates first
+
+Do not trust the first result.
+
+For every search, fetch multiple candidates from the provider.
+
+For each candidate, collect:
+- name
+- address
+- city/suburb
+- postcode
+- country
+- phone
+- website
+- Google place ID if available
+- coordinates if available
+- category
+- rating
+- review count
+
+5. Add match scoring
+
+Create:
+
+function calculateBusinessMatchScore(candidate, businessQuery, locationQuery, detectedCountry)
+
+Score logic:
+
+Business name:
+- exact normalised business name match: +50
+- candidate name contains businessQuery: +35
+- businessQuery contains candidate name: +25
+- partial word match: +15
+- completely different name: -30
+
+Street/address:
+- exact street number match: +25
+- street name match: +30
+- street number + street name match: +50
+
+Postcode:
+- exact postcode match: +50
+- postcode prefix match: +20
+
+City/suburb:
+- exact city/suburb match: +30
+- nearby city match: +10
+- different city: -30
+
+Country:
+- exact country match: +40
+- detected country but candidate country missing: 0
+- wrong country: -150
+
+Phone/website:
+- website domain matches business name: +15
+- phone country code matches detected country: +10
+
+Coordinates:
+- if location geocoded and candidate is close: +20
+- if very far away: -80
+
+Category:
+- matching category: +10
+- unrelated category: -20
+
+6. Reject bad matches
+
+Set strict acceptance rules:
+
+If detectedCountry exists and candidate country is different:
+reject candidate
+
+If postcode is provided and candidate postcode does not match:
+reject candidate unless the business name and street match are extremely strong
+
+If street address is provided and candidate has a completely different street:
+reject candidate
+
+If final score is below 70:
+do not show as exact result
+
+If final score is between 50 and 70:
+show under “Possible matches” only
+
+If score is below 50:
+hide it
+
+7. Never show a random wrong result
+
+If no result passes the threshold, show:
+
+No exact business match found.
+
+Then show:
+Please check the business name and address, or submit the business details so we can review it.
+
+Add button:
+Submit business details
+
+8. Add “Can’t find your business?” form
+
+When no exact match is found, show:
+
+Can’t find your business?
+Submit your details and we’ll review it.
+
+Fields:
+- Business name
+- Full address
+- City/suburb
+- Postcode
+- Country
+- Website
+- Phone
+- Google Business Profile link
+- Contact name
+- Email
+
+Save this to database table:
+
+business_claim_requests
+
+Fields:
+id
+business_name
+address
+city
+postcode
+country
+website
+phone
+google_profile_url
+contact_name
+email
+status
+created_at
+
+Statuses:
+pending
+reviewed
+added
+rejected
+
+9. Add admin view for missing business requests
+
+In admin panel, add section:
+Missing Business Requests
+
+Admin can:
+- view submitted business details
+- open Google profile link
+- mark as reviewed
+- mark as added
+- mark as rejected
+
+10. Add debug logs
+
+For every search, log:
+
+original businessQuery
+original locationQuery
+strict query
+detected country
+provider used
+candidate names
+candidate addresses
+candidate countries
+match score
+accept/reject reason
+
+11. Add exact examples as tests
+
+Test 1:
+Business: Organic Hairdressing
+Location: 95 Raleigh Dr, London N20 0UZ
+
+Expected:
+Organic Hairdressing
+95 Raleigh Dr, London N20 0UZ, United Kingdom
+
+Must reject:
+Organic Hair & Beauty
+Tauranga, New Zealand
+
+Test 2:
+Business: Buxton Dingley Village
+Location: Dingley Village VIC Australia
+
+Expected:
+Buxton Dingley Village, Victoria, Australia
+
+Must reject:
+any Buxton business in another suburb/country
+
+Test 3:
+Business: cafe
+Location: Mornington VIC
+
+Expected:
+cafes in Mornington VIC only
+
+Must reject:
+cafes in Mornington Peninsula overseas or unrelated locations
+
+12. Final rule
+
+Accuracy is more important than always showing a result.
+
+If the app is not confident, show:
+No exact match found
+
+Do not show a wrong business.
