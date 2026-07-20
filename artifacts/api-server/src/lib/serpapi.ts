@@ -355,10 +355,16 @@ export async function fetchBusinessCore(
   // exceeding our request timeout. The Maps item is a superset of the fields we
   // read (rating.value/votes_count, address/address_info, url/domain, phone,
   // main_image, category/additional_categories, latitude/longitude).
+  // When the caller provides an explicit location, append it to the keyword so
+  // DataForSEO returns locally-scoped results (e.g. "cafe Mornington VIC"
+  // instead of just "cafe" against all of Australia). extractBusinessName()
+  // below strips the location back off when scoring candidates.
+  const dfsKeyword = location ? `${query} ${location}` : query;
+
   const items = await dataforseoLive(
     "/serp/google/maps/live/advanced",
     {
-      keyword: query,
+      keyword: dfsKeyword,
       location_name: dfsLocation,
       language_code: DFS_LANGUAGE,
       depth: 10,
@@ -949,10 +955,15 @@ function extractPostcodes(location: string): string[] {
   return [...seen];
 }
 
-/** Extract the street name from the first comma segment (minus leading number). */
+/** Extract the street name from the first comma segment (minus leading number).
+ * Returns "" when the segment doesn't start with a house/unit number, so that
+ * bare suburb inputs like "Mornington VIC" don't produce a spurious street match.
+ */
 function extractStreetName(location: string): string {
   const firstSeg = location.split(",")[0]?.trim() ?? "";
-  return firstSeg.replace(/^\d+\w*\s+/, "").trim();
+  // Require a leading digit — if there's no house number, it's not a street address.
+  if (!/^\d/.test(firstSeg)) return "";
+  return firstSeg.replace(/^\d+(?:[/\-]\d+)?\w*\s+/, "").trim();
 }
 
 /** Extract city/suburb tokens from the middle comma-segments of a location. */
@@ -976,7 +987,32 @@ function extractCityTokens(location: string): string[] {
         .trim(),
     ].filter(Boolean);
   }
-  return [];
+  // No commas: try to extract suburb/city by space-splitting and removing
+  // state abbreviations, postcodes, country keywords, and road suffixes.
+  // e.g. "Mornington VIC" → ["Mornington"], "London N20 0UZ" → ["London"]
+  const COUNTRY_WORDS = new Set([
+    "australia", "uk", "usa", "england", "scotland", "wales",
+    "new", "zealand", "united", "kingdom", "states", "america",
+  ]);
+  const ROAD_SUFFIXES = new Set([
+    "st", "rd", "dr", "ave", "blvd", "ct", "pl", "ln", "hwy",
+    "pkwy", "sq", "cr", "cres", "tce", "terrace", "way", "close",
+  ]);
+  return (parts[0] ?? "")
+    .split(/\s+/)
+    .filter((w) => {
+      if (w.length < 2) return false;
+      if (AU_STATES_UNAMBIGUOUS.has(w.toUpperCase())) return false;
+      if (COUNTRY_WORDS.has(w.toLowerCase())) return false;
+      if (ROAD_SUFFIXES.has(w.toLowerCase())) return false;
+      // Skip postcodes: 4-5 digits, UK district (e.g. N20), UK sector (e.g. 0UZ)
+      if (/^\d{4,5}$/.test(w)) return false;
+      if (/^[A-Z]{1,2}\d[\dA-Z]?$/i.test(w)) return false;
+      if (/^\d[A-Z]{2}$/i.test(w)) return false;
+      // Skip bare house numbers
+      if (/^\d+[a-z]?$/i.test(w)) return false;
+      return true;
+    });
 }
 
 /**
