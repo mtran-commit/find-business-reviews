@@ -1,0 +1,306 @@
+Improve the SEO and Google Search visibility of Find Business Reviews.
+
+IMPORTANT:
+Do not redesign the website.
+Do not change the existing search functionality.
+Do not remove existing features.
+Do not change the current branding.
+The goal is to improve how Google and other search engines understand and index the website.
+
+FIRST:
+Inspect the current SEO implementation and identify what already exists before making changes.
+
+Then implement the following.
+
+1. HOMEPAGE SEO TITLE
+
+Set the homepage title to:
+
+Find Business Reviews | Compare Reviews & AI Trust Scores
+
+Keep the title concise and search-friendly.
+
+2. META DESCRIPTION
+
+Use:
+
+Find Business Reviews helps you compare business reviews from multiple platforms in one search. Check ratings, customer sentiment and an AI Trust Score before you buy, book or visit.
+
+3. HOMEPAGE H1
+
+The main H1 should be:
+
+Compare Business Reviews in One Search
+
+There should only be one primary H1 on the homepage.
+
+Do not necessarily change the visual hero design if the current branding is important. The H1 can be integrated naturally into the existing page.
+
+4. SUPPORTING SEO TEXT
+
+Add natural supporting copy:
+
+Search businesses worldwide and compare ratings and customer reviews across multiple review platforms. Get a free AI Trust Score to help you make a more informed decision before you buy, book or visit.
+
+Do not keyword-stuff the page.
+
+5. TARGET SEARCH INTENT
+
+Structure the page naturally around relevant search topics including:
+
+business reviews
+business ratings
+compare business reviews
+check business reviews
+customer reviews
+company reviews
+local business reviews
+business reputation
+online reputation
+AI Trust Score
+business reputation report
+review comparison
+business review search
+
+Do NOT repeatedly insert these phrases unnaturally.
+
+6. BUSINESS SEO
+
+Where technically appropriate, make individual business result/profile pages indexable with unique URLs.
+
+Preferred structure:
+
+/business/[business-name]-[location]
+
+Example:
+
+/business/organic-hairdressing-london
+
+Each business page should have a unique SEO title such as:
+
+Organic Hairdressing Reviews, Ratings & Trust Score | Find Business Reviews
+
+Meta description example:
+
+Compare Organic Hairdressing reviews and ratings across multiple review platforms and view its AI Trust Score on Find Business Reviews.
+
+IMPORTANT:
+Only create indexable business pages when we have enough reliable business information.
+Do not generate thousands of thin, duplicate or low-quality pages.
+
+7. LOCATION SEO
+
+Build the architecture so we can eventually support useful location/category landing pages such as:
+
+/business-reviews/australia
+/business-reviews/united-kingdom
+/business-reviews/united-states
+/business-reviews/italy
+
+and later:
+
+/business-reviews/london/hairdressers
+/business-reviews/melbourne/plumbers
+/business-reviews/sydney/restaurants
+
+Do not automatically create large numbers of empty pages.
+
+Only index pages that contain useful unique content and real business results.
+
+8. STRUCTURED DATA
+
+Implement valid Schema.org structured data where appropriate.
+
+Homepage:
+WebSite
+Organization
+
+Business pages:
+LocalBusiness or the most appropriate subtype when reliable business data is available.
+
+Include only factual information we actually have.
+
+Possible fields:
+name
+url
+address
+telephone
+image
+geo
+aggregateRating
+
+IMPORTANT:
+Do not fabricate ratings, review counts, addresses, phone numbers or other structured data.
+
+Do not mark AI-generated Trust Scores as Google AggregateRating unless they genuinely satisfy Google's structured-data requirements.
+
+9. SEARCH ENGINE CRAWLING
+
+Check and correctly configure:
+
+robots.txt
+sitemap.xml
+canonical URLs
+index/noindex rules
+404 handling
+redirects
+www/non-www canonicalisation
+HTTPS canonicalisation
+
+The sitemap should contain only valid canonical pages that we want indexed.
+
+10. GOOGLE SEARCH CONSOLE
+
+Make sure the site is ready to connect to Google Search Console.
+
+If verification is not currently configured, tell me exactly what verification record/tag I need to add.
+
+Do not invent a verification token.
+
+11. SOCIAL SHARING / OPEN GRAPH
+
+Add:
+
+og:title
+og:description
+og:image
+og:url
+og:type
+
+Also add appropriate Twitter/X card metadata.
+
+Suggested social title:
+
+Compare Business Reviews With One Click
+
+Suggested description:
+
+Compare reviews across multiple platforms and get a free AI Trust Score before you buy, book or visit.
+
+Use the existing Find Business Reviews branded social image/logo where appropriate.
+
+12. GLOBAL SEO
+
+Find Business Reviews is a GLOBAL platform.
+
+The architecture must support:
+Australia
+United Kingdom
+United States
+Canada
+New Zealand
+Europe
+and other countries.
+
+Do not configure the website as Australia-only.
+
+Do not hardcode Australia into global metadata.
+
+13. MULTILINGUAL SEO PREPARATION
+
+Prepare the architecture for future multilingual pages.
+
+When translated versions are introduced, support proper hreflang tags such as:
+
+en-AU
+en-GB
+en-US
+it-IT
+fr-FR
+de-DE
+es-ES
+
+Do not create hreflang links to pages that do not actually exist.
+
+14. PERFORMANCE / CORE WEB VITALS
+
+Check:
+mobile performance
+image sizes
+lazy loading
+layout shifts
+JavaScript bundle size
+font loading
+Largest Contentful Paint
+Cumulative Layout Shift
+
+Optimise where safe without changing the design.
+
+15. IMAGE SEO
+
+Make sure meaningful images have descriptive alt text.
+
+Examples:
+
+Find Business Reviews logo
+
+Business names can be used for business images where appropriate.
+
+Do not keyword-stuff alt text.
+
+16. MOBILE SEO
+
+Make sure:
+- mobile content matches desktop content
+- search works correctly
+- important SEO text is not hidden from search engines
+- buttons and fields remain usable
+- no important content is rendered only after unnecessary interaction
+
+17. BUSINESS REPORT SEO
+
+Create useful metadata for the business reputation report landing page.
+
+Suggested title:
+
+AI Business Reputation Report | Find Business Reviews
+
+Suggested description:
+
+Discover what customers see about your business online. Analyse ratings, customer sentiment, reputation strengths and opportunities with an AI Business Reputation Report.
+
+18. BRAND ENTITY
+
+Clearly identify the organisation as:
+
+Find Business Reviews
+Powered by Quintessence Visionary Studio Pty Ltd
+ACN 678 711 469
+ABN 15 678 711 469
+
+Use the correct official website URL consistently throughout structured data and canonical metadata.
+
+19. DO NOT INDEX PRIVATE PAGES
+
+Make sure these types of pages are noindex where appropriate:
+
+admin
+super admin
+payment processing pages
+private report-generation screens
+internal API routes
+login/authentication utility pages
+temporary result states
+
+20. FINAL SEO AUDIT
+
+After implementation, give me a report showing:
+
+Current SEO problems found
+Changes made
+Homepage title
+Homepage meta description
+H1
+Canonical URL
+robots.txt status
+sitemap status
+structured data added
+Open Graph status
+mobile SEO status
+performance improvements
+pages set to noindex
+Google Search Console readiness
+
+Also identify any SEO improvements you recommend but did NOT implement.
+
+Do not claim that any change guarantees a Google ranking.
