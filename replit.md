@@ -68,14 +68,31 @@ Best-effort Facebook/Instagram profile discovery via SerpApi, gated by a `scoreM
 ### SEO foundations
 Technical SEO only — no visible UI/copy/layout changes.
 
-- `artifacts/compare-reviews/public/robots.txt` allows all crawlers and points to the sitemap; `public/sitemap.xml` lists the homepage and `/terms` (static, hand-maintained — add new indexable routes here if any are added later).
-- `<head>` has a canonical `<link>` (`https://findbusinessreviews.com/`) and a `WebApplication` JSON-LD block describing the product (invisible, for Google's Rich Results).
+- `artifacts/compare-reviews/public/robots.txt` allows all crawlers and points to the sitemap; `public/sitemap.xml` lists the homepage, `/terms`, and `/privacy` (static, hand-maintained — add new indexable routes here if any are added later).
+- `<head>` has a canonical `<link>` (`https://findbusinessreviews.com/`), an `x-default` hreflang link, and a JSON-LD `@graph` block with **WebApplication** (app description), **WebSite** (with `SearchAction` for sitelinks search box), and **Organization** (legal name "Quintessence Visionary Studio Pty Ltd", ACN/ABN, contact).
+- Full set of social tags: `og:title`, `og:description`, `og:image` (hero-logo.png), `twitter:card`, `twitter:title`, `twitter:description`, `twitter:image`.
+- Homepage has an `<h1>` ("Compare Business Reviews in One Search") with supporting copy, naturally integrated in the landing empty state — it is visually hidden (but stays in the DOM for SEO) when a search is active.
+- Admin (`/admin-report-requests`) and other private screens inject `<meta name="robots" content="noindex,nofollow">` via `setRobotsNoindex()`.
 - `updateSearchMeta()` (called at the top of `renderResults`) rewrites `document.title` + the `description`/`og:title`/`og:description` meta tags to include the searched business name (and suburb, if known) — this only affects the browser tab title and link-preview cards, never the visible page DOM. Best-effort/try-caught so it can never block rendering.
-- **Submitting the sitemap to Google Search Console (manual, one-time, user must do this):**
-  1. Go to https://search.google.com/search-console and add `findbusinessreviews.com` as a property (Domain or URL-prefix).
-  2. Verify ownership (DNS TXT record is easiest for a domain property).
-  3. Under "Sitemaps", submit `sitemap.xml` (Search Console appends it to the verified domain).
-  4. Optionally use "URL Inspection" → "Request indexing" for the homepage to speed up first crawl.
+- When the Business Reputation Report modal opens, title + meta update to "AI Business Reputation Report | Find Business Reviews"; they restore on close.
+
+### Submitting to Google Search Console
+
+This is a one-time manual step the site owner must perform:
+
+1. Go to https://search.google.com/search-console and add `findbusinessreviews.com` as a **Domain property** (requires DNS access) or a **URL-prefix property** (easier — just choose `https://findbusinessreviews.com/`).
+2. Verify ownership. The recommended method for a URL-prefix property is the **HTML tag** method:
+   - Search Console will generate a `<meta name="google-site-verification" content="...">` tag.
+   - Paste it into `artifacts/compare-reviews/index.html` at the placeholder comment in `<head>`:
+     ```html
+     <!-- <meta name="google-site-verification" content="YOUR_VERIFICATION_TOKEN_HERE" /> -->
+     ```
+   - Remove the comment delimiters and replace `YOUR_VERIFICATION_TOKEN_HERE` with the token from Search Console.
+   - Publish the site, then click **Verify** in Search Console.
+3. Under **Sitemaps**, enter `sitemap.xml` and click **Submit**. The sitemap URL is: `https://findbusinessreviews.com/sitemap.xml`
+4. Optionally use **URL Inspection** → "Request indexing" on the homepage to speed up the first crawl.
+
+> Never commit a real verification token to git without understanding who has repo access — it is low-risk but worth knowing it's public.
 
 ### iOS mobile app (Capacitor + Codemagic)
 The web app ships to iOS as a Capacitor shell built on Codemagic cloud Macs (no local Mac). Setup lives in: `codemagic.yaml` (repo root, monorepo-aware build), `artifacts/compare-reviews/capacitor.config.json` (appId `com.findbusinessreviews.app`, webDir `dist/public`), `assets/icon-only.png`+`splash.png`+`splash-dark.png` (the layout `@capacitor/assets` requires — NOT `resources/`), and native detection in `index.html` (`API_BASE` switches to `https://findbusinessreviews.com/api` when protocol is `capacitor:`). Native build needs `PORT=8080 BASE_PATH=./`. CORS is already open. Full walkthrough: `codemagic-ios-guide.md`. Keep the site published — the native app is a client of the live API.

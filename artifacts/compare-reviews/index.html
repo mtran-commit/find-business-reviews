@@ -3,29 +3,70 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Find Business Reviews — Compare Google, TripAdvisor & Yelp ratings</title>
-    <meta name="description" content="Don't trust one rating. Compare Google, TripAdvisor and Yelp reviews and get an AI Trust Score before you buy, book or visit." />
-    <meta name="robots" content="index, follow" />
+    <title>Find Business Reviews | Compare Reviews &amp; AI Trust Scores</title>
+    <meta name="description" content="Find Business Reviews helps you compare Google, TripAdvisor, Yelp and more ratings in one place — with a free AI Trust Score — before you buy, book or visit." />
+    <meta name="robots" content="index,follow" />
     <link rel="canonical" href="https://findbusinessreviews.com/" />
-    <meta property="og:title" content="Find Business Reviews" />
-    <meta property="og:description" content="Compare Google, TripAdvisor and Yelp reviews and get an AI Trust Score before you buy, book or visit." />
+    <!-- hreflang: x-default covers the primary English (Australian) audience.
+         Add per-locale <link rel="alternate" hreflang="en-GB" href="..."> etc. here when regional variants are introduced. -->
+    <link rel="alternate" hreflang="x-default" href="https://findbusinessreviews.com/" />
+    <meta property="og:title" content="Find Business Reviews | Compare Reviews &amp; AI Trust Scores" />
+    <meta property="og:description" content="Find Business Reviews helps you compare Google, TripAdvisor, Yelp and more ratings in one place — with a free AI Trust Score — before you buy, book or visit." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://findbusinessreviews.com/" />
+    <meta property="og:image" content="https://findbusinessreviews.com/hero-logo.png" />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Find Business Reviews | Compare Reviews &amp; AI Trust Scores" />
+    <meta name="twitter:description" content="Find Business Reviews helps you compare Google, TripAdvisor, Yelp and more ratings in one place — with a free AI Trust Score — before you buy, book or visit." />
+    <meta name="twitter:image" content="https://findbusinessreviews.com/hero-logo.png" />
+    <!-- Google Search Console ownership verification: paste your HTML-tag token here once generated in Search Console UI. -->
+    <!-- <meta name="google-site-verification" content="YOUR_VERIFICATION_TOKEN_HERE" /> -->
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Find Business Reviews",
-      "url": "https://findbusinessreviews.com/",
-      "description": "Compare a business's public review ratings across Google, Yelp, TripAdvisor, Trustpilot, Product Review and Facebook, with a computed 0-100 Trust Score.",
-      "applicationCategory": "BusinessApplication",
-      "operatingSystem": "Web",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "AUD"
-      }
+      "@graph": [
+        {
+          "@type": "WebApplication",
+          "name": "Find Business Reviews",
+          "url": "https://findbusinessreviews.com/",
+          "description": "Compare a business's public review ratings across Google, Yelp, TripAdvisor, Trustpilot, Product Review and Facebook, with a computed 0-100 Trust Score.",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "AUD"
+          }
+        },
+        {
+          "@type": "WebSite",
+          "name": "Find Business Reviews",
+          "url": "https://findbusinessreviews.com/",
+          "potentialAction": {
+            "@type": "SearchAction",
+            "target": {
+              "@type": "EntryPoint",
+              "urlTemplate": "https://findbusinessreviews.com/?q={search_term_string}"
+            },
+            "query-input": "required name=search_term_string"
+          }
+        },
+        {
+          "@type": "Organization",
+          "name": "Find Business Reviews",
+          "url": "https://findbusinessreviews.com/",
+          "legalName": "Quintessence Visionary Studio Pty Ltd",
+          "identifier": [
+            { "@type": "PropertyValue", "name": "ACN", "value": "678 711 469" },
+            { "@type": "PropertyValue", "name": "ABN", "value": "15 678 711 469" }
+          ],
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "hello@findbusinessreviews.com",
+            "contactType": "customer support"
+          }
+        }
+      ]
     }
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -118,6 +159,24 @@
       .search-cta:hover { opacity: .9; }
       .search-cta:active { transform: translateY(1px); }
       .search-cta-label { display: none; font-weight: 800; font-size: 16px; letter-spacing: .2px; }
+
+      /* ===== Homepage H1 hero copy ===== */
+      .hero-h1-wrap {
+        text-align: center; margin: 22px auto 0; max-width: 720px; padding: 0 16px;
+      }
+      .hero-h1 {
+        font-size: clamp(26px, 3.8vw, 40px); font-weight: 900; letter-spacing: -.6px;
+        color: var(--navy); line-height: 1.1;
+      }
+      .hero-h1-sub {
+        font-size: clamp(15px, 1.8vw, 18px); color: var(--text-2);
+        margin: 10px auto 0; max-width: 620px; line-height: 1.6;
+      }
+      .hero-h1-wrap.search-active {
+        /* Visually hidden but kept in DOM for SEO */
+        position: absolute; width: 1px; height: 1px; overflow: hidden;
+        clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+      }
 
       /* ===== Hero ===== */
       .hero { text-align: center; padding: 40px 0 0; }
@@ -922,24 +981,29 @@
       <section class="panel">
         <!-- Empty / landing (feature cards) -->
         <div id="emptyState">
+          <!-- Homepage H1 — naturally integrated; hidden when a search is active -->
+          <div id="heroH1Wrap" class="hero-h1-wrap">
+            <h1 class="hero-h1">Compare Business Reviews in One Search</h1>
+            <p class="hero-h1-sub">Find business ratings across Google, TripAdvisor, Yelp, Trustpilot, Product Review and Facebook — all in one place. Our AI Trust Score shows you who to trust before you buy, book or visit.</p>
+          </div>
           <div class="platform-strip">
             <div class="platform-pill">
-              <img src="./icons/google.svg" alt="Google logo" class="platform-logo" />
+              <img src="./icons/google.svg" alt="Google logo" class="platform-logo" loading="lazy" />
             </div>
             <div class="platform-pill">
-              <img src="./icons/yelp.svg" alt="Yelp logo" class="platform-logo" />
+              <img src="./icons/yelp.svg" alt="Yelp logo" class="platform-logo" loading="lazy" />
             </div>
             <div class="platform-pill">
-              <img src="./icons/tripadvisor.svg" alt="TripAdvisor logo" class="platform-logo" />
+              <img src="./icons/tripadvisor.svg" alt="TripAdvisor logo" class="platform-logo" loading="lazy" />
             </div>
             <div class="platform-pill">
-              <img src="./icons/trustpilot.svg" alt="Trustpilot logo" class="platform-logo" />
+              <img src="./icons/trustpilot.svg" alt="Trustpilot logo" class="platform-logo" loading="lazy" />
             </div>
             <div class="platform-pill">
-              <img src="./icons/productreview.svg" alt="Product Review logo" class="platform-logo" />
+              <img src="./icons/productreview.svg" alt="Product Review logo" class="platform-logo" loading="lazy" />
             </div>
             <div class="platform-pill">
-              <img src="./icons/facebook.svg" alt="Facebook logo" class="platform-logo" />
+              <img src="./icons/facebook.svg" alt="Facebook logo" class="platform-logo" loading="lazy" />
             </div>
           </div>
           <div class="feature-grid">
@@ -2218,6 +2282,9 @@
         els.error.classList.toggle('hidden', which !== 'error');
         els.noMatch.classList.toggle('hidden', which !== 'noMatch');
         els.results.classList.toggle('hidden', which !== 'results');
+        // Hide H1 hero copy when a search is active (keeps it in DOM for SEO).
+        var h1w = document.getElementById('heroH1Wrap');
+        if (h1w) h1w.classList.toggle('search-active', which !== 'empty');
       }
       function showError(message) {
         document.getElementById('errorMsg').textContent = message;
@@ -2825,6 +2892,21 @@
         reportToken++; // invalidate any in-flight report render
         els.modal.classList.add('hidden');
         document.body.style.overflow = '';
+        // Restore homepage/search-result meta (best-effort).
+        try {
+          if (currentData && currentData.name) {
+            updateSearchMeta(currentData);
+          } else {
+            document.title = 'Find Business Reviews | Compare Reviews & AI Trust Scores';
+            const descEl = document.querySelector('meta[name="description"]');
+            const homepageDesc = 'Find Business Reviews helps you compare Google, TripAdvisor, Yelp and more ratings in one place \u2014 with a free AI Trust Score \u2014 before you buy, book or visit.';
+            if (descEl) descEl.setAttribute('content', homepageDesc);
+            const ogTitle = document.querySelector('meta[property="og:title"]');
+            if (ogTitle) ogTitle.setAttribute('content', 'Find Business Reviews | Compare Reviews & AI Trust Scores');
+            const ogDesc = document.querySelector('meta[property="og:description"]');
+            if (ogDesc) ogDesc.setAttribute('content', homepageDesc);
+          }
+        } catch(e) { /* best-effort */ }
       }
 
       // ---- Business-owner report (paid preview, reuses the report modal) ----
@@ -2835,6 +2917,17 @@
         els.reportBody.innerHTML = reportLoadingHtml('business');
         els.modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
+        // Update page title + meta for the paid report modal (restores on close).
+        try {
+          document.title = 'AI Business Reputation Report | Find Business Reviews';
+          const descEl = document.querySelector('meta[name="description"]');
+          const reportDesc = 'Get your personalised AI Business Reputation Report from Find Business Reviews — full platform analysis, customer sentiment, and a 7-day reputation action plan.';
+          if (descEl) descEl.setAttribute('content', reportDesc);
+          const ogTitle = document.querySelector('meta[property="og:title"]');
+          if (ogTitle) ogTitle.setAttribute('content', 'AI Business Reputation Report | Find Business Reviews');
+          const ogDesc = document.querySelector('meta[property="og:description"]');
+          if (ogDesc) ogDesc.setAttribute('content', reportDesc);
+        } catch(e) { /* best-effort */ }
 
         let ai, branding;
         try {
@@ -3970,6 +4063,7 @@
           .forEach(function (el) { el.classList.add('hidden'); });
         adminRoot.classList.remove('hidden');
         document.title = 'Report requests — Admin';
+        setRobotsNoindex(); // private screen — never index
         loadAdminRequests();
       }
 
@@ -4001,6 +4095,19 @@
         document.getElementById('privacyRoot').classList.remove('hidden');
         document.title = 'Privacy Policy — Find Business Reviews';
         window.scrollTo(0, 0);
+      }
+
+      // --- Robots noindex helpers ---
+      // Private screens (admin, super-admin, report-generation) should never be
+      // indexed. Call setRobotsNoindex() when entering a private screen and
+      // setRobotsIndex() when returning to the public app.
+      function setRobotsNoindex() {
+        var el = document.querySelector('meta[name="robots"]');
+        if (el) el.setAttribute('content', 'noindex,nofollow');
+      }
+      function setRobotsIndex() {
+        var el = document.querySelector('meta[name="robots"]');
+        if (el) el.setAttribute('content', 'index,follow');
       }
 
       // Route: render the admin page, terms page, privacy page, OR the public app — never more than one.
