@@ -3,22 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Find Business Reviews | Compare Reviews &amp; AI Trust Scores</title>
-    <meta name="description" content="Find Business Reviews helps you compare Google, TripAdvisor, Yelp and more ratings in one place — with a free AI Trust Score — before you buy, book or visit." />
+    <title>Find Business Reviews | Compare Business Reviews &amp; AI Trust Scores</title>
+    <meta name="description" content="Compare business reviews from multiple platforms in one search. Check ratings, customer sentiment and a free AI Trust Score before you buy, book or visit." />
     <meta name="robots" content="index,follow" />
     <link rel="canonical" href="https://findbusinessreviews.com/" />
     <!-- hreflang: x-default covers the primary English (Australian) audience.
          Add per-locale <link rel="alternate" hreflang="en-GB" href="..."> etc. here when regional variants are introduced. -->
     <link rel="alternate" hreflang="x-default" href="https://findbusinessreviews.com/" />
-    <meta property="og:title" content="Find Business Reviews | Compare Reviews &amp; AI Trust Scores" />
-    <meta property="og:description" content="Find Business Reviews helps you compare Google, TripAdvisor, Yelp and more ratings in one place — with a free AI Trust Score — before you buy, book or visit." />
+    <meta property="og:title" content="Find Business Reviews | Compare Business Reviews &amp; AI Trust Scores" />
+    <meta property="og:description" content="Compare business reviews from multiple platforms in one search. Check ratings, customer sentiment and a free AI Trust Score before you buy, book or visit." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://findbusinessreviews.com/" />
-    <meta property="og:image" content="https://findbusinessreviews.com/hero-logo.png" />
+    <meta property="og:image" content="https://findbusinessreviews.com/opengraph.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="Find Business Reviews" />
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:title" content="Find Business Reviews | Compare Reviews &amp; AI Trust Scores" />
-    <meta name="twitter:description" content="Find Business Reviews helps you compare Google, TripAdvisor, Yelp and more ratings in one place — with a free AI Trust Score — before you buy, book or visit." />
-    <meta name="twitter:image" content="https://findbusinessreviews.com/hero-logo.png" />
+    <meta name="twitter:site" content="@findbizreviews" />
+    <meta name="twitter:title" content="Find Business Reviews | Compare Business Reviews &amp; AI Trust Scores" />
+    <meta name="twitter:description" content="Compare business reviews from multiple platforms in one search. Check ratings, customer sentiment and a free AI Trust Score before you buy, book or visit." />
+    <meta name="twitter:image" content="https://findbusinessreviews.com/opengraph.jpg" />
     <!-- Google Search Console ownership verification: paste your HTML-tag token here once generated in Search Console UI. -->
     <!-- <meta name="google-site-verification" content="YOUR_VERIFICATION_TOKEN_HERE" /> -->
     <script type="application/ld+json">
@@ -26,22 +30,43 @@
       "@context": "https://schema.org",
       "@graph": [
         {
-          "@type": "WebApplication",
+          "@type": "Organization",
           "name": "Find Business Reviews",
+          "legalName": "Quintessence Visionary Studio Pty Ltd",
           "url": "https://findbusinessreviews.com/",
-          "description": "Compare a business's public review ratings across Google, Yelp, TripAdvisor, Trustpilot, Product Review and Facebook, with a computed 0-100 Trust Score.",
-          "applicationCategory": "BusinessApplication",
-          "operatingSystem": "Web",
-          "offers": {
-            "@type": "Offer",
-            "price": "0",
-            "priceCurrency": "AUD"
+          "logo": {
+            "@type": "ImageObject",
+            "url": "https://findbusinessreviews.com/hero-logo.png",
+            "width": 620,
+            "height": 180
+          },
+          "description": "Find Business Reviews compares business review ratings from Google, TripAdvisor, Yelp, Trustpilot, Product Review and Facebook in one place, with a free AI Trust Score.",
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "email": "hello@findbusinessreviews.com",
+            "contactType": "customer support",
+            "areaServed": "Worldwide",
+            "availableLanguage": "English"
+          },
+          "identifier": [
+            { "@type": "PropertyValue", "name": "ACN", "value": "678 711 469" },
+            { "@type": "PropertyValue", "name": "ABN", "value": "15 678 711 469" }
+          ],
+          "foundingLocation": {
+            "@type": "Place",
+            "address": {
+              "@type": "PostalAddress",
+              "addressCountry": "AU",
+              "addressRegion": "Victoria"
+            }
           }
         },
         {
           "@type": "WebSite",
           "name": "Find Business Reviews",
           "url": "https://findbusinessreviews.com/",
+          "description": "Compare business reviews from multiple platforms in one search. Check ratings, customer sentiment and a free AI Trust Score before you buy, book or visit.",
+          "inLanguage": "en",
           "potentialAction": {
             "@type": "SearchAction",
             "target": {
@@ -52,23 +77,33 @@
           }
         },
         {
-          "@type": "Organization",
+          "@type": "WebApplication",
           "name": "Find Business Reviews",
           "url": "https://findbusinessreviews.com/",
-          "legalName": "Quintessence Visionary Studio Pty Ltd",
-          "identifier": [
-            { "@type": "PropertyValue", "name": "ACN", "value": "678 711 469" },
-            { "@type": "PropertyValue", "name": "ABN", "value": "15 678 711 469" }
-          ],
-          "contactPoint": {
-            "@type": "ContactPoint",
-            "email": "hello@findbusinessreviews.com",
-            "contactType": "customer support"
-          }
+          "description": "Compare business review ratings across Google, Yelp, TripAdvisor, Trustpilot, Product Review and Facebook with a computed 0–100 AI Trust Score.",
+          "applicationCategory": "BusinessApplication",
+          "operatingSystem": "Web, iOS, Android",
+          "browserRequirements": "Requires JavaScript",
+          "inLanguage": "en",
+          "offers": {
+            "@type": "Offer",
+            "price": "0",
+            "priceCurrency": "AUD",
+            "availability": "https://schema.org/InStock"
+          },
+          "featureList": [
+            "Compare business ratings across multiple review platforms",
+            "AI Trust Score from 0 to 100",
+            "AI-powered review sentiment analysis",
+            "Business reputation report",
+            "Global business search"
+          ]
         }
       ]
     }
     </script>
+    <!-- Preload LCP image (hero logo) to improve Core Web Vitals -->
+    <link rel="preload" as="image" href="./hero-logo.png" fetchpriority="high" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -944,6 +979,24 @@
         .report-stat-grid { grid-template-columns: 1fr; }
         .paid-report-banner { flex-direction: column; align-items: flex-start; }
       }
+
+      /* ===== Homepage explainer content ===== */
+      .hp-content { margin: 48px 0 0; }
+      .hp-section { background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 36px 40px; margin: 24px 0; box-shadow: var(--shadow-soft); }
+      .hp-section-heading { font-size: 22px; font-weight: 800; color: var(--navy); letter-spacing: -.3px; margin-bottom: 14px; }
+      .hp-section-body { font-size: 15px; color: #2a2f38; line-height: 1.75; }
+      .hp-section-body p { margin: 12px 0; }
+      .hp-section-body p:first-child { margin-top: 0; }
+      .hp-section-body ul { margin: 12px 0 12px 22px; }
+      .hp-section-body li { margin: 7px 0; }
+      @media (max-width: 900px) { .hp-section { padding: 26px 24px; } }
+      @media (max-width: 640px) { .hp-content { margin: 28px 0 0; } }
+
+
+      /* ===== Expanded footer nav ===== */
+      .foot-nav { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 18px; margin: 18px 0 6px; font-size: 13px; }
+      .foot-nav a { color: var(--navy); text-decoration: none; font-weight: 500; }
+      .foot-nav a:hover { color: var(--purple); text-decoration: underline; }
     </style>
   </head>
   <body>
@@ -954,7 +1007,7 @@
       </div>
 
       <!-- Search (persistent) -->
-      <div class="search-wrap">
+      <div class="search-wrap" id="search">
         <div class="search-shell">
           <div class="search-field">
             <div class="search-icon-circle">
@@ -1033,6 +1086,25 @@
               <p>Discover deals, promotions and special offers nearby.</p>
             </div>
           </div>
+
+          <!-- Homepage content sections — shown on landing, hidden when a search is active -->
+          <div class="hp-content">
+
+            <div class="hp-section" id="how-it-works">
+              <h2 class="hp-section-heading">Why compare reviews from multiple platforms?</h2>
+              <div class="hp-section-body">
+                <p>A single review platform only tells part of the story. Find Business Reviews compares public reviews from multiple platforms and generates an AI Trust Score to help you make more informed decisions before you buy, book or visit.</p>
+              </div>
+            </div>
+
+            <div class="hp-section" id="for-businesses">
+              <h2 class="hp-section-heading">For businesses</h2>
+              <div class="hp-section-body">
+                <p>Understand how your brand appears across the web with an AI Business Reputation Report showing customer sentiment, reputation strengths, improvement areas and practical actions to build trust.</p>
+              </div>
+            </div>
+
+          </div>
         </div>
 
         <!-- Loading -->
@@ -1069,6 +1141,13 @@
 
     <footer class="page-shell foot-line">
       <div>Independent. Unbiased. Built for smarter decisions.</div>
+      <nav class="foot-nav" aria-label="Page sections">
+        <a href="#search">Search</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="#for-businesses">For Businesses</a>
+        <a href="/terms">Terms</a>
+        <a href="/privacy">Privacy</a>
+      </nav>
       <p class="foot-disclaimer">Find Business Reviews uses available public review data and AI analysis. AI may make mistakes. Information may be incomplete, outdated or inaccurate. Please verify information independently before making decisions.</p>
       <p class="foot-disclaimer foot-affiliation">Independent platform. Not affiliated with or endorsed by Google, Yelp, TripAdvisor, Trustpilot, ProductReview or Facebook.</p>
       <p class="foot-copyright">© 2026 Find Business Reviews. Powered by Quintessence Visionary Studio Pty Ltd. ACN 678 711 469 | ABN 15 678 711 469.</p>
@@ -2897,7 +2976,7 @@
           if (currentData && currentData.name) {
             updateSearchMeta(currentData);
           } else {
-            document.title = 'Find Business Reviews | Compare Reviews & AI Trust Scores';
+            document.title = 'Find Business Reviews | Compare Business Reviews & AI Trust Scores';
             const descEl = document.querySelector('meta[name="description"]');
             const homepageDesc = 'Find Business Reviews helps you compare Google, TripAdvisor, Yelp and more ratings in one place \u2014 with a free AI Trust Score \u2014 before you buy, book or visit.';
             if (descEl) descEl.setAttribute('content', homepageDesc);

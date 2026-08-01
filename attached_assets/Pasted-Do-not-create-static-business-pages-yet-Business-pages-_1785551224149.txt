@@ -1,0 +1,93 @@
+Do not create static business pages yet.
+
+Business pages are generated dynamically only after a user performs a search using SerpApi/DataForSEO, so they cannot currently be indexed by Google.
+
+The priority is to make the Find Business Reviews website itself rank highly on Google.
+
+Please focus on improving homepage and site-level SEO only.
+
+Tasks:
+
+1. Improve homepage content naturally around:
+- compare business reviews
+- business reviews
+- business ratings
+- customer reviews
+- business reputation
+- online reputation
+- AI Trust Score
+- compare reviews
+- review comparison
+- business reputation report
+
+Do not keyword-stuff.
+
+2. Expand the homepage with useful content explaining:
+- what Find Business Reviews does
+- why comparing multiple review platforms matters
+- how the AI Trust Score works
+- benefits for customers
+- benefits for businesses
+- global coverage
+- supported review platforms
+
+Target around 600–1,000 words of useful content.
+
+3. Add structured data:
+- Organization
+- WebSite
+- SearchAction
+
+4. Improve:
+- page title
+- meta description
+- Open Graph
+- Twitter cards
+- canonical tags
+
+5. Improve image alt text.
+
+6. Improve Core Web Vitals.
+
+7. Create an SEO-friendly About page.
+
+8. Create Help pages:
+- How the AI Trust Score works
+- How Find Business Reviews works
+- Frequently Asked Questions
+
+9. Create a Resources/Blog section.
+
+Write high-quality articles such as:
+- Why comparing reviews matters
+- How to spot fake reviews
+- Google Reviews vs Trustpilot
+- Why review volume matters
+- How businesses build trust online
+- What is an AI Trust Score?
+
+These pages should target real Google searches and bring organic traffic.
+
+10. Build strong internal linking between:
+Homepage
+About
+FAQ
+Resources
+Privacy
+Terms
+
+11. Make sure every page has:
+- unique title
+- unique meta description
+- H1
+- proper heading hierarchy
+- schema
+- canonical URL
+
+12. Generate a final SEO report explaining:
+- what was improved
+- what Google can now crawl
+- remaining opportunities
+
+Do not implement business SEO pages yet.
+Those will be a separate future feature if we decide to permanently save searched businesses.

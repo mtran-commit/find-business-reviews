@@ -1,0 +1,101 @@
+Important correction:
+
+Find Business Reviews is a ONE-PAGE website.
+
+Do not create any new pages.
+
+Do not create:
+- About page
+- FAQ page
+- How It Works page
+- Blog or Resources page
+- AI Trust Score page
+- Business Report page
+- Category pages
+- Location pages
+- Country pages
+- Permanent business profile pages
+
+Keep the entire public website on the existing homepage.
+
+The goal is to improve Google SEO for this single page only.
+
+Please focus only on:
+
+1. Homepage SEO title
+Use:
+Find Business Reviews | Compare Business Reviews & AI Trust Scores
+
+2. Homepage meta description
+Use:
+Compare business reviews from multiple platforms in one search. Check ratings, customer sentiment and a free AI Trust Score before you buy, book or visit.
+
+3. Main H1
+Use:
+Compare Business Reviews in One Search
+
+There must only be one H1.
+
+4. Add this H2 section below the feature cards and above the footer:
+
+Why compare reviews from multiple platforms?
+
+A single review platform only tells part of the story. Find Business Reviews compares public reviews from multiple platforms and generates an AI Trust Score to help you make more informed decisions before you buy, book or visit.
+
+5. Add another compact H2 section underneath:
+
+For businesses
+
+Understand how your brand appears across the web with an AI Business Reputation Report showing customer sentiment, reputation strengths, improvement areas and practical actions to build trust.
+
+6. Keep all content on the same homepage.
+
+Use anchor links if needed, such as:
+#search
+#how-it-works
+#for-businesses
+#privacy
+#terms
+
+Do not create separate URLs for these sections.
+
+7. Improve homepage structured data:
+- Organization
+- WebSite
+- SearchAction
+
+Do not add LocalBusiness schema for dynamically searched businesses.
+
+8. Keep:
+- canonical homepage URL
+- robots.txt
+- sitemap.xml containing only genuine permanent public URLs
+- Open Graph metadata
+- Twitter Card metadata
+- image alt text
+- mobile performance improvements
+- Core Web Vitals optimisation
+
+9. Dynamic search results should not create indexable permanent pages.
+
+Do not add temporary business search results to the sitemap.
+
+10. Private routes must remain noindex:
+- admin
+- report requests
+- payment processing
+- generated private reports
+- internal APIs
+
+11. Do not redesign the website.
+Do not change the search functionality.
+Do not alter the current one-page structure.
+
+Final result:
+A well-optimised, one-page global website that helps Google understand:
+- business review comparison
+- business ratings
+- customer reviews
+- AI Trust Scores
+- business reputation reports
+- global business search
