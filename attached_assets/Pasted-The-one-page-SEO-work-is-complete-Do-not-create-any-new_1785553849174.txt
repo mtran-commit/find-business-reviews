@@ -1,0 +1,150 @@
+The one-page SEO work is complete. Do not create any new public pages.
+
+Now complete the final SEO authority and verification setup for Find Business Reviews without changing the design or search functionality.
+
+1. Verify Organization structured data
+
+Check that the homepage includes valid Organization schema with:
+
+Name:
+Find Business Reviews
+
+Legal operator:
+Quintessence Visionary Studio Pty Ltd
+
+Website:
+https://findbusinessreviews.com
+
+ACN:
+678 711 469
+
+ABN:
+15 678 711 469
+
+Use the official logo URL from the live website.
+
+Do not include social media, App Store or Google Business Profile URLs unless those exact profiles already exist and I provide the correct URLs.
+
+2. Verify WebSite structured data
+
+Keep valid WebSite schema and SearchAction schema for the homepage search.
+
+Make sure the search target uses the actual production search URL and query parameters used by the website.
+
+Do not invent URLs or parameters.
+
+3. Run structured-data validation
+
+Validate the live homepage markup for:
+
+- Organization
+- WebSite
+- SearchAction
+
+Check for:
+- invalid properties
+- missing required values
+- duplicate schema
+- incorrect URLs
+- placeholder content
+
+Fix any genuine errors.
+
+Do not add LocalBusiness schema for businesses returned dynamically through search.
+
+4. Prepare Google Search Console verification
+
+Check whether Google Search Console verification is already installed.
+
+Look for:
+- google-site-verification meta tag
+- verification HTML file
+- DNS verification record documentation
+
+If no verification exists, do not invent a verification code.
+
+Tell me exactly where I need to paste the Google verification code after I obtain it.
+
+5. Prepare Bing Webmaster Tools verification
+
+Check whether Bing verification is installed.
+
+If not, tell me where to add the Bing verification code.
+
+Do not invent a code.
+
+6. Confirm indexing setup
+
+Verify that:
+
+- the homepage is indexable
+- /terms is indexable
+- /privacy is indexable
+- admin routes are noindex
+- payment routes are noindex
+- internal report-generation routes are noindex
+- temporary search-result states are not added to the sitemap
+- dynamic business search results do not generate permanent indexable pages
+
+7. Verify sitemap and robots.txt
+
+Confirm the sitemap contains only the real permanent public URLs:
+
+- homepage
+- terms
+- privacy
+
+Confirm robots.txt references the correct production sitemap URL.
+
+8. Verify homepage SEO metadata
+
+Confirm the live homepage uses:
+
+Title:
+Find Business Reviews | Compare Business Reviews & AI Trust Scores
+
+Meta description:
+Compare business reviews from multiple platforms in one search. Check ratings, customer sentiment and a free AI Trust Score before you buy, book or visit.
+
+H1:
+Compare Business Reviews in One Search
+
+Only one H1 should exist.
+
+9. Verify the two homepage SEO sections
+
+Confirm these sections are present below the feature cards and above the footer:
+
+Why compare reviews from multiple platforms?
+
+A single review platform only tells part of the story. Find Business Reviews compares public reviews from multiple platforms and generates an AI Trust Score to help you make more informed decisions before you buy, book or visit.
+
+For businesses
+
+Understand how your brand appears across the web with an AI Business Reputation Report showing customer sentiment, reputation strengths, improvement areas and practical actions to build trust.
+
+10. Final report
+
+When finished, provide a clear report showing:
+
+- Organization schema status
+- WebSite/SearchAction schema status
+- Google Search Console readiness
+- Bing Webmaster Tools readiness
+- robots.txt status
+- sitemap status
+- indexable URLs
+- noindex routes
+- homepage title
+- meta description
+- H1
+- structured-data errors fixed
+- anything I still need to do manually
+
+Important:
+Do not create new pages.
+Do not add fake social links.
+Do not add placeholder verification codes.
+Do not redesign the site.
+Do not change the business search.
+Do not start automatic alerts or monitoring yet.
