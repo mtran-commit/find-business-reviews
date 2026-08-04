@@ -127,7 +127,7 @@ workflows:
   # ─────────────────────────────────────────────────────────────────────────────
   android-capacitor:
     name: Find Business Reviews Android (Capacitor)
-    instance_type: linux
+    instance_type: mac_mini_m1
     max_build_duration: 60
     environment:
       node: 24
@@ -163,7 +163,7 @@ workflows:
           fi
           # Patch versionCode to use the Codemagic build number
           BUILD_GRADLE="android/app/build.gradle"
-          sed -i "s/versionCode .*/versionCode ${CM_BUILD_NUMBER:-1}/" "$BUILD_GRADLE"
+          sed -i '' "s/versionCode .*/versionCode ${CM_BUILD_NUMBER:-1}/" "$BUILD_GRADLE"
           echo "=== versionCode line ==="
           grep versionCode "$BUILD_GRADLE"
       - name: Generate icons & splash
@@ -181,7 +181,7 @@ workflows:
       - name: Decode keystore
         script: |
           set -e
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 --decode > /tmp/fbr-release.keystore
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/fbr-release.keystore
           test -s /tmp/fbr-release.keystore || { echo "ERROR: keystore is empty after decode"; exit 1; }
       - name: Build signed AAB
         script: |
