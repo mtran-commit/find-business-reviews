@@ -127,7 +127,7 @@ workflows:
   # ─────────────────────────────────────────────────────────────────────────────
   android-capacitor:
     name: Find Business Reviews Android (Capacitor)
-    instance_type: linux_x2
+    instance_type: linux_x1
     max_build_duration: 60
     environment:
       node: 24
