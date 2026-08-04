@@ -181,7 +181,7 @@ workflows:
       - name: Decode keystore
         script: |
           set -e
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/fbr-release.keystore
+          echo "$ANDROID_KEYSTORE_BASE64" | tr -d '[:space:]' | base64 -d > /tmp/fbr-release.keystore
           test -s /tmp/fbr-release.keystore || { echo "ERROR: keystore is empty after decode"; exit 1; }
       - name: Build signed AAB
         script: |
