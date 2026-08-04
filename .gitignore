@@ -47,3 +47,8 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+
+# Android signing
+*.keystore
+*.jks
+docs/android-signing/
