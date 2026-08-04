@@ -1,0 +1,57 @@
+Build signed AAB
+17s
+
+
+
+Show command
+Showing the last 50 lines. Click this button to load the full log
+> Task :app:createReleaseCompatibleScreenManifests
+> Task :app:extractDeepLinksRelease
+> Task :capacitor-android:extractDeepLinksRelease
+> Task :capacitor-cordova-android-plugins:extractDeepLinksRelease
+> Task :app:packageReleaseResources
+> Task :capacitor-android:writeReleaseAarMetadata
+> Task :capacitor-cordova-android-plugins:writeReleaseAarMetadata
+> Task :capacitor-android:processReleaseManifest
+> Task :capacitor-cordova-android-plugins:processReleaseManifest
+> Task :app:mergeReleaseResources
+> Task :app:parseReleaseLocalResources
+> Task :app:processReleaseMainManifest
+> Task :app:processReleaseManifest
+> Task :app:processApplicationManifestReleaseForBundle
+> Task :app:checkReleaseAarMetadata
+> Task :capacitor-android:compileReleaseLibraryResources
+> Task :capacitor-cordova-android-plugins:compileReleaseLibraryResources
+> Task :capacitor-android:parseReleaseLocalResources
+> Task :capacitor-cordova-android-plugins:parseReleaseLocalResources
+> Task :app:extractReleaseVersionControlInfo
+> Task :app:processReleaseManifestForPackage
+> Task :capacitor-android:javaPreCompileRelease
+> Task :capacitor-cordova-android-plugins:javaPreCompileRelease
+> Task :capacitor-android:generateReleaseRFile
+> Task :capacitor-cordova-android-plugins:generateReleaseRFile
+> Task :app:checkReleaseDuplicateClasses
+> Task :app:processReleaseResources
+> Task :capacitor-android:compileReleaseJavaWithJavac FAILED
+
+[Incubating] Problems report is available at: file:///Users/builder/clone/artifacts/compare-reviews/android/build/reports/problems/problems-report.html
+
+FAILURE: Build failed with an exception.
+
+* What went wrong:
+Execution failed for task ':capacitor-android:compileReleaseJavaWithJavac'.
+> Java compilation initialization error
+    error: invalid source release: 21
+
+* Try:
+> Run with --stacktrace option to get the stack trace.
+> Run with --info or --debug option to get more log output.
+> Run with --scan to get full insights.
+> Get more help at https://help.gradle.org.
+
+BUILD FAILED in 16s
+41 actionable tasks: 41 executed
+
+
+Build failed :|
+Step 8 script `Build signed AAB` exited with status code 1

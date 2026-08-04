@@ -131,7 +131,7 @@ workflows:
     max_build_duration: 60
     environment:
       node: 24
-      java: 17
+      java: 21
       vars:
         PACKAGE_NAME: "com.findbusinessreviews.app"
       groups:
