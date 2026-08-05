@@ -28,8 +28,16 @@ description: Lessons from setting up the Android Capacitor + Codemagic CI pipeli
 
 ## Version code
 - Google Play requires each upload to have a strictly higher versionCode.
-- First manual upload used versionCode 1. CI uses `CM_BUILD_NUMBER + 1` as offset so it's always > 1.
-- **Why:** `${CM_BUILD_NUMBER:-1}` defaults to 1, colliding with the mandatory first manual upload.
+- First manual upload used versionCode 1. A failed CI attempt consumed versionCode 2 (Google marks it used even if the edit was never committed).
+- CI now uses `CM_BUILD_NUMBER + 2` offset → versionCodes 3, 4, 5 … for build #1, #2, #3 …
+- **Why +2:** +1 collided with the consumed-but-uncommitted versionCode 2 from a failed retry.
+- Version code 2 does not appear in Play Console releases list — that's normal; it was consumed but never committed so no release entry was created.
+- Each Codemagic build adds a new draft to Play Console internal testing. Promote whichever one you want testers to receive; ignore or delete the rest.
+
+## First manual upload (required by Google)
+- Google requires the very first version to be uploaded manually via Play Console UI.
+- Automated publishing via service account only works for subsequent builds.
+- Path: Play Console → Testing → Internal testing → Create new release → Upload AAB → Start rollout.
 
 ## First upload
 - Google requires the very first version to be uploaded manually via Play Console UI regardless of API setup.
