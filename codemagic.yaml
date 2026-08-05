@@ -206,17 +206,44 @@ workflows:
             exit 0
           fi
           AAB=$(find artifacts/compare-reviews/android -name "*.aab" | head -1)
-          echo "$GCLOUD_SERVICE_ACCOUNT_CREDENTIALS" > /tmp/gcloud-key.json
-          npx @google/play-publisher \
-            --package-name "$PACKAGE_NAME" \
-            --service-account-key /tmp/gcloud-key.json \
-            --aab-path "$AAB" \
-            --track internal \
-            --status draft \
-            || {
-              # Fallback: use bundletool-style upload via gcloud CLI if available
-              echo "play-publisher failed; attempting gcloud alpha pubsub (noop fallback)"
-              exit 0
-            }
+          if [ -z "$AAB" ]; then
+            echo "ERROR: No AAB found to publish" >&2
+            exit 1
+          fi
+          echo "=== Publishing $AAB to Google Play internal track ==="
+          echo "$GCLOUD_SERVICE_ACCOUNT_CREDENTIALS" > /tmp/gplay-creds.json
+          pip3 install --quiet google-api-python-client google-auth
+          python3 - "$AAB" "$PACKAGE_NAME" <<'PYEOF'
+          import sys
+          from googleapiclient.discovery import build
+          from googleapiclient.http import MediaFileUpload
+          from google.oauth2 import service_account
+
+          aab_path, package_name = sys.argv[1], sys.argv[2]
+
+          creds = service_account.Credentials.from_service_account_file(
+              '/tmp/gplay-creds.json',
+              scopes=['https://www.googleapis.com/auth/androidpublisher']
+          )
+          service = build('androidpublisher', 'v3', credentials=creds)
+
+          edit = service.edits().insert(body={}, packageName=package_name).execute()
+          edit_id = edit['id']
+
+          media = MediaFileUpload(aab_path, mimetype='application/octet-stream', resumable=True)
+          bundle = service.edits().bundles().upload(
+              packageName=package_name, editId=edit_id, media_body=media
+          ).execute()
+          version_code = bundle['versionCode']
+          print(f'Uploaded bundle versionCode={version_code}')
+
+          service.edits().tracks().update(
+              packageName=package_name, editId=edit_id, track='internal',
+              body={'releases': [{'versionCodes': [str(version_code)], 'status': 'draft'}]}
+          ).execute()
+
+          service.edits().commit(packageName=package_name, editId=edit_id).execute()
+          print(f'Published to internal track as draft (versionCode={version_code})')
+          PYEOF
     artifacts:
       - artifacts/compare-reviews/android/**/*.aab
