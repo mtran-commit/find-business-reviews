@@ -1,3 +1,4 @@
+- [Android Codemagic quirks](android-codemagic-quirks.md) — instance type, Java 21, legacy keystore, AAB find path, Python publish, versionCode +1 offset.
 - [SerpApi engine quirks](serpapi-engines.md) — SerpApi-only (pre-DataForSEO) historical: which engines expose aggregate ratings directly vs require derivation; Yelp=derive. TripAdvisor is now DataForSEO async, not SerpApi.
 - [DataForSEO async task quirks](dataforseo-task-quirks.md) — task_post returns 20100 not 20000; TripAdvisor is async-only (no /live), priority:2 for fast queue; provider split.
 - [Replit OpenAI integration lazy import](openai-integration-lazy-import.md) — the AI-integrations OpenAI client throws at module load if env vars missing; import it lazily inside handlers.
