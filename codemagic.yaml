@@ -161,10 +161,10 @@ workflows:
           if [ ! -d android ]; then
             npx cap add android
           fi
-          # Patch versionCode: base 1000 + CM_BUILD_NUMBER so CI codes never
-          # collide with manually uploaded releases (1, 2, etc.) or failed retries.
+          # Patch versionCode: base 10 + CM_BUILD_NUMBER so CI codes clear
+          # manually uploaded releases (1, 2) and any failed retry attempts.
           BUILD_GRADLE="android/app/build.gradle"
-          VERSION_CODE=$(( ${CM_BUILD_NUMBER:-1} + 1000 ))
+          VERSION_CODE=$(( ${CM_BUILD_NUMBER:-1} + 10 ))
           sed -i '' "s/versionCode .*/versionCode ${VERSION_CODE}/" "$BUILD_GRADLE"
           echo "=== versionCode line ==="
           grep versionCode "$BUILD_GRADLE"
