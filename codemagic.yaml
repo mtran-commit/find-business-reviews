@@ -205,7 +205,7 @@ workflows:
             echo "GCLOUD_SERVICE_ACCOUNT_CREDENTIALS is not set — skipping Google Play publish."
             exit 0
           fi
-          AAB=$(find artifacts/compare-reviews/android -name "*.aab" | head -1)
+          AAB=$(find artifacts/compare-reviews/android/app/build/outputs/bundle/release -name "*.aab" | head -1)
           if [ -z "$AAB" ]; then
             echo "ERROR: No AAB found to publish" >&2
             exit 1
