@@ -529,6 +529,7 @@
       .platform-icon-sm.logo { background: #fff !important; border: 1px solid var(--border); }
       .platform-icon-sm img { width: 100%; height: 100%; object-fit: contain; padding: 2px; display: block; }
       .platform-row-name { font-weight: 600; font-size: 13.5px; display: flex; align-items: center; gap: 6px; }
+      .platform-row-wordmark { height: 13px; width: auto; display: inline-block; vertical-align: middle; }
       .platform-row-meta { display: flex; align-items: center; gap: 7px; justify-self: end; }
       .platform-row-meta .star1 { color: var(--text); font-size: 13px; }
       .platform-row-meta b { font-size: 13.5px; font-weight: 800; }
@@ -2666,11 +2667,12 @@
           const r = data[p.key];
           const demo = isDemo(data, p.key);
           if (!hasRating(r)) {
+            const rowLabel = p.key === 'reviewpay' ? '<img src="./icons/reviewpay-wordmark.png" alt="Review Pay" class="platform-row-wordmark">' : p.label;
             if (isPending(data, p.key)) {
               return '' +
                 '<div class="platform-row platform-row--na">' +
                   platformIcon(p) +
-                  '<div class="platform-row-name">' + p.label + '</div>' +
+                  '<div class="platform-row-name">' + rowLabel + '</div>' +
                   '<div class="platform-row-na-text platform-row-checking">Checking&hellip;</div>' +
                 '</div>';
             }
@@ -2678,14 +2680,15 @@
             return '' +
               '<div class="platform-row platform-row--na">' +
                 platformIcon(p) +
-                '<div class="platform-row-name">' + p.label + '</div>' +
+                '<div class="platform-row-name">' + rowLabel + '</div>' +
                 '<div class="platform-row-na-text">&mdash; ' + escapeHtml(note) + '</div>' +
               '</div>';
           }
+          const rowLabel = p.key === 'reviewpay' ? '<img src="./icons/reviewpay-wordmark.png" alt="Review Pay" class="platform-row-wordmark">' : p.label;
           return '' +
             '<div class="platform-row">' +
               platformIcon(p) +
-              '<div class="platform-row-name">' + p.label + (demo ? ' <span class="demo-badge">Demo</span>' : '') + '</div>' +
+              '<div class="platform-row-name">' + rowLabel + (demo ? ' <span class="demo-badge">Demo</span>' : '') + '</div>' +
               '<div class="platform-row-meta">' +
                 '<span class="star1">&#9733;</span>' +
                 '<b>' + r.rating.toFixed(1) + '</b>' +
