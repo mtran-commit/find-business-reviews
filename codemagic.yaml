@@ -154,6 +154,51 @@ workflows:
           set -e
           cd artifacts/compare-reviews
           PORT=8080 BASE_PATH=./ pnpm run build
+      - name: Determine next version code
+        script: |
+          set -e
+          pip3 install --quiet google-api-python-client google-auth
+          if [ -n "${GCLOUD_SERVICE_ACCOUNT_CREDENTIALS:-}" ]; then
+            echo "$GCLOUD_SERVICE_ACCOUNT_CREDENTIALS" > /tmp/gplay-creds.json
+            NEXT_VC=$(python3 - "$PACKAGE_NAME" <<'PYEOF'
+          import sys
+          from googleapiclient.discovery import build
+          from google.oauth2 import service_account
+
+          package_name = sys.argv[1]
+          creds = service_account.Credentials.from_service_account_file(
+              '/tmp/gplay-creds.json',
+              scopes=['https://www.googleapis.com/auth/androidpublisher']
+          )
+          service = build('androidpublisher', 'v3', credentials=creds)
+
+          # Create a temporary edit to read committed version codes from tracks
+          edit = service.edits().insert(body={}, packageName=package_name).execute()
+          edit_id = edit['id']
+
+          max_vc = 0
+          try:
+              tracks = service.edits().tracks().list(
+                  packageName=package_name, editId=edit_id
+              ).execute()
+              for track in tracks.get('tracks', []):
+                  for release in track.get('releases', []):
+                      for vc in release.get('versionCodes', []):
+                          max_vc = max(max_vc, int(vc))
+          except Exception:
+              pass
+          # Do NOT commit the edit — it expires automatically after 7 days.
+          # +5 buffer absorbs any version codes consumed by failed retries.
+          print(max_vc + 5)
+          PYEOF
+            )
+          else
+            # No credentials yet — use build number as fallback (no automated publish anyway)
+            NEXT_VC=$(( ${CM_BUILD_NUMBER:-1} + 10 ))
+          fi
+          echo "$NEXT_VC" > /tmp/next_vc
+          echo "=== Next version code: $NEXT_VC ==="
+
       - name: Add Android platform
         script: |
           set -e
@@ -161,10 +206,9 @@ workflows:
           if [ ! -d android ]; then
             npx cap add android
           fi
-          # Patch versionCode: +2 offset clears the manually uploaded (1) and
-          # failed retry (2), giving natural codes 3, 4, 5 … going forward.
+          # Use version code determined by the Play API query (or fallback)
           BUILD_GRADLE="android/app/build.gradle"
-          VERSION_CODE=$(( ${CM_BUILD_NUMBER:-1} + 2 ))
+          VERSION_CODE=$(cat /tmp/next_vc)
           sed -i '' "s/versionCode .*/versionCode ${VERSION_CODE}/" "$BUILD_GRADLE"
           echo "=== versionCode line ==="
           grep versionCode "$BUILD_GRADLE"

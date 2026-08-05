@@ -1,0 +1,56 @@
+Publish to Google Play internal track (optional)
+2s
+
+
+
+Show command
+=== Publishing artifacts/compare-reviews/android/app/build/outputs/bundle/release/app-release.aab to Google Play internal track ===
+
+[notice] A new release of pip is available: 24.2 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+Traceback (most recent call last):
+  File "<stdin>", line 20, in <module>
+  File "/Users/builder/.pyenv/versions/3.12.7/lib/python3.12/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/builder/.pyenv/versions/3.12.7/lib/python3.12/site-packages/googleapiclient/http.py", line 902, in execute
+    _, body = self.next_chunk(http=http, num_retries=num_retries)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/builder/.pyenv/versions/3.12.7/lib/python3.12/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/builder/.pyenv/versions/3.12.7/lib/python3.12/site-packages/googleapiclient/http.py", line 1093, in next_chunk
+    return self._process_response(resp, content)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/builder/.pyenv/versions/3.12.7/lib/python3.12/site-packages/googleapiclient/http.py", line 1124, in _process_response
+    raise HttpError(resp, content, uri=self.uri)
+googleapiclient.errors.HttpError: <HttpError 403 when requesting https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/com.findbusinessreviews.app/edits/01108158309863860139/bundles?alt=json&uploadType=resumable returned "Version code 3 has already been used.". Details: "Version code 3 has already been used.">
+
+
+Build failed :|
+Step 9 script `Publish to Google Play internal track (optional)` exited with status code 1
+=== Publishing artifacts/compare-reviews/android/app/build/outputs/bundle/release/app-release.aab to Google Play internal track ===
+
+[notice] A new release of pip is available: 24.2 -> 26.2.1
+[notice] To update, run: pip install --upgrade pip
+Traceback (most recent call last):
+  File "<stdin>", line 20, in <module>
+  File "/Users/builder/.pyenv/versions/3.12.7/lib/python3.12/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/builder/.pyenv/versions/3.12.7/lib/python3.12/site-packages/googleapiclient/http.py", line 902, in execute
+    _, body = self.next_chunk(http=http, num_retries=num_retries)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/builder/.pyenv/versions/3.12.7/lib/python3.12/site-packages/googleapiclient/_helpers.py", line 130, in positional_wrapper
+    return wrapped(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/builder/.pyenv/versions/3.12.7/lib/python3.12/site-packages/googleapiclient/http.py", line 1093, in next_chunk
+    return self._process_response(resp, content)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/builder/.pyenv/versions/3.12.7/lib/python3.12/site-packages/googleapiclient/http.py", line 1124, in _process_response
+    raise HttpError(resp, content, uri=self.uri)
+googleapiclient.errors.HttpError: <HttpError 403 when requesting https://androidpublisher.googleapis.com/upload/androidpublisher/v3/applications/com.findbusinessreviews.app/edits/01108158309863860139/bundles?alt=json&uploadType=resumable returned "Version code 3 has already been used.". Details: "Version code 3 has already been used.">
+
+
+Build failed :|
+Step 9 script `Publish to Google Play internal track (optional)` exited with status code 1

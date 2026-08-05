@@ -28,11 +28,12 @@ description: Lessons from setting up the Android Capacitor + Codemagic CI pipeli
 
 ## Version code
 - Google Play requires each upload to have a strictly higher versionCode.
-- First manual upload used versionCode 1. A failed CI attempt consumed versionCode 2 (Google marks it used even if the edit was never committed).
-- CI now uses `CM_BUILD_NUMBER + 2` offset → versionCodes 3, 4, 5 … for build #1, #2, #3 …
-- **Why +2:** +1 collided with the consumed-but-uncommitted versionCode 2 from a failed retry.
-- Version code 2 does not appear in Play Console releases list — that's normal; it was consumed but never committed so no release entry was created.
-- Each Codemagic build adds a new draft to Play Console internal testing. Promote whichever one you want testers to receive; ignore or delete the rest.
+- `CM_BUILD_NUMBER`-based offsets are unreliable — Codemagic reuses the same CM_BUILD_NUMBER when you restart a build, causing repeated collisions.
+- Google marks a version code as "used" even if the edit is never committed (abandoned upload = consumed version code).
+- **Fix:** query the Play API before building to get the max committed version code, then use `max + 5` as a buffer. Implemented as a "Determine next version code" step that runs `edits().tracks().list()` in a temporary uncommitted edit, writes result to `/tmp/next_vc`, then "Add Android platform" reads from it.
+- +5 buffer absorbs up to 4 failed retry attempts between two successful commits.
+- Version codes jump by 5+ between successful builds (e.g. 3 → 8 → 13) — this is normal and not a problem for Google Play.
+- Version codes consumed but never committed do NOT appear in Play Console releases list — expected behavior.
 
 ## First manual upload (required by Google)
 - Google requires the very first version to be uploaded manually via Play Console UI.
