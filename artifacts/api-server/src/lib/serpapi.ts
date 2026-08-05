@@ -457,7 +457,9 @@ export async function fetchBusinessCore(
     )}`;
   }
 
-  const notes: Record<string, string> = {};
+  const notes: Record<string, string> = {
+    reviewpay: "No match found",
+  };
 
   // The five non-Google platforms are slow (some need async task queues). They
   // are resolved separately — either by `fetchBusinessReviews` (full lookup for
